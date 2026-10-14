@@ -104,7 +104,7 @@ impl ArchiveReader {
   }
 
   /// `ArchiveReader.extractFile(path:)`.
-  pub fn extract_file(&self, path: &str) -> Result<(WriteEntry, Vec<u8>), Error> {
+  pub fn extract_file(&self, path: &str) -> Result<(WriteEntry<'static>, Vec<u8>), Error> {
     platform::outcome(
       self.handle.extract_file(path),
       format!("extract {path} from an archive"),
@@ -114,7 +114,7 @@ impl ArchiveReader {
 }
 
 impl<'a> IntoIterator for &'a ArchiveReader {
-  type Item = (WriteEntry, Vec<u8>);
+  type Item = (WriteEntry<'static>, Vec<u8>);
   type IntoIter = Iterator<'a>;
 
   fn into_iter(self) -> Self::IntoIter {
@@ -123,10 +123,12 @@ impl<'a> IntoIterator for &'a ArchiveReader {
 }
 
 /// An entry and its data, as Swift's iterator and `extractFile` return them.
-fn read(outcome: &ffi::CzOutcome) -> (WriteEntry, Vec<u8>) {
+/// Swift makes each entry with `WriteEntry()`, so it doesn't use the archive.
+fn read(outcome: &ffi::CzOutcome) -> (WriteEntry<'static>, Vec<u8>) {
   (
     WriteEntry {
       handle: outcome.write_entry(),
+      archive: PhantomData,
     },
     outcome.entry_data(),
   )
@@ -145,7 +147,7 @@ impl fmt::Debug for Iterator<'_> {
 }
 
 impl std::iter::Iterator for Iterator<'_> {
-  type Item = (WriteEntry, Vec<u8>);
+  type Item = (WriteEntry<'static>, Vec<u8>);
 
   /// `ArchiveReader.Iterator.next()`.
   fn next(&mut self) -> Option<Self::Item> {
@@ -171,7 +173,7 @@ impl fmt::Debug for StreamingIterator<'_> {
 }
 
 impl<'a> std::iter::Iterator for StreamingIterator<'a> {
-  type Item = (WriteEntry, ArchiveEntryReader<'a>);
+  type Item = (WriteEntry<'static>, ArchiveEntryReader<'a>);
 
   /// `ArchiveReader.StreamingIterator.next()`.
   fn next(&mut self) -> Option<Self::Item> {
@@ -181,6 +183,7 @@ impl<'a> std::iter::Iterator for StreamingIterator<'a> {
       (
         WriteEntry {
           handle: outcome.write_entry(),
+          archive: PhantomData,
         },
         ArchiveEntryReader {
           handle: outcome.archive_entry_reader(),

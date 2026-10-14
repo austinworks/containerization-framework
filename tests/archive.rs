@@ -31,7 +31,7 @@ fn files(reader: &cfw::containerization_archive::ArchiveReader) -> BTreeMap<Stri
 fn entry(
   path: &str,
   file_type: cfw::containerization_archive::URLFileResourceType,
-) -> cfw::containerization_archive::WriteEntry {
+) -> cfw::containerization_archive::WriteEntry<'static> {
   let mut entry = cfw::containerization_archive::WriteEntry::new().expect("an entry");
   entry.set_path(Some(path));
   entry.set_file_type(file_type);
@@ -47,7 +47,7 @@ fn archives_a_directory_and_reads_it_back() {
   std::fs::create_dir(&root).expect("the archived directory");
   tree(&root);
 
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::Gzip,
     Default::default(),
@@ -103,7 +103,7 @@ fn archives_paths_under_a_base() {
   std::fs::create_dir(&root).expect("the base directory");
   tree(&root);
 
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::None,
     Default::default(),
@@ -133,7 +133,7 @@ fn writes_entries_whole_and_in_chunks() {
     cfw::containerization_archive::Format::Ustar,
     cfw::containerization_archive::Filter::None,
   );
-  let writer = cfw::containerization_archive::ArchiveWriter::new(&configuration).expect("a writer");
+  let mut writer = cfw::containerization_archive::ArchiveWriter::new(&configuration).expect("a writer");
   writer
     .open(&archive)
     .expect("the archive's file should open");
@@ -260,7 +260,7 @@ fn streams_each_entrys_data() {
   let archive = directory.path().join("root.tar");
   std::fs::create_dir(&root).expect("the archived directory");
   tree(&root);
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::None,
     Default::default(),
@@ -292,7 +292,7 @@ fn extracts_an_archive_and_rejects_paths_that_escape_it() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let archive = directory.path().join("escape.tar");
   let into = directory.path().join("into");
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::None,
     Default::default(),
@@ -324,7 +324,7 @@ fn reads_from_a_file_handle_it_owns() {
   std::fs::create_dir(&root).expect("the archived directory");
   tree(&root);
   let file = std::fs::File::create(&archive).expect("the archive's file");
-  let writer =
+  let mut writer =
     cfw::containerization_archive::ArchiveWriter::new(&cfw::containerization_archive::ArchiveWriterConfiguration::new(
       cfw::containerization_archive::Format::Pax,
       cfw::containerization_archive::Filter::None,
@@ -356,7 +356,7 @@ fn reads_a_bundled_zip() {
   let archive = directory.path().join("root.zip");
   std::fs::create_dir(&root).expect("the archived directory");
   tree(&root);
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::Zip,
     cfw::containerization_archive::Filter::None,
     cfw::containerization_archive::archive_writer::ArchiveWriterOptions {
@@ -396,7 +396,7 @@ fn writes_with_an_extended_attribute_format() {
       cfw::containerization_archive::Filter::None,
     )
   };
-  let writer = cfw::containerization_archive::ArchiveWriter::new(&configuration).expect("a writer");
+  let mut writer = cfw::containerization_archive::ArchiveWriter::new(&configuration).expect("a writer");
   writer
     .open(&archive)
     .expect("the archive's file should open");
@@ -467,7 +467,7 @@ fn refuses_a_path_that_isnt_utf8_without_asking_swift() {
 fn says_which_file_is_not_in_an_archive() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let archive = directory.path().join("one.tar");
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::None,
     Default::default(),
@@ -497,7 +497,7 @@ fn unpacks_an_archive_into_a_filesystem() {
   let exported = directory.path().join("exported.tar");
   std::fs::create_dir(&root).expect("the archived directory");
   tree(&root);
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::PaxRestricted,
     cfw::containerization_archive::Filter::Gzip,
     Default::default(),

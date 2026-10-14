@@ -19,6 +19,19 @@ use std::path::PathBuf;
 /// `Content`, which in Swift is a protocol that `LocalContent` conforms to.
 /// Swift's generic `decode()` doesn't cross the bridge; decode
 /// [`Content::data`] instead.
+///
+/// Swift's `Content` is `Sendable`, but `LocalContent` seeks one shared file
+/// handle before each read. Two threads reading the same `Content` could each
+/// read from the other's position, so Rust's is `Send` but not `Sync`.
+///
+/// ```compile_fail
+/// # use containerization_framework as cfw;
+/// let content = cfw::containerization_oci::content::Content::open("blob".as_ref())?;
+/// std::thread::scope(|scope| {
+///   scope.spawn(|| content.size());
+/// });
+/// # Ok::<(), cfw::error::Error>(())
+/// ```
 pub struct Content {
   pub(crate) handle: ffi::CzContent,
 }
@@ -29,9 +42,9 @@ impl fmt::Debug for Content {
   }
 }
 
-// Swift's `Content` is `Sendable`.
+// Swift's `Content` is `Sendable`. Rust's isn't `Sync`, so one call runs at a
+// time.
 unsafe impl Send for Content {}
-unsafe impl Sync for Content {}
 
 impl Content {
   /// `LocalContent.maxDecodedSize`: the largest content [`Content::data`]

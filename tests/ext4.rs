@@ -170,7 +170,7 @@ fn archive(directory: &Path) -> std::path::PathBuf {
   std::fs::write(root.join("sub").join("b.txt"), b"bravo").expect("a file in the subdirectory");
   std::os::unix::fs::symlink("a.txt", root.join("link")).expect("a symlink");
 
-  let writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
     cfw::containerization_archive::Format::PaxRestricted,
     cfw::containerization_archive::Filter::Gzip,
     Default::default(),

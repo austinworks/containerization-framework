@@ -4,6 +4,7 @@ use crate::platform;
 use crate::platform::ffi;
 use std::collections::BTreeMap;
 use std::fmt;
+use std::marker::PhantomData;
 use std::time::SystemTime;
 
 raw_values!(
@@ -26,34 +27,46 @@ raw_values!(
 ///
 /// Swift's date setters drop any fraction of a second, and they move a date
 /// before 1970 one second later.
-pub struct WriteEntry {
+///
+/// Swift's `WriteEntry` is a class that isn't `Sendable`, so Rust's is neither
+/// `Send` nor `Sync`. An entry made with [`WriteEntry::with_archive`] uses its
+/// writer's archive, so it borrows the writer.
+///
+/// ```compile_fail
+/// # use containerization_framework as cfw;
+/// let entry = cfw::containerization_archive::WriteEntry::new()?;
+/// std::thread::spawn(move || entry.path());
+/// # Ok::<(), cfw::error::Error>(())
+/// ```
+pub struct WriteEntry<'a> {
   pub(crate) handle: ffi::CzWriteEntry,
+  pub(crate) archive: PhantomData<&'a ArchiveWriter>,
 }
 
-impl fmt::Debug for WriteEntry {
+impl fmt::Debug for WriteEntry<'_> {
   fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
     formatter.debug_struct("WriteEntry").finish_non_exhaustive()
   }
 }
 
-// Swift's `WriteEntry` is a class that isn't `Sendable`; Rust's isn't `Sync`,
-// so one call runs at a time.
-unsafe impl Send for WriteEntry {}
-
-impl WriteEntry {
+impl WriteEntry<'static> {
   /// `WriteEntry()`.
   pub fn new() -> Result<Self, Error> {
     let outcome = platform::outcome(ffi::cz_write_entry_new(), "make an archive entry")?;
 
     Ok(Self {
       handle: outcome.write_entry(),
+      archive: PhantomData,
     })
   }
+}
 
+impl<'a> WriteEntry<'a> {
   /// `WriteEntry(_:)`, for `archive`.
-  pub fn with_archive(archive: &ArchiveWriter) -> Self {
+  pub fn with_archive(archive: &'a ArchiveWriter) -> Self {
     Self {
       handle: archive.handle.new_entry(),
+      archive: PhantomData,
     }
   }
 

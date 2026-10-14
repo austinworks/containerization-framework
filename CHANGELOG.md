@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Breaking changes
+
+- `WriteEntry` and `ArchiveWriterTransaction` take a lifetime and are no
+  longer `Send`. A transaction, and an entry made with
+  `WriteEntry::with_archive`, borrow their writer, so they can't outlive it
+  or be used from another thread. Entries from `WriteEntry::new` and from an
+  `ArchiveReader` are `WriteEntry<'static>`.
+- `ArchiveWriter::finish_encoding` takes `&mut self`, so it can't free the
+  archive while a transaction or borrowing entry still uses it.
+- `Content` is no longer `Sync`. Swift's `LocalContent` seeks one shared file
+  handle before each read, so two threads reading one `Content` could read
+  the wrong bytes.
+
 ## v0.6.0
 
 - Update Containerization to 0.49.0. Use the matching init image,

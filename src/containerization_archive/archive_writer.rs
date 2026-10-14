@@ -9,6 +9,7 @@ use crate::error::Error;
 use crate::platform;
 use crate::platform::ffi;
 use std::fmt;
+use std::marker::PhantomData;
 use std::os::fd::RawFd;
 use std::path::Path;
 
@@ -97,15 +98,44 @@ impl ArchiveWriter {
     .map(drop)
   }
 
-  /// `ArchiveWriter.finishEncoding()`.
-  pub fn finish_encoding(&self) -> Result<(), Error> {
+  /// `ArchiveWriter.finishEncoding()`, which frees the archive. It takes
+  /// `&mut self` so that no transaction, or entry made with
+  /// [`WriteEntry::with_archive`], can use the archive afterwards.
+  ///
+  /// ```compile_fail
+  /// # use containerization_framework as cfw;
+  /// # let configuration = cfw::containerization_archive::ArchiveWriterConfiguration::new(
+  /// #   cfw::containerization_archive::Format::Ustar,
+  /// #   cfw::containerization_archive::Filter::None,
+  /// # );
+  /// let mut writer = cfw::containerization_archive::ArchiveWriter::new(&configuration)?;
+  /// let transaction = writer.make_transaction_writer();
+  /// writer.finish_encoding()?;
+  /// transaction.finish()?;
+  /// # Ok::<(), cfw::error::Error>(())
+  /// ```
+  ///
+  /// ```compile_fail
+  /// # use containerization_framework as cfw;
+  /// # let configuration = cfw::containerization_archive::ArchiveWriterConfiguration::new(
+  /// #   cfw::containerization_archive::Format::Ustar,
+  /// #   cfw::containerization_archive::Filter::None,
+  /// # );
+  /// let mut writer = cfw::containerization_archive::ArchiveWriter::new(&configuration)?;
+  /// let entry = cfw::containerization_archive::WriteEntry::with_archive(&writer);
+  /// writer.finish_encoding()?;
+  /// entry.path();
+  /// # Ok::<(), cfw::error::Error>(())
+  /// ```
+  pub fn finish_encoding(&mut self) -> Result<(), Error> {
     platform::outcome(self.handle.finish_encoding(), "finish an archive").map(drop)
   }
 
   /// `ArchiveWriter.makeTransactionWriter()`.
-  pub fn make_transaction_writer(&self) -> ArchiveWriterTransaction {
+  pub fn make_transaction_writer(&self) -> ArchiveWriterTransaction<'_> {
     ArchiveWriterTransaction {
       handle: self.handle.make_transaction_writer(),
+      writer: PhantomData,
     }
   }
 
@@ -148,12 +178,29 @@ impl ArchiveWriter {
   }
 }
 
-/// `ArchiveWriterTransaction`.
-pub struct ArchiveWriterTransaction {
+/// `ArchiveWriterTransaction`. It writes through its writer's archive, so it
+/// borrows the writer. Swift's is a class that isn't `Sendable`, so Rust's is
+/// neither `Send` nor `Sync`.
+///
+/// ```compile_fail
+/// # use containerization_framework as cfw;
+/// # let configuration = cfw::containerization_archive::ArchiveWriterConfiguration::new(
+/// #   cfw::containerization_archive::Format::Ustar,
+/// #   cfw::containerization_archive::Filter::None,
+/// # );
+/// let writer = cfw::containerization_archive::ArchiveWriter::new(&configuration)?;
+/// let transaction = writer.make_transaction_writer();
+/// std::thread::scope(|scope| {
+///   scope.spawn(move || transaction.finish());
+/// });
+/// # Ok::<(), cfw::error::Error>(())
+/// ```
+pub struct ArchiveWriterTransaction<'a> {
   handle: ffi::CzArchiveWriterTransaction,
+  writer: PhantomData<&'a ArchiveWriter>,
 }
 
-impl fmt::Debug for ArchiveWriterTransaction {
+impl fmt::Debug for ArchiveWriterTransaction<'_> {
   fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
     formatter
       .debug_struct("ArchiveWriterTransaction")
@@ -161,11 +208,7 @@ impl fmt::Debug for ArchiveWriterTransaction {
   }
 }
 
-// Swift's `ArchiveWriterTransaction` is a class that isn't `Sendable`; Rust's
-// isn't `Sync`, so one call runs at a time.
-unsafe impl Send for ArchiveWriterTransaction {}
-
-impl ArchiveWriterTransaction {
+impl ArchiveWriterTransaction<'_> {
   /// `ArchiveWriterTransaction.writeHeader(entry:)`.
   pub fn write_header(&self, entry: &WriteEntry) -> Result<(), Error> {
     platform::outcome(
