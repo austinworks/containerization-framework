@@ -214,7 +214,10 @@ fn link_swift_runtime() {
     .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
     .unwrap_or_else(|| "/Applications/Xcode.app/Contents/Developer".to_string());
 
+  // The first is Xcode's, and the second the Command Line Tools'. A search
+  // path that doesn't exist is ignored.
   println!("cargo:rustc-link-search={developer}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/");
+  println!("cargo:rustc-link-search={developer}/usr/lib/swift/macosx/");
   println!("cargo:rustc-link-search={SWIFT_RUNTIME_DIR}");
 
   println!("cargo:rustc-link-lib=framework=Virtualization");
@@ -236,6 +239,19 @@ fn main() {
 
   if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
     return;
+  }
+
+  // `swift build` builds for the machine it runs on, which is the one this
+  // script was compiled for. Any other architecture would leave every bridge
+  // symbol undefined at link time.
+  let target = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+
+  if target != "aarch64" || !cfg!(target_arch = "aarch64") {
+    panic!(
+      "containerization-framework builds only on and for Apple silicon (aarch64-apple-darwin), as Containerization \
+       runs only there, but this build runs on {} and targets {target}",
+      std::env::consts::ARCH
+    );
   }
 
   println!("cargo:rerun-if-changed={}", source_sources_dir().display());

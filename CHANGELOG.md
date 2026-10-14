@@ -34,6 +34,14 @@
   duplicate, so their writes no longer interleave.
 - `config().boot_log` now reports the descriptor a `BootLog::FileHandle` was
   given, instead of the number of Swift's duplicate.
+- A macOS build for any target but `aarch64-apple-darwin`, or on an Intel
+  Mac, now fails in the build script with a message saying why. It used to
+  fail at link time with every bridge symbol undefined.
+- The build script now also searches the Command Line Tools' Swift libraries.
+- `FileTimestamps`' getters now match what Swift writes for a fractional
+  date before about 1984. Swift holds a date as seconds since 2001, which
+  shifts such a date's nanoseconds slightly; the getters used seconds since
+  1970.
 
 ### Breaking changes
 

@@ -81,16 +81,22 @@ fn hi(time: SystemTime) -> u32 {
 
 /// Swift's internal `Date.fs()`, which the getters above read: the low 32 bits
 /// of the seconds since 1970, two bits counting how often they wrapped, and 30
-/// bits of nanoseconds. The date is read as a Swift `Date` holds it, as
-/// seconds in a `Double`.
+/// bits of nanoseconds.
+///
+/// The date is read as a Swift `Date` holds it, as seconds since 2001 in a
+/// `Double`. Swift's `timeIntervalSince1970` adds the years before 2001 back,
+/// which can change a fraction's low bits, so this does the same.
 pub(crate) fn fs(time: SystemTime) -> u64 {
+  const SECONDS_FROM_1970_TO_2001: f64 = 978_307_200.0;
   // `Date.distantPast`, the first instant of year 1 in Foundation's calendar.
-  const DISTANT_PAST: f64 = -62_135_769_600.0;
+  const DISTANT_PAST: f64 = -63_114_076_800.0;
 
-  let seconds = platform::seconds(time);
-  if seconds == DISTANT_PAST {
+  let since_2001 = platform::seconds(time) - SECONDS_FROM_1970_TO_2001;
+  if since_2001 == DISTANT_PAST {
     return 0;
   }
+
+  let seconds = since_2001 + SECONDS_FROM_1970_TO_2001;
   if seconds < -(0x8000_0000_i64 as f64) {
     return 0x8000_0000;
   }

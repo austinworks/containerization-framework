@@ -54,7 +54,9 @@ and stops when that process exits.
 
 ## Requirements
 
-- macOS 26 on Apple silicon, and Xcode 26 to build.
+- macOS 26 on Apple silicon, and Xcode 26 to build. On macOS the crate builds
+  only on and for `aarch64-apple-darwin`, and any other target fails with a
+  message saying so.
 - Network on a first build: the build script compiles the bundled Swift package,
   which resolves Containerization and its dependencies through SwiftPM. Versions
   are pinned by the `Package.resolved` that ships with this crate.

@@ -129,6 +129,8 @@ mod tests {
       SystemTime::UNIX_EPOCH + Duration::from_millis(1_700_000_000_250),
       SystemTime::UNIX_EPOCH + Duration::from_secs(0x1_2345_6789),
       SystemTime::UNIX_EPOCH - Duration::from_millis(86_400_500),
+      SystemTime::UNIX_EPOCH + Duration::from_millis(100),
+      SystemTime::UNIX_EPOCH - Duration::from_millis(86_400_100),
       SystemTime::UNIX_EPOCH - Duration::from_secs(0x1_0000_0000),
       SystemTime::UNIX_EPOCH + Duration::from_secs(0x4_0000_0000),
       SystemTime::UNIX_EPOCH - Duration::from_secs(62_135_769_600),
