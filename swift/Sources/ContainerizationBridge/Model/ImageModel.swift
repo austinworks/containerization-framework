@@ -68,7 +68,8 @@ extension EXT4.JournalConfig.JournalMode {
 }
 
 /// Rust's `ProgressHandler?`. Swift may call it from several threads at once,
-/// and Rust's is `Sync`.
+/// and Rust's is `Sync`. It runs off the cooperative pool, because Swift's is
+/// `async` and so may call back into Swift.
 func progressHandler(_ handler: RustProgressHandler) -> ProgressHandler? {
   guard handler.isSome() else {
     return nil
@@ -76,26 +77,30 @@ func progressHandler(_ handler: RustProgressHandler) -> ProgressHandler? {
   nonisolated(unsafe) let handler = handler
 
   return { events in
-    let kinds = RustVec<ProgressKind>()
-    let values = RustVec<Int64>()
-    for event in events {
-      switch event {
-      case .addItems(let value):
-        kinds.push(value: .Items)
-        values.push(value: Int64(value))
-      case .addTotalItems(let value):
-        kinds.push(value: .TotalItems)
-        values.push(value: Int64(value))
-      case .addSize(let value):
-        kinds.push(value: .Size)
-        values.push(value: value)
-      case .addTotalSize(let value):
-        kinds.push(value: .TotalSize)
-        values.push(value: value)
-      }
-    }
-    handler.call(kinds, values)
+    await offPool { call(handler, with: events) }
   }
+}
+
+private func call(_ handler: RustProgressHandler, with events: [ProgressEvent]) {
+  let kinds = RustVec<ProgressKind>()
+  let values = RustVec<Int64>()
+  for event in events {
+    switch event {
+    case .addItems(let value):
+      kinds.push(value: .Items)
+      values.push(value: Int64(value))
+    case .addTotalItems(let value):
+      kinds.push(value: .TotalItems)
+      values.push(value: Int64(value))
+    case .addSize(let value):
+      kinds.push(value: .Size)
+      values.push(value: value)
+    case .addTotalSize(let value):
+      kinds.push(value: .TotalSize)
+      values.push(value: value)
+    }
+  }
+  handler.call(kinds, values)
 }
 
 // MARK: Swift to Rust

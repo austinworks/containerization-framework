@@ -39,5 +39,6 @@ impl ProgressEvent {
 }
 
 /// `ProgressHandler`. Swift calls it with a batch of events, from any thread,
-/// and possibly from several at once.
+/// and possibly from several at once. It may call back into this crate, as
+/// Swift's `async` handler may.
 pub type ProgressHandler = Box<dyn Fn(&[ProgressEvent]) + Send + Sync>;

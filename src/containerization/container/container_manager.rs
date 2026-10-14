@@ -242,6 +242,10 @@ impl ContainerManager {
   /// `configuration` runs on another thread, as Swift's closure does, against
   /// the configuration the manager seeded. An error it returns is thrown and
   /// returned by `create`.
+  ///
+  /// The closure shouldn't call into this crate. It runs on one of Swift's
+  /// pool threads, and each call blocks that thread until it returns. If
+  /// every pool thread is blocked this way, nothing can return.
   pub fn create(
     &mut self,
     id: &str,
@@ -276,6 +280,9 @@ impl ContainerManager {
   /// the configuration the manager seeded. Swift seeds a boot log in the
   /// manager's directory for `id`, but only the image `create` makes that
   /// directory, so set `boot_log` to somewhere that exists.
+  ///
+  /// The closure shouldn't call into this crate, for the reason
+  /// [`Self::create`] gives.
   pub fn create_with_rootfs(
     &mut self,
     id: &str,

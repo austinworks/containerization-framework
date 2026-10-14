@@ -282,6 +282,9 @@ impl LinuxContainer {
   /// `LinuxContainer.exec(_:configuration:)` with a closure, which changes a
   /// `LinuxProcessConfiguration()`. Swift calls it once, on its own thread,
   /// and an error it returns is thrown.
+  ///
+  /// The closure must not call this container. Swift holds the container's
+  /// lock while the closure runs, so the call would never return.
   pub fn exec_with(
     &self,
     id: &str,

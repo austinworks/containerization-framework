@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- A progress handler or `ingest` body that calls back into the crate no
+  longer hangs when every thread of Swift's pool is busy. Swift now runs them
+  on a concurrent dispatch queue of the bridge's own.
+- The docs for `exec_with`, `add_container`, `exec_in_container` and
+  `ContainerManager`'s `create` methods now say their closures mustn't call
+  back. Swift holds the container's or pod's lock while the closure runs, or
+  runs it on its own pool.
+
 ### Breaking changes
 
 - `WriteEntry` and `ArchiveWriterTransaction` take a lifetime and are no

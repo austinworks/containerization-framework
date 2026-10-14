@@ -66,7 +66,8 @@ impl LocalContentStore {
   ///
   /// `body` runs on another thread, as Swift's closure does, with the ingest
   /// directory. If it returns an error, nothing it wrote reaches the store, and
-  /// `ingest` returns that error.
+  /// `ingest` returns that error. It may call back into this crate, as Swift's
+  /// `async` closure may.
   pub fn ingest(&self, body: impl FnOnce(&Path) -> Result<(), Error> + Send + 'static) -> Result<Vec<String>, Error> {
     let failure = Arc::new(Mutex::new(None));
     let slot = Arc::clone(&failure);

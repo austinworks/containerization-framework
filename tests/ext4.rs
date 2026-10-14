@@ -50,6 +50,50 @@ fn unpacks_an_image_and_reports_its_progress() {
   assert_eq!(unpacked, total, "every item counted is unpacked");
 }
 
+/// Swift awaits the progress handler, so a handler may call back into Swift.
+/// With more unpacks at once than Swift has pool threads, every pool thread
+/// may be inside a handler at the same time, and the calls they make still
+/// have to finish.
+#[test]
+fn unpacks_with_handlers_that_call_back_into_swift_while_the_pool_is_full() {
+  let store = std::sync::Arc::new(support::store::image_store());
+  let image = std::sync::Arc::new(support::store::image(&store));
+  let unpacks = 2
+    * std::thread::available_parallelism()
+      .expect("the number of cores")
+      .get();
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let (finished, finishes) = std::sync::mpsc::channel();
+
+  for index in 0..unpacks {
+    let store = std::sync::Arc::clone(&store);
+    let image = std::sync::Arc::clone(&image);
+    let at = directory.path().join(format!("rootfs-{index}.ext4"));
+    let finished = finished.clone();
+
+    std::thread::spawn(move || {
+      let platform = cfw::containerization_oci::image::Platform::current().expect("the current platform");
+      let handler: cfw::containerization_extras::ProgressHandler = Box::new(move |_| {
+        store
+          .get(support::store::IMAGE, false)
+          .expect("the image from inside the handler");
+      });
+      let unpacked = cfw::containerization::image::EXT4Unpacker::new(CAPACITY_IN_BYTES, None)
+        .unpack(&image, &platform, &at, Some(handler))
+        .map(drop);
+
+      finished.send(unpacked).expect("the test is listening");
+    });
+  }
+
+  for _ in 0..unpacks {
+    finishes
+      .recv_timeout(std::time::Duration::from_secs(120))
+      .expect("every unpack should finish without hanging")
+      .expect("the image should unpack");
+  }
+}
+
 #[test]
 fn unpacks_with_a_journal() {
   let directory = tempfile::tempdir().expect("a temporary directory");

@@ -183,6 +183,9 @@ impl LinuxPod {
   /// `LinuxPod.addContainer(_:rootfs:configuration:)`, whose closure changes a
   /// `LinuxPod.ContainerConfiguration()`. Swift calls it once, on its own
   /// thread, and an error it returns is thrown.
+  ///
+  /// The closure must not call this pod. Swift holds the pod's lock while the
+  /// closure runs, so the call would never return.
   pub fn add_container(
     &self,
     id: &str,
@@ -266,6 +269,9 @@ impl LinuxPod {
   /// changes the container's process configuration, less its arguments,
   /// terminal and stdio. Swift calls it once, on its own thread, and an error
   /// it returns is thrown.
+  ///
+  /// The closure must not call this pod. Swift holds the pod's lock while the
+  /// closure runs, so the call would never return.
   pub fn exec_in_container(
     &self,
     container_id: &str,
