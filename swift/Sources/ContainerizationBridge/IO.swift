@@ -13,13 +13,13 @@ func newReadStream() -> CzOutcome {
 func readStreamWithURL(url: RustStr, bufferSize: UInt) -> CzOutcome {
   let url = URL(filePath: url.toString())
 
-  return CzOutcome { CzReadStream(try ReadStream(url: url, bufferSize: Int(bufferSize))) }
+  return CzOutcome { CzReadStream(try ReadStream(url: url, bufferSize: try int(bufferSize, "buffer size"))) }
 }
 
 func readStreamWithData(data: RustVec<UInt8>, bufferSize: UInt) -> CzOutcome {
   let data = Data(data)
 
-  return CzOutcome { CzReadStream(ReadStream(data: data, bufferSize: Int(bufferSize))) }
+  return CzOutcome { CzReadStream(ReadStream(data: data, bufferSize: try int(bufferSize, "buffer size"))) }
 }
 
 /// For a test that compares Rust's copy with it.

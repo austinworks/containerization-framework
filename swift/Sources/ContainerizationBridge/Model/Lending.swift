@@ -13,7 +13,8 @@ func strings(_ count: UInt, _ element: (UInt) -> RustStr) -> [String] {
   list(count) { element($0).toString() }
 }
 
-/// A map Rust lends by index: `xLen`, `xKeyAt`, `xValueAt`.
+/// A map Rust lends by index: `xLen`, `xKeyAt`, `xValueAt`. Keys Rust holds
+/// apart can be equal to Swift, and the last one wins.
 func dictionary(_ count: UInt, _ key: (UInt) -> RustStr, _ value: (UInt) -> RustStr) -> [String: String] {
-  Dictionary(uniqueKeysWithValues: list(count) { (key($0).toString(), value($0).toString()) })
+  Dictionary(list(count) { (key($0).toString(), value($0).toString()) }, uniquingKeysWith: { _, last in last })
 }

@@ -71,12 +71,19 @@ impl LocalContentStore {
   pub fn ingest(&self, body: impl FnOnce(&Path) -> Result<(), Error> + Send + 'static) -> Result<Vec<String>, Error> {
     let failure = Arc::new(Mutex::new(None));
     let slot = Arc::clone(&failure);
+    let panic = platform::Panic::default();
+    let caught = panic.clone();
     let outcome = self.handle.ingest(Box::new(move |directory: String| {
-      body(Path::new(&directory))
-        .map_err(|error| *slot.lock().unwrap_or_else(PoisonError::into_inner) = Some(error))
-        .is_ok()
+      caught
+        .catch(|| body(Path::new(&directory)))
+        .is_some_and(|result| {
+          result
+            .map_err(|error| *slot.lock().unwrap_or_else(PoisonError::into_inner) = Some(error))
+            .is_ok()
+        })
     }));
 
+    panic.resume();
     platform::outcome(outcome, "ingest content")
       .map(|outcome| outcome.strings())
       .map_err(|error| {

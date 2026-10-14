@@ -52,6 +52,21 @@ fn reads_part_of_a_blob() {
 }
 
 #[test]
+fn refuses_a_length_swifts_int_cannot_hold() {
+  let image = support::store::image(&support::store::image_store());
+  let content = image
+    .get_content(&image.digest())
+    .expect("the image's index");
+
+  let error = content
+    .data_range(0, usize::MAX)
+    .err()
+    .expect("a length above Int.max");
+
+  assert!(error.to_string().contains("length"), "{error}");
+}
+
+#[test]
 fn finds_no_blob_the_store_never_held() {
   assert!(
     support::store::content_store()
@@ -133,6 +148,19 @@ fn runs_a_body_that_calls_back_into_swift() {
     .expect("the ingest should complete");
 
   assert_eq!(body_saw.recv().expect("the body ran"), support::store::IMAGE);
+}
+
+#[test]
+fn resumes_a_panic_in_its_body_on_the_callers_thread() {
+  let (_directory, store) = blob_and_store("unused");
+
+  let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    store.ingest(|_| panic!("the body gave up"))
+  }))
+  .err()
+  .expect("the body's panic should reach the caller");
+
+  assert_eq!(panicked.downcast_ref::<&str>(), Some(&"the body gave up"));
 }
 
 #[test]

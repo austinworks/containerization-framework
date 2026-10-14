@@ -237,6 +237,19 @@ fn configures_a_process_from_an_image() {
 }
 
 #[test]
+fn configures_a_process_from_an_image_whose_labels_swift_considers_equal() {
+  let config = cfw::containerization_oci::image::ImageConfig {
+    labels: Some(std::collections::BTreeMap::from([
+      ("caf\u{e9}".to_string(), "composed".to_string()),
+      ("cafe\u{301}".to_string(), "decomposed".to_string()),
+    ])),
+    ..Default::default()
+  };
+
+  cfw::containerization::process::LinuxProcessConfiguration::from_image_config(&config).expect("a process");
+}
+
+#[test]
 fn configures_a_process_from_an_empty_image() {
   let process = cfw::containerization::process::LinuxProcessConfiguration::from_image_config(&Default::default())
     .expect("a process");

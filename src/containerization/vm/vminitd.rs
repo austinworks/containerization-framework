@@ -181,7 +181,7 @@ impl Vminitd {
         .wait_process(id, container_id.map(str::to_string), timeout_in_seconds),
       format!("wait for process {id} in the guest"),
     )
-    .map(|outcome| platform::exit_status(&outcome))
+    .and_then(|outcome| platform::exit_status(&outcome))
   }
 
   /// `Vminitd.deleteProcess(id:containerID:)`.

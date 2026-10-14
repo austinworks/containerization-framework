@@ -9,6 +9,8 @@ enum BridgeError: Error, CustomStringConvertible {
   /// A value the bridge could not parse: a malformed wire string, or a
   /// setting that never made sense.
   case malformed(String, String)
+  /// A Rust `usize` too large for Swift's `Int`.
+  case tooLarge(String, UInt)
   /// A Rust closure returned an error, which Rust keeps.
   case bodyFailed
   /// `ArchiveEntryReader.read(_:maxLength:)` returned `-1`.
@@ -24,6 +26,8 @@ enum BridgeError: Error, CustomStringConvertible {
       return "the archive entry's data could not be read"
     case .malformed(let what, let value):
       return "malformed \(what): \(value.debugDescription)"
+    case .tooLarge(let what, let value):
+      return "the \(what), \(value), is larger than Swift's Int can hold"
     }
   }
 }

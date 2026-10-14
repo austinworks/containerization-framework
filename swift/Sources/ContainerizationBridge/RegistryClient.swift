@@ -23,17 +23,24 @@ func registryClientWithHost(
   retryInterval: UInt64,
   bufferSize: UInt
 ) -> CzOutcome {
-  let client = RegistryClient(
-    host: host.toString(),
-    scheme: scheme?.toString(),
-    port: port.map { Int($0) },
-    authentication: authentication.authentication,
-    clientID: clientID?.toString(),
-    retryOptions: hasRetryOptions ? RetryOptions(maxRetries: maxRetries, retryInterval: retryInterval) : nil,
-    bufferSize: Int(bufferSize)
-  )
+  let host = host.toString()
+  let scheme = scheme?.toString()
+  let authentication = authentication.authentication
+  let clientID = clientID?.toString()
+  let retryOptions = hasRetryOptions ? RetryOptions(maxRetries: maxRetries, retryInterval: retryInterval) : nil
 
-  return CzOutcome { CzRegistryClient(client) }
+  return CzOutcome {
+    CzRegistryClient(
+      RegistryClient(
+        host: host,
+        scheme: scheme,
+        port: port.map { Int($0) },
+        authentication: authentication,
+        clientID: clientID,
+        retryOptions: retryOptions,
+        bufferSize: try int(bufferSize, "buffer size")
+      ))
+  }
 }
 
 final class CzRegistryClient: Sendable {

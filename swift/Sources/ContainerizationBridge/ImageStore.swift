@@ -87,7 +87,8 @@ final class CzImageStore: Sendable {
     let store = store
 
     return CzOutcome {
-      CzImage(
+      let maxConcurrentDownloads = try int(maxConcurrentDownloads, "maximum concurrent downloads")
+      return CzImage(
         try blocking {
           try await store.pull(
             reference: reference,
@@ -95,7 +96,7 @@ final class CzImageStore: Sendable {
             insecure: insecure,
             auth: auth,
             progress: progress,
-            maxConcurrentDownloads: Int(maxConcurrentDownloads)
+            maxConcurrentDownloads: maxConcurrentDownloads
           )
         })
     }
@@ -139,13 +140,14 @@ final class CzImageStore: Sendable {
     let store = store
 
     return CzOutcome {
-      try blocking {
+      let maxConcurrentUploads = try int(maxConcurrentUploads, "maximum concurrent uploads")
+      return try blocking {
         try await store.push(
           references: references,
           platform: platform,
           insecure: insecure,
           auth: auth,
-          maxConcurrentUploads: Int(maxConcurrentUploads),
+          maxConcurrentUploads: maxConcurrentUploads,
           progress: progress
         )
       }

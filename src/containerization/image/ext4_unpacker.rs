@@ -34,14 +34,12 @@ impl EXT4Unpacker {
     at: &Path,
     progress: Option<containerization_extras::ProgressHandler>,
   ) -> Result<container::Mount, Error> {
+    let path = platform::path(at)?;
+
     platform::outcome(
-      ffi::cz_ext4_unpack(
-        *self,
-        image.handle.duplicate(),
-        platform.clone(),
-        platform::path(at)?,
-        platform::Progress(progress),
-      ),
+      platform::progressing(progress, |progress| {
+        ffi::cz_ext4_unpack(*self, image.handle.duplicate(), platform.clone(), path, progress)
+      }),
       format!("unpack {} to {}", image.reference(), at.display()),
     )
     .map(|outcome| outcome.mount())

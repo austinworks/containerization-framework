@@ -364,6 +364,12 @@ func strings(_ vec: RustVec<RustString>) -> [String] {
   vec.map { $0.as_str().toString() }
 }
 
+/// A Rust `usize` as Swift's `Int`, which can't hold one above `Int.max`.
+func int(_ value: UInt, _ what: String) throws -> Int {
+  guard let int = Int(exactly: value) else { throw BridgeError.tooLarge(what, value) }
+  return int
+}
+
 /// A Rust map, crossing as its keys and its values in the same order.
 func dictionary(_ keys: RustVec<RustString>, _ values: RustVec<RustString>) -> [String: String] {
   Dictionary(zip(strings(keys), strings(values)), uniquingKeysWith: { _, last in last })

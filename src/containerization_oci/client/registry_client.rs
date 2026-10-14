@@ -144,13 +144,13 @@ impl RegistryClient {
     into: &Path,
     progress: Option<containerization_extras::ProgressHandler>,
   ) -> Result<(i64, String), Error> {
+    let path = platform::path(into)?;
     let outcome = platform::outcome(
-      self.handle.fetch_blob(
-        name,
-        descriptor.clone(),
-        platform::path(into)?,
-        platform::Progress(progress),
-      ),
+      platform::progressing(progress, |progress| {
+        self
+          .handle
+          .fetch_blob(name, descriptor.clone(), path, progress)
+      }),
       format!("fetch {} from {name} into {}", descriptor.digest, into.display()),
     )?;
 

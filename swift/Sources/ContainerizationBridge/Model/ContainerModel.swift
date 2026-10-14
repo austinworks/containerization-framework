@@ -309,14 +309,15 @@ extension VMConfiguration {
         configuration.vmnetInterfaceAt
       ),
       mountsByID: Dictionary(
-        uniqueKeysWithValues: list(configuration.mountsByIdLen()) { index in
+        list(configuration.mountsByIdLen()) { index in
           (
             configuration.mountsByIdKeyAt(index).toString(),
             list(configuration.mountsByIdMountsLen(index)) {
               Containerization.Mount(configuration.mountsByIdMountAt(index, $0))
             }
           )
-        }
+        },
+        uniquingKeysWith: { _, last in last }
       ),
       bootLog: configuration.hasBootLog() ? try BootLog.from(configuration.bootLog()) : nil,
       nestedVirtualization: configuration.nestedVirtualization()

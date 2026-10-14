@@ -148,6 +148,6 @@ final class CzContent: Sendable {
   }
 
   func dataRange(offset: UInt64, length: UInt) -> CzOutcome {
-    CzOutcome { try content?.data(offset: offset, length: Int(length)) as Data? }
+    CzOutcome { try content?.data(offset: offset, length: try int(length, "length")) as Data? }
   }
 }

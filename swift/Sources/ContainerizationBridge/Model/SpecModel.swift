@@ -180,12 +180,13 @@ extension LinuxResources {
         ) : nil,
       rdma: resources.hasRdma()
         ? Dictionary(
-          uniqueKeysWithValues: list(resources.rdmaLen()) {
+          list(resources.rdmaLen()) {
             (
               resources.rdmaKeyAt($0).toString(),
               LinuxRdma(hcsHandles: resources.rdmaHcsHandlesAt($0), hcaObjects: resources.rdmaHcaObjectsAt($0))
             )
-          }
+          },
+          uniquingKeysWith: { _, last in last }
         ) : nil
     )
     // The initializer can't make `unified` nil.

@@ -16,14 +16,17 @@ use crate::platform;
 
 impl platform::Progress {
   pub(crate) fn is_some(&self) -> bool {
-    self.0.is_some()
+    self.handler.is_some()
   }
 
   /// One batch of events, as a kind and a value each.
   pub(crate) fn call(&self, kinds: Vec<ffi::ProgressKind>, values: Vec<i64>) {
-    let Some(handler) = &self.0 else {
+    let Some(handler) = &self.handler else {
       return;
     };
+    if self.panic.caught() {
+      return;
+    }
     let events: Vec<containerization_extras::ProgressEvent> = kinds
       .into_iter()
       .zip(values)
@@ -35,7 +38,7 @@ impl platform::Progress {
       })
       .collect();
 
-    handler(&events);
+    self.panic.catch(|| handler(&events));
   }
 }
 

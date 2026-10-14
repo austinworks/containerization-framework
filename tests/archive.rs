@@ -174,7 +174,7 @@ fn writes_entries_whole_and_in_chunks() {
   assert_eq!(data, b"whole");
   assert_eq!(read.permissions() & 0o777, 0o644);
   assert_eq!(read.size(), Some(5));
-  assert_eq!(read.modification_date(), Some(modified));
+  assert_eq!(read.modification_date().expect("a date"), Some(modified));
 
   let (read, data) = reader
     .extract_file("chunked.txt")
@@ -194,7 +194,7 @@ fn reads_and_writes_an_entrys_properties() {
     entry.file_type(),
     cfw::containerization_archive::URLFileResourceType::Unknown
   );
-  assert_eq!(entry.modification_date(), None);
+  assert_eq!(entry.modification_date().expect("a date"), None);
 
   let before_1970 = SystemTime::UNIX_EPOCH - Duration::from_secs(86_400);
   let accessed = SystemTime::UNIX_EPOCH + Duration::from_millis(1_600_000_000_250);
@@ -229,9 +229,12 @@ fn reads_and_writes_an_entrys_properties() {
   assert_eq!(entry.symlink_target().as_deref(), Some("target"));
   // Swift's setter drops a fraction of a second, and moves a date before 1970
   // one second later.
-  assert_eq!(entry.creation_date(), Some(before_1970 + Duration::from_secs(1)));
   assert_eq!(
-    entry.content_access_date(),
+    entry.creation_date().expect("a date"),
+    Some(before_1970 + Duration::from_secs(1))
+  );
+  assert_eq!(
+    entry.content_access_date().expect("a date"),
     Some(SystemTime::UNIX_EPOCH + Duration::from_secs(1_600_000_000))
   );
   assert_eq!(entry.xattrs(), xattrs);
@@ -250,7 +253,7 @@ fn reads_and_writes_an_entrys_properties() {
 
   assert_eq!(entry.size(), None);
   assert_eq!(entry.path(), None);
-  assert_eq!(entry.modification_date(), None);
+  assert_eq!(entry.modification_date().expect("a date"), None);
 }
 
 #[test]

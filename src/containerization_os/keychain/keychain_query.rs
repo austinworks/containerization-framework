@@ -81,7 +81,12 @@ impl KeychainQuery {
       ffi::cz_keychain_query_get(security_domain, access_group.map(str::to_string), hostname),
       format!("read {hostname} from the keychain"),
     )
-    .map(|outcome| outcome.is_some().then(|| outcome.keychain_query_result()))
+    .and_then(|outcome| {
+      outcome
+        .is_some()
+        .then(|| outcome.keychain_query_result())
+        .transpose()
+    })
   }
 
   /// `list(securityDomain:accessGroup:)`.
@@ -90,7 +95,7 @@ impl KeychainQuery {
       ffi::cz_keychain_query_list(security_domain, access_group.map(str::to_string)),
       format!("list the keychain's entries for {security_domain}"),
     )
-    .map(|outcome| outcome.registry_infos())
+    .and_then(|outcome| outcome.registry_infos())
   }
 
   /// `exists(securityDomain:accessGroup:hostname:)`.

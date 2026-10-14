@@ -128,7 +128,8 @@ impl linux_pod::Configuration {
     let source = match kind {
       ffi::PodVolumeKind::Nbd => pod_volume::Source::Nbd {
         url: location,
-        timeout: timeout.map(Duration::from_secs_f64),
+        // A `Duration` near its maximum crosses as a `Double` just above it.
+        timeout: timeout.map(|seconds| Duration::try_from_secs_f64(seconds).unwrap_or(Duration::MAX)),
         read_only,
       },
       ffi::PodVolumeKind::DiskImage => pod_volume::Source::DiskImage {

@@ -29,6 +29,48 @@ fn sh(pod: &cfw::containerization::container::LinuxPod, container: &str, id: &st
 }
 
 #[test]
+fn reads_back_the_longest_nbd_timeout() {
+  let vmm = support::store::vmm();
+  let volume = cfw::containerization::container::linux_pod::PodVolume {
+    name: "remote".to_string(),
+    source: cfw::containerization::container::linux_pod::pod_volume::Source::Nbd {
+      url: "nbd://localhost:10809/remote".to_string(),
+      timeout: Some(std::time::Duration::MAX),
+      read_only: false,
+    },
+    format: "ext4".to_string(),
+  };
+  let configured = volume.clone();
+
+  let pod =
+    cfw::containerization::container::LinuxPod::new("cfw-test-nbd-pod", &vmm, support::vm(), move |configuration| {
+      configuration.volumes = vec![configured];
+      Ok(())
+    })
+    .expect("a pod should be made");
+
+  assert_eq!(pod.config().volumes, [volume]);
+}
+
+#[test]
+fn resumes_a_panic_in_a_containers_configuration_on_the_callers_thread() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let vmm = support::store::vmm();
+  let pod = cfw::containerization::container::LinuxPod::new("cfw-test-panic-pod", &vmm, support::vm(), |_| Ok(()))
+    .expect("a pod should be made");
+  let rootfs = support::store::unpack(&directory.path().join("panics.ext4"));
+
+  let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    pod.add_container("panics", rootfs, |_| panic!("the configuration gave up"))
+  }))
+  .err()
+  .expect("the closure's panic should reach the caller");
+
+  assert_eq!(panicked.downcast_ref::<&str>(), Some(&"the configuration gave up"));
+  assert!(pod.list_containers().is_empty());
+}
+
+#[test]
 fn shares_a_volume_between_its_containers() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let vmm = support::store::vmm();

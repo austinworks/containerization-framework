@@ -95,6 +95,38 @@ fn unpacks_with_handlers_that_call_back_into_swift_while_the_pool_is_full() {
 }
 
 #[test]
+fn finishes_unpacking_then_resumes_a_panic_in_its_progress_handler() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let at = directory.path().join("panics.ext4");
+  let image = support::store::image(&support::store::image_store());
+  let platform = cfw::containerization_oci::image::Platform::current().expect("the current platform");
+  let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+  let counted = std::sync::Arc::clone(&calls);
+  let handler: cfw::containerization_extras::ProgressHandler = Box::new(move |_| {
+    counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    panic!("the handler gave up");
+  });
+
+  let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    cfw::containerization::image::EXT4Unpacker::new(CAPACITY_IN_BYTES, None).unpack(
+      &image,
+      &platform,
+      &at,
+      Some(handler),
+    )
+  }))
+  .err()
+  .expect("the handler's panic should reach the caller");
+
+  assert_eq!(panicked.downcast_ref::<&str>(), Some(&"the handler gave up"));
+  assert_eq!(
+    calls.load(std::sync::atomic::Ordering::SeqCst),
+    1,
+    "a handler that panicked isn't called again"
+  );
+}
+
+#[test]
 fn unpacks_with_a_journal() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let at = directory.path().join("journaled.ext4");
@@ -350,6 +382,27 @@ fn stats_files_links_and_symlinks() {
     2,
     "the same attributes, read past the header as readInlineExtendedAttributes does"
   );
+}
+
+#[test]
+fn refuses_a_count_swifts_int_cannot_hold() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let at = directory.path().join("formatted.ext4");
+  format(&at);
+  let reader = cfw::containerization_ext4::ext4::EXT4Reader::new(&at).expect("the filesystem should read");
+
+  let error = reader
+    .read_file(
+      "/etc/hello.txt".as_ref(),
+      cfw::containerization_ext4::ext4::ext4_reader::ReadFileOptions {
+        count: Some(usize::MAX),
+        ..Default::default()
+      },
+    )
+    .err()
+    .expect("a count above Int.max");
+
+  assert!(error.to_string().contains("count"), "{error}");
 }
 
 #[test]

@@ -194,15 +194,18 @@ impl ImageStore {
   pub fn pull(&self, reference: &str, options: PullOptions) -> Result<Image, Error> {
     let action = format!("pull {reference}");
     let (has_platform, platform) = containerization_oci::image::platform::crossing(options.platform.as_ref());
-    let outcome = self.handle.pull(
-      reference,
-      has_platform,
-      platform,
-      options.insecure,
-      authentication::crossing(options.auth.as_ref())?,
-      platform::Progress(options.progress),
-      options.max_concurrent_downloads,
-    );
+    let auth = authentication::crossing(options.auth.as_ref())?;
+    let outcome = platform::progressing(options.progress, |progress| {
+      self.handle.pull(
+        reference,
+        has_platform,
+        platform,
+        options.insecure,
+        auth,
+        progress,
+        options.max_concurrent_downloads,
+      )
+    });
 
     platform::outcome(outcome, action).map(|outcome| Image {
       handle: outcome.image(),
@@ -213,14 +216,12 @@ impl ImageStore {
   pub fn push(&self, reference: &str, options: PushOptions) -> Result<(), Error> {
     let action = format!("push {reference}");
     let (has_platform, platform) = containerization_oci::image::platform::crossing(options.platform.as_ref());
-    let outcome = self.handle.push(
-      reference,
-      has_platform,
-      platform,
-      options.insecure,
-      authentication::crossing(options.auth.as_ref())?,
-      platform::Progress(options.progress),
-    );
+    let auth = authentication::crossing(options.auth.as_ref())?;
+    let outcome = platform::progressing(options.progress, |progress| {
+      self
+        .handle
+        .push(reference, has_platform, platform, options.insecure, auth, progress)
+    });
 
     platform::outcome(outcome, action).map(drop)
   }
@@ -230,18 +231,21 @@ impl ImageStore {
   /// [`Self::push`].
   pub fn push_all(&self, references: &[&str], options: PushAllOptions) -> Result<(), Error> {
     let (has_platform, platform) = containerization_oci::image::platform::crossing(options.platform.as_ref());
-    let outcome = self.handle.push_all(
-      references
-        .iter()
-        .map(|reference| reference.to_string())
-        .collect(),
-      has_platform,
-      platform,
-      options.insecure,
-      authentication::crossing(options.auth.as_ref())?,
-      options.max_concurrent_uploads,
-      platform::Progress(options.progress),
-    );
+    let auth = authentication::crossing(options.auth.as_ref())?;
+    let outcome = platform::progressing(options.progress, |progress| {
+      self.handle.push_all(
+        references
+          .iter()
+          .map(|reference| reference.to_string())
+          .collect(),
+        has_platform,
+        platform,
+        options.insecure,
+        auth,
+        options.max_concurrent_uploads,
+        progress,
+      )
+    });
 
     platform::outcome(outcome, format!("push {}", references.join(", "))).map(drop)
   }
@@ -253,10 +257,12 @@ impl ImageStore {
     auth: Option<&containerization_oci::client::Authentication>,
     progress: Option<containerization_extras::ProgressHandler>,
   ) -> Result<InitImage, Error> {
+    let auth = authentication::crossing(auth)?;
+
     platform::outcome(
-      self
-        .handle
-        .get_init_image(reference, authentication::crossing(auth)?, platform::Progress(progress)),
+      platform::progressing(progress, |progress| {
+        self.handle.get_init_image(reference, auth, progress)
+      }),
       format!("get init image {reference}"),
     )
     .map(|outcome| InitImage {
@@ -305,10 +311,10 @@ impl ImageStore {
     directory: &Path,
     progress: Option<containerization_extras::ProgressHandler>,
   ) -> Result<Vec<Image>, Error> {
+    let path = platform::path(directory)?;
+
     platform::outcome(
-      self
-        .handle
-        .load(platform::path(directory)?, platform::Progress(progress)),
+      platform::progressing(progress, |progress| self.handle.load(path, progress)),
       format!("load images from {}", directory.display()),
     )
     .map(|outcome| images(&outcome))

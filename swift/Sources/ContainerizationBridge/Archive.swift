@@ -505,7 +505,7 @@ final class CzArchiveEntryReader: @unchecked Sendable {
   /// The bytes read, or a failure for Swift's `-1`.
   func read(maxLength: UInt) -> CzOutcome {
     CzOutcome {
-      var buffer = [UInt8](repeating: 0, count: Int(maxLength))
+      var buffer = [UInt8](repeating: 0, count: try int(maxLength, "maximum length"))
       let count = buffer.withUnsafeMutableBufferPointer { buffer in
         guard let baseAddress = buffer.baseAddress else { return 0 }
         return reader.read(baseAddress, maxLength: buffer.count)

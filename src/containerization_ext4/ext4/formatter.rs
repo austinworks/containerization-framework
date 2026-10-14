@@ -172,13 +172,17 @@ impl Formatter {
 
   /// `EXT4.Formatter.unpack(source:format:compression:progress:)`.
   pub fn unpack(&self, source: &Path, options: UnpackOptions) -> Result<(), Error> {
+    let path = platform::path(source)?;
+
     platform::outcome(
-      self.handle.unpack(
-        platform::path(source)?,
-        options.format.raw_value(),
-        options.compression.raw_value(),
-        platform::Progress(options.progress),
-      ),
+      platform::progressing(options.progress, |progress| {
+        self.handle.unpack(
+          path,
+          options.format.raw_value(),
+          options.compression.raw_value(),
+          progress,
+        )
+      }),
       format!("unpack {}", source.display()),
     )
     .map(drop)
@@ -192,9 +196,11 @@ impl Formatter {
     progress: Option<containerization_extras::ProgressHandler>,
   ) -> Result<(), Error> {
     platform::outcome(
-      self
-        .handle
-        .unpack_reader(reader.handle.duplicate(), platform::Progress(progress)),
+      platform::progressing(progress, |progress| {
+        self
+          .handle
+          .unpack_reader(reader.handle.duplicate(), progress)
+      }),
       "unpack an archive",
     )
     .map(drop)

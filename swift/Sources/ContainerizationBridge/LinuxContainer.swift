@@ -136,13 +136,14 @@ final class CzLinuxContainer: Sendable {
     let destination = URL(filePath: destination.toString())
 
     return CzOutcome {
-      try blocking {
+      let chunkSize = try int(chunkSize, "chunk size")
+      return try blocking {
         try await container.copyIn(
           from: source,
           to: destination,
           mode: mode,
           createParents: createParents,
-          chunkSize: Int(chunkSize)
+          chunkSize: chunkSize
         )
       }
     }
@@ -154,12 +155,13 @@ final class CzLinuxContainer: Sendable {
     let destination = URL(filePath: destination.toString())
 
     return CzOutcome {
-      try blocking {
+      let chunkSize = try int(chunkSize, "chunk size")
+      return try blocking {
         try await container.copyOut(
           from: source,
           to: destination,
           createParents: createParents,
-          chunkSize: Int(chunkSize)
+          chunkSize: chunkSize
         )
       }
     }

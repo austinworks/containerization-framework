@@ -37,7 +37,7 @@ impl KeychainHelper {
       ffi::cz_keychain_helper_list(&self.security_domain, self.access_group.clone()),
       "list the keychain's registries",
     )
-    .map(|outcome| outcome.registry_infos())
+    .and_then(|outcome| outcome.registry_infos())
   }
 
   /// `KeychainHelper.delete(hostname:)`.

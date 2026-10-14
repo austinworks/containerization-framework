@@ -144,12 +144,13 @@ impl<'a> WriteEntry<'a> {
     self.handle.set_file_type(file_type.raw_value());
   }
 
-  /// `contentAccessDate`.
-  pub fn content_access_date(&self) -> Option<SystemTime> {
+  /// `contentAccessDate`. It fails for a date `SystemTime` can't hold.
+  pub fn content_access_date(&self) -> Result<Option<SystemTime>, Error> {
     self
       .handle
       .has_content_access_date()
       .then(|| platform::system_time(self.handle.content_access_date()))
+      .transpose()
   }
 
   pub fn set_content_access_date(&mut self, date: Option<SystemTime>) {
@@ -158,12 +159,13 @@ impl<'a> WriteEntry<'a> {
       .set_content_access_date(date.is_some(), date.map(platform::seconds).unwrap_or_default());
   }
 
-  /// `creationDate`.
-  pub fn creation_date(&self) -> Option<SystemTime> {
+  /// `creationDate`. It fails for a date `SystemTime` can't hold.
+  pub fn creation_date(&self) -> Result<Option<SystemTime>, Error> {
     self
       .handle
       .has_creation_date()
       .then(|| platform::system_time(self.handle.creation_date()))
+      .transpose()
   }
 
   pub fn set_creation_date(&mut self, date: Option<SystemTime>) {
@@ -172,12 +174,13 @@ impl<'a> WriteEntry<'a> {
       .set_creation_date(date.is_some(), date.map(platform::seconds).unwrap_or_default());
   }
 
-  /// `modificationDate`.
-  pub fn modification_date(&self) -> Option<SystemTime> {
+  /// `modificationDate`. It fails for a date `SystemTime` can't hold.
+  pub fn modification_date(&self) -> Result<Option<SystemTime>, Error> {
     self
       .handle
       .has_modification_date()
       .then(|| platform::system_time(self.handle.modification_date()))
+      .transpose()
   }
 
   pub fn set_modification_date(&mut self, date: Option<SystemTime>) {

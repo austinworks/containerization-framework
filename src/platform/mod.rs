@@ -19,7 +19,9 @@ use crate::containerization::process;
 use crate::containerization_error;
 use crate::containerization_extras;
 use crate::error::Error;
+use std::any::Any;
 use std::collections::BTreeMap;
+use std::panic::AssertUnwindSafe;
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -27,16 +29,74 @@ use std::sync::PoisonError;
 use std::time::Duration;
 use std::time::SystemTime;
 
-/// A `ProgressHandler?`, as it crosses to Swift.
-pub(crate) struct Progress(pub(crate) Option<containerization_extras::ProgressHandler>);
+/// A panic in a Rust closure that Swift called. A panic can't unwind through
+/// Swift, so it is kept and resumed on the thread that called Swift.
+#[derive(Clone, Default)]
+pub(crate) struct Panic(Arc<Mutex<Option<Box<dyn Any + Send>>>>);
+
+impl Panic {
+  /// What `body` returns, or `None` if it panicked. The first panic is kept.
+  pub(crate) fn catch<R>(&self, body: impl FnOnce() -> R) -> Option<R> {
+    std::panic::catch_unwind(AssertUnwindSafe(body))
+      .map_err(|payload| {
+        self
+          .0
+          .lock()
+          .unwrap_or_else(PoisonError::into_inner)
+          .get_or_insert(payload);
+      })
+      .ok()
+  }
+
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+  pub(crate) fn caught(&self) -> bool {
+    self
+      .0
+      .lock()
+      .unwrap_or_else(PoisonError::into_inner)
+      .is_some()
+  }
+
+  /// Resumes the panic `catch` kept, if there is one.
+  pub(crate) fn resume(&self) {
+    if let Some(payload) = self.0.lock().unwrap_or_else(PoisonError::into_inner).take() {
+      std::panic::resume_unwind(payload);
+    }
+  }
+}
+
+/// A `ProgressHandler?`, as it crosses to Swift. Once the handler panics, it
+/// isn't called again.
+pub(crate) struct Progress {
+  pub(crate) handler: Option<containerization_extras::ProgressHandler>,
+  pub(crate) panic: Panic,
+}
+
+/// What `call` returns when it hands Swift `handler`. A panic in the handler
+/// is resumed once Swift has returned.
+pub(crate) fn progressing<R>(
+  handler: Option<containerization_extras::ProgressHandler>,
+  call: impl FnOnce(Progress) -> R,
+) -> R {
+  let panic = Panic::default();
+  let returned = call(Progress {
+    handler,
+    panic: panic.clone(),
+  });
+
+  panic.resume();
+  returned
+}
 
 type Configuring<T> = Box<dyn FnOnce(&mut T) -> Result<(), Error> + Send>;
 
 /// An `(inout T) throws -> Void` closure, as it crosses to Swift. Swift calls
-/// it once, with the value it filled, and throws if it returns an error.
+/// it once, with the value it filled, and throws if it returns an error or
+/// panics.
 pub(crate) struct Configure<T> {
   configure: Mutex<Option<Configuring<T>>>,
   thrown: Arc<Mutex<Option<Error>>>,
+  panic: Panic,
 }
 
 impl<T> Configure<T> {
@@ -44,11 +104,12 @@ impl<T> Configure<T> {
     Self {
       configure: Mutex::new(Some(Box::new(configure))),
       thrown: Arc::default(),
+      panic: Panic::default(),
     }
   }
 
   /// Runs the closure on the value Swift filled, the first time only, and
-  /// says whether it threw. Its error is kept for Rust to return.
+  /// says whether it threw. Its error or panic is kept for Rust.
   pub(crate) fn call(&self, value: &mut T) -> bool {
     let configure = self
       .configure
@@ -56,11 +117,12 @@ impl<T> Configure<T> {
       .unwrap_or_else(PoisonError::into_inner)
       .take();
 
-    match configure.map(|configure| configure(value)) {
-      Some(Err(error)) => {
+    match configure.map(|configure| self.panic.catch(|| configure(value))) {
+      Some(Some(Err(error))) => {
         *self.thrown.lock().unwrap_or_else(PoisonError::into_inner) = Some(error);
         true
       }
+      Some(None) => true,
       _ => false,
     }
   }
@@ -80,7 +142,8 @@ pub(crate) type ConfigurePodContainer = Configure<container::linux_pod::Containe
 
 /// What a throwing Swift call returned, when `call` hands it `configure` as
 /// its closure, or what it threw as a failure of `action`. If the closure
-/// threw, its own error is returned, as Swift rethrows it.
+/// threw, its own error is returned, as Swift rethrows it. If it panicked, the
+/// panic is resumed here.
 pub(crate) fn configured<T>(
   configure: impl FnOnce(&mut T) -> Result<(), Error> + Send + 'static,
   call: impl FnOnce(Configure<T>) -> ffi::CzOutcome,
@@ -88,8 +151,10 @@ pub(crate) fn configured<T>(
 ) -> Result<ffi::CzOutcome, Error> {
   let configure = Configure::new(configure);
   let thrown = Arc::clone(&configure.thrown);
+  let panic = configure.panic.clone();
   let returned = call(configure);
 
+  panic.resume();
   if let Some(error) = thrown.lock().unwrap_or_else(PoisonError::into_inner).take() {
     return Err(error);
   }
@@ -160,21 +225,29 @@ pub(crate) fn path(path: &Path) -> Result<&str, Error> {
 }
 
 /// `ExitStatus`, its `exitedAt` crossing as seconds since 1970.
-pub(crate) fn exit_status(outcome: &ffi::CzOutcome) -> process::ExitStatus {
-  process::ExitStatus {
+pub(crate) fn exit_status(outcome: &ffi::CzOutcome) -> Result<process::ExitStatus, Error> {
+  Ok(process::ExitStatus {
     exit_code: outcome.exit_code(),
-    exited_at: system_time(outcome.exited_at()),
-  }
+    exited_at: system_time(outcome.exited_at())?,
+  })
 }
 
 /// A Swift `Date`, crossing as seconds since 1970, which are negative before
-/// it.
-pub(crate) fn system_time(seconds: f64) -> SystemTime {
-  if seconds < 0.0 {
-    SystemTime::UNIX_EPOCH - Duration::from_secs_f64(-seconds)
+/// it. A `Date` can hold dates that `SystemTime` can't, and those fail.
+pub(crate) fn system_time(seconds: f64) -> Result<SystemTime, Error> {
+  let duration = |seconds: f64| Duration::try_from_secs_f64(seconds).ok();
+  let time = if seconds < 0.0 {
+    duration(-seconds).and_then(|before| SystemTime::UNIX_EPOCH.checked_sub(before))
   } else {
-    SystemTime::UNIX_EPOCH + Duration::from_secs_f64(seconds)
-  }
+    duration(seconds).and_then(|after| SystemTime::UNIX_EPOCH.checked_add(after))
+  };
+
+  time.ok_or_else(|| {
+    Error::failed(
+      "read a Swift Date as a SystemTime",
+      format!("{seconds} seconds from 1970 is outside SystemTime's range"),
+    )
+  })
 }
 
 /// A struct Swift sends as its bytes, laid out as Swift's is.
@@ -224,7 +297,14 @@ mod tests {
   #[test]
   fn crosses_dates_on_either_side_of_1970() {
     for seconds in [-86_400.5, 0.0, 1_700_000_000.25] {
-      assert_eq!(super::seconds(system_time(seconds)), seconds);
+      assert_eq!(super::seconds(system_time(seconds).unwrap()), seconds);
+    }
+  }
+
+  #[test]
+  fn fails_dates_system_time_cant_hold() {
+    for seconds in [9.3e18, -9.3e18, f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+      assert!(matches!(system_time(seconds), Err(Error::Failed { .. })), "{seconds}");
     }
   }
 

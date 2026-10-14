@@ -53,9 +53,11 @@ final class CzExt4Reader: @unchecked Sendable {
 
   func readFile(at: RustStr, offset: UInt64, count: UInt?, followSymlinks: Bool) -> CzOutcome {
     let at = FilePath(at.toString())
-    let count = count.map { Int($0) }
 
-    return CzOutcome { try reader.readFile(at: at, offset: offset, count: count, followSymlinks: followSymlinks) }
+    return CzOutcome {
+      let count = try count.map { try int($0, "count") }
+      return try reader.readFile(at: at, offset: offset, count: count, followSymlinks: followSymlinks)
+    }
   }
 
   func export(archive: RustStr) -> CzOutcome {
@@ -80,7 +82,9 @@ func readBlockExtendedAttributes(buffer: RustVec<UInt8>) -> CzOutcome {
 func readFileXattrs(buffer: RustVec<UInt8>, start: UInt, offset: UInt) -> CzOutcome {
   let buffer = [UInt8](buffer)
 
-  return CzOutcome { try EXT4.FileXattrsState.read(buffer: buffer, start: Int(start), offset: Int(offset)) }
+  return CzOutcome {
+    try EXT4.FileXattrsState.read(buffer: buffer, start: try int(start, "start"), offset: try int(offset, "offset"))
+  }
 }
 
 func rootInode() -> CzOutcome {

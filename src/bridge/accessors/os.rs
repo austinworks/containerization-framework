@@ -5,6 +5,7 @@ use crate::bridge::ffi;
 use crate::containerization_os;
 use crate::containerization_os::keychain;
 use crate::containerization_os::linux::binfmt;
+use crate::error::Error;
 use crate::platform;
 
 impl binfmt::Entry {
@@ -77,13 +78,13 @@ impl ffi::CzOutcome {
 
   /// The `KeychainQueryResult` an outcome holds, its dates crossing as
   /// seconds since 1970.
-  pub(crate) fn keychain_query_result(&self) -> keychain::KeychainQueryResult {
-    keychain::KeychainQueryResult {
+  pub(crate) fn keychain_query_result(&self) -> Result<keychain::KeychainQueryResult, Error> {
+    Ok(keychain::KeychainQueryResult {
       username: self.keychain_query_result_username(),
       password: self.keychain_query_result_password(),
-      modified_date: platform::system_time(self.keychain_query_result_modified_date()),
-      created_date: platform::system_time(self.keychain_query_result_created_date()),
-    }
+      modified_date: platform::system_time(self.keychain_query_result_modified_date())?,
+      created_date: platform::system_time(self.keychain_query_result_created_date())?,
+    })
   }
 }
 

@@ -9,9 +9,27 @@
   `ContainerManager`'s `create` methods now say their closures mustn't call
   back. Swift holds the container's or pod's lock while the closure runs, or
   runs it on its own pool.
+- A `usize` larger than Swift's `Int` can hold, such as a `count` of
+  `usize::MAX` for `Ext4Reader::read_file`, now returns an error instead of
+  killing the process.
+- A string map whose keys Swift considers equal, such as `"caf\u{e9}"` and
+  `"cafe\u{301}"`, no longer kills the process. As Swift's own bridge does
+  for other maps, the last of the equal keys wins.
+- An NBD volume's timeout of `Duration::MAX` now reads back as
+  `Duration::MAX` from `LinuxPod::config`, instead of panicking.
+- A panic in a closure that Swift calls is now resumed on the thread that
+  called the crate, instead of aborting the process. This covers
+  configuration closures, the `ingest` body and progress handlers. Swift sees
+  a panicking configuration closure as one that threw. A progress handler
+  that panics is not called again, the operation finishes, and then the
+  panic resumes.
 
 ### Breaking changes
 
+- `WriteEntry::modification_date`, `creation_date` and `content_access_date`
+  return `Result<Option<SystemTime>, Error>`. An archive can hold a date that
+  `SystemTime` can't, and reading it used to panic. A wait's exit status,
+  and the dates in keychain results, fail the same way instead of panicking.
 - `WriteEntry` and `ArchiveWriterTransaction` take a lifetime and are no
   longer `Send`. A transaction, and an entry made with
   `WriteEntry::with_archive`, borrow their writer, so they can't outlive it

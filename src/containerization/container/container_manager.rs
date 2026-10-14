@@ -216,22 +216,22 @@ impl ContainerManager {
     mut options: CreateOptions,
     configuration: impl FnOnce(&mut linux_container::Configuration) -> Result<(), Error> + Send + 'static,
   ) -> Result<LinuxContainer, Error> {
-    let progress = platform::Progress(options.progress.take());
-
-    platform::configured(
-      configuration,
-      |configure| {
-        self.handle.create_from_reference(
-          id,
-          reference,
-          options,
-          progress,
-          linux_container::Configuration::default(),
-          configure,
-        )
-      },
-      format!("create {id} from {reference}"),
-    )
+    platform::progressing(options.progress.take(), |progress| {
+      platform::configured(
+        configuration,
+        |configure| {
+          self.handle.create_from_reference(
+            id,
+            reference,
+            options,
+            progress,
+            linux_container::Configuration::default(),
+            configure,
+          )
+        },
+        format!("create {id} from {reference}"),
+      )
+    })
     .map(|outcome| LinuxContainer {
       handle: outcome.linux_container(),
     })
@@ -253,22 +253,22 @@ impl ContainerManager {
     mut options: CreateOptions,
     configuration: impl FnOnce(&mut linux_container::Configuration) -> Result<(), Error> + Send + 'static,
   ) -> Result<LinuxContainer, Error> {
-    let progress = platform::Progress(options.progress.take());
-
-    platform::configured(
-      configuration,
-      |configure| {
-        self.handle.create(
-          id,
-          image.handle.duplicate(),
-          options,
-          progress,
-          linux_container::Configuration::default(),
-          configure,
-        )
-      },
-      format!("create {id}"),
-    )
+    platform::progressing(options.progress.take(), |progress| {
+      platform::configured(
+        configuration,
+        |configure| {
+          self.handle.create(
+            id,
+            image.handle.duplicate(),
+            options,
+            progress,
+            linux_container::Configuration::default(),
+            configure,
+          )
+        },
+        format!("create {id}"),
+      )
+    })
     .map(|outcome| LinuxContainer {
       handle: outcome.linux_container(),
     })
