@@ -5,7 +5,8 @@ use crate::platform::ffi;
 use std::path::Path;
 use std::path::PathBuf;
 
-/// `Bundle`, an OCI bundle on disk. Every method asks Swift.
+/// `Bundle`, an OCI bundle on disk. Every method but [`Bundle::path`] asks
+/// Swift.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Bundle {
   path: PathBuf,
@@ -20,7 +21,8 @@ impl Bundle {
     )
   }
 
-  /// `Bundle.create(path:spec:)` with `Data`, written unchecked.
+  /// `Bundle.create(path:spec:)` with `Data`, which is written as
+  /// `config.json` without checking that it is a valid spec.
   pub fn create_from_data(path: &Path, spec: &[u8]) -> Result<Self, Error> {
     Self::at(
       ffi::cz_bundle_create_from_data(platform::path(path)?, spec.to_vec()),

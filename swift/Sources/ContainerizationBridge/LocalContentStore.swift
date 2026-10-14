@@ -72,8 +72,8 @@ final class CzLocalContentStore: Sendable {
 
   /// `body` is Rust's: it gets the ingest directory, and returns whether it
   /// succeeded. Rust keeps its own error, and returns that in place of the one
-  /// thrown here. Swift's is `async`, so `body` runs off the cooperative pool
-  /// and may call back into Swift.
+  /// thrown here. Swift's closure is `async`, so `body` runs off the
+  /// cooperative pool and may call back into Swift.
   func ingest(body: (RustString) -> Bool) -> CzOutcome {
     let store = store
 

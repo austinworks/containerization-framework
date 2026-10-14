@@ -11,8 +11,8 @@ use std::fmt;
 use std::path::Path;
 
 /// `EXT4.EXT4Reader.readFile(at:offset:count:followSymlinks:)`'s defaulted
-/// arguments. [`Default`] is Swift's defaults: from the start, to the end,
-/// following symlinks.
+/// arguments. [`Default`] uses Swift's defaults, which read the whole file and
+/// follow symlinks.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReadFileOptions {
   pub offset: u64,
@@ -80,8 +80,8 @@ impl EXT4Reader {
     .map(|outcome| (outcome.inode_number(), outcome.inode()))
   }
 
-  /// `EXT4.EXT4Reader.listDirectory(_:)`: the entries' names, sorted, without
-  /// `.` and `..`.
+  /// `EXT4.EXT4Reader.listDirectory(_:)`. It returns the entries' names,
+  /// sorted, without `.` and `..`.
   pub fn list_directory(&self, path: &Path) -> Result<Vec<String>, Error> {
     platform::outcome(
       self.handle.list_directory(platform::path(path)?),

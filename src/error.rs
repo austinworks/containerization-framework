@@ -1,18 +1,20 @@
-//! What this crate could not do: the attempt, and what it said.
+//! The error that every fallible call in this crate returns.
 
 use crate::containerization_error;
 use std::fmt;
 
-/// An error thrown by Swift, or a call that could not reach Swift at all.
+/// An error thrown by Swift or by a Rust closure, a value that could not cross
+/// between Rust and Swift, or a call made off macOS.
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum Error {
-  /// The call was attempted and failed.
+  /// The call failed, or a value it passed or returned could not cross
+  /// between Rust and Swift.
   Failed {
     /// What was attempted, such as `pull docker.io/library/alpine:3`.
     action: String,
-    /// What Containerization said, which is the only account of a failure
-    /// inside the VM.
+    /// Why it failed, usually in Containerization's words. For a failure
+    /// inside the VM, this is the only account there is.
     message: String,
     /// The code of the thrown `ContainerizationError`, if Swift threw one.
     code: Option<containerization_error::Code>,
@@ -39,7 +41,8 @@ impl Error {
     }
   }
 
-  /// A thrown `ContainerizationError`, with its code.
+  /// A failure of `action`, with the code of the `ContainerizationError` that
+  /// Swift threw, if it threw one.
   pub(crate) fn failed_with_code(
     action: impl Into<String>,
     message: impl fmt::Display,

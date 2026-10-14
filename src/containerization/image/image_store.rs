@@ -134,8 +134,9 @@ impl ImageStore {
     })
   }
 
-  /// `ImageStore.default`, in the user's Application Support directory.
-  /// Swift's crashes, rather than throwing, if it can't be made.
+  /// `ImageStore.default`, which lives in the user's Application Support
+  /// directory. If Swift can't make it, Swift crashes the process instead of
+  /// throwing.
   pub fn default_store() -> Result<Self, Error> {
     platform::outcome(ffi::cz_image_store_default(), "open the default image store").map(|outcome| Self {
       handle: outcome.image_store(),
@@ -320,8 +321,8 @@ impl ImageStore {
     .map(|outcome| images(&outcome))
   }
 
-  /// `ImageStore.cleanUpOrphanedBlobs()`: the digests deleted, and the bytes
-  /// freed.
+  /// `ImageStore.cleanUpOrphanedBlobs()`, which returns the names of the blobs it
+  /// deleted and the bytes it freed.
   pub fn clean_up_orphaned_blobs(&self) -> Result<(Vec<String>, u64), Error> {
     let outcome = platform::outcome(self.handle.clean_up_orphaned_blobs(), "clean up orphaned blobs")?;
 
@@ -335,7 +336,7 @@ impl ImageStore {
   }
 }
 
-/// The `[Image]` an outcome holds.
+/// Returns the `[Image]` that an outcome holds.
 fn images(outcome: &ffi::CzOutcome) -> Vec<Image> {
   let images = outcome.images();
 

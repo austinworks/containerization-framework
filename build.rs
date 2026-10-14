@@ -1,13 +1,12 @@
 //! Generates the FFI glue, builds the Swift package, and tells cargo how to
 //! link it.
 //!
-//! The package is staged into `OUT_DIR`, at
-//! `target/<profile>/containerization-framework-swift`.
-//!
-//! SwiftPM's build directory stays out of `OUT_DIR`, which is keyed by this
-//! script's fingerprint — editing this file, or the rustflags cargo was invoked
-//! with, yields a new one. That directory holds the compiled dependency graph, so
-//! a copy per fingerprint costs ~2 GiB and a full rebuild of Containerization.
+//! The package is staged into `OUT_DIR`, but SwiftPM's build directory lives
+//! at `target/<profile>/containerization-framework-swift`. `OUT_DIR` is keyed
+//! by this script's fingerprint, and editing this file or changing the
+//! rustflags yields a new one. The build directory holds the compiled
+//! dependency graph, so a copy per fingerprint would cost about 2 GiB and a
+//! full rebuild of Containerization.
 //!
 //! macOS only. On other platforms the bridge is a stand-in
 //! (`src/platform/unsupported`) that compiles, but fails every call that would
@@ -66,7 +65,7 @@ fn staged_package_dir() -> PathBuf {
 /// SwiftPM's build directory, one per profile.
 ///
 /// `OUT_DIR` is `<target>/<profile>/build/<crate>-<fingerprint>/out`, so the
-/// profile directory is its fourth ancestor. Cargo documents no part of that
+/// profile directory is its third ancestor. Cargo documents no part of that
 /// layout, so a path that doesn't match it falls back to `OUT_DIR`.
 fn scratch_dir() -> PathBuf {
   let out = out_dir();
@@ -108,9 +107,11 @@ fn publish_bridge_shims(generated: &Path) {
   std::fs::write(&path, published).expect("the generated glue should be writable");
 }
 
-/// Mirrors `from` onto `to`, skipping unchanged files and removing anything
-/// this run didn't write. SwiftPM keys off mtimes. Entries named in `skip` are
-/// neither copied nor removed, since something else owns them.
+/// Mirrors `from` onto `to`, removing whatever `from` doesn't have.
+///
+/// Unchanged files aren't rewritten, because SwiftPM decides what to rebuild
+/// from mtimes. Entries named in `skip` are neither copied nor removed, since
+/// something else owns them.
 fn mirror(from: &Path, to: &Path, skip: &[&str]) {
   std::fs::create_dir_all(to).expect("the destination should be creatable");
 
@@ -204,7 +205,8 @@ const SYSTEM_LIBRARIES: [&str; 5] = ["archive", "z", "bz2", "lzma", "iconv"];
 /// Where the dynamic Swift runtime lives.
 const SWIFT_RUNTIME_DIR: &str = "/usr/lib/swift";
 
-/// The Swift runtime the static library depends on but does not carry.
+/// Links what the static library depends on but does not carry: the Swift
+/// runtime, system frameworks, and `SYSTEM_LIBRARIES`.
 fn link_swift_runtime() {
   let developer = Command::new("xcode-select")
     .arg("--print-path")
@@ -221,8 +223,8 @@ fn link_swift_runtime() {
   println!("cargo:rustc-link-search={SWIFT_RUNTIME_DIR}");
 
   println!("cargo:rustc-link-lib=framework=Virtualization");
-  // `SecTaskCopyValueForEntitlement`: the Swift side checks the build is
-  // signed before starting a VM.
+  // Dependencies such as swift-certificates and NIOTransportServices import
+  // Security.
   println!("cargo:rustc-link-lib=framework=Security");
 
   for library in SYSTEM_LIBRARIES {
@@ -270,7 +272,7 @@ fn main() {
 
   let glue = out_dir().join("swift-bridge");
 
-  // `OUT_DIR` survives between builds.
+  // `OUT_DIR` survives between builds, so glue from the last run is cleared.
   let _ = std::fs::remove_dir_all(&glue);
 
   let modules = BRIDGE_MODULES.map(|module| manifest_dir().join(module));

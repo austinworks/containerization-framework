@@ -22,8 +22,8 @@ impl ParsedDigest {
     )
   }
 
-  /// `ParsedDigest(parsingPathComponent:)`, which also accepts the digits
-  /// without it.
+  /// `ParsedDigest(parsingPathComponent:)`, which also accepts the hex digits
+  /// without the prefix.
   pub fn parse_path_component(component: &str) -> Result<Self, Error> {
     Self::parsed(
       ffi::cz_parsed_digest_parse_path_component(component),

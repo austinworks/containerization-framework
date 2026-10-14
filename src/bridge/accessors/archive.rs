@@ -59,7 +59,7 @@ mod tests {
   use crate::containerization_archive;
   use crate::containerization_archive::options;
 
-  /// Each enum's raw values, in Rust's order, against Swift's.
+  /// Checks each enum's raw values, in Rust's order, against Swift's.
   #[test]
   fn copies_swifts_raw_values() {
     fn raw_values<T: Copy>(all: &[T], raw_value: fn(T) -> &'static str) -> Vec<&'static str> {

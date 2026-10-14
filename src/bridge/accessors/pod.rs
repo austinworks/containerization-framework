@@ -50,12 +50,14 @@ impl linux_pod::Configuration {
     ));
   }
 
-  /// Only after [`Self::push_interface`], for the interface it pushed.
+  /// Swift calls this only after [`Self::push_interface`], and it sets the
+  /// interface that call pushed.
   pub(crate) fn set_interface_ipv6_address(&mut self, high: u64, low: u64, zone: Option<String>, prefix: u8) {
     container::set_ipv6_address(&mut self.interfaces, high, low, zone, prefix);
   }
 
-  /// Only after [`Self::push_interface`], for the interface it pushed.
+  /// Swift calls this only after [`Self::push_interface`], and it sets the
+  /// interface that call pushed.
   pub(crate) fn set_interface_ipv6_gateway(&mut self, high: u64, low: u64, zone: Option<String>) {
     container::set_ipv6_gateway(&mut self.interfaces, high, low, zone);
   }
@@ -86,7 +88,7 @@ impl linux_pod::Configuration {
     self.hosts = Some(container::hosts(comment));
   }
 
-  /// Only after [`Self::set_hosts`].
+  /// Swift calls this only after [`Self::set_hosts`].
   pub(crate) fn push_hosts_entry(&mut self, ip_address: String, hostnames: Vec<String>, comment: Option<String>) {
     container::push_hosts_entry(&mut self.hosts, ip_address, hostnames, comment);
   }
@@ -128,7 +130,8 @@ impl linux_pod::Configuration {
     let source = match kind {
       ffi::PodVolumeKind::Nbd => pod_volume::Source::Nbd {
         url: location,
-        // A `Duration` near its maximum crosses as a `Double` just above it.
+        // A `Duration` near its maximum crosses as a `Double` just above it,
+        // which `try_from_secs_f64` rejects.
         timeout: timeout.map(|seconds| Duration::try_from_secs_f64(seconds).unwrap_or(Duration::MAX)),
         read_only,
       },
@@ -152,12 +155,12 @@ impl linux_pod::Configuration {
     container::interface_kind(&self.interfaces[index])
   }
 
-  /// Only when [`Self::interface_kind_at`] is `Nat`.
+  /// Swift calls this only when [`Self::interface_kind_at`] is `Nat`.
   pub(crate) fn nat_interface_at(&self, index: usize) -> &containerization::network::NATInterface {
     container::nat_interface(&self.interfaces[index])
   }
 
-  /// Only when [`Self::interface_kind_at`] is `Vmnet`.
+  /// Swift calls this only when [`Self::interface_kind_at`] is `Vmnet`.
   pub(crate) fn vmnet_interface_at(&self, index: usize) -> ffi::CzVmnetInterface {
     container::vmnet_interface(&self.interfaces[index])
   }
@@ -170,7 +173,7 @@ impl linux_pod::Configuration {
     self.boot_log.is_some()
   }
 
-  /// Only when [`Self::has_boot_log`].
+  /// Swift calls this only when [`Self::has_boot_log`] is true.
   pub(crate) fn boot_log(&self) -> &containerization::vm::BootLog {
     present(&self.boot_log)
   }
@@ -187,7 +190,7 @@ impl linux_pod::Configuration {
     self.dns.is_some()
   }
 
-  /// Only when [`Self::has_dns`].
+  /// Swift calls this only when [`Self::has_dns`] is true.
   pub(crate) fn dns(&self) -> &containerization::network::DNS {
     present(&self.dns)
   }
@@ -196,7 +199,7 @@ impl linux_pod::Configuration {
     self.hosts.is_some()
   }
 
-  /// Only when [`Self::has_hosts`].
+  /// Swift calls this only when [`Self::has_hosts`] is true.
   pub(crate) fn hosts(&self) -> &containerization::network::Hosts {
     present(&self.hosts)
   }
@@ -217,7 +220,7 @@ impl linux_pod::Configuration {
     container::seccomp_mode(&self.seccomp_profile)
   }
 
-  /// Only when [`Self::seccomp_mode`] is `Profile`.
+  /// Swift calls this only when [`Self::seccomp_mode`] is `Profile`.
   pub(crate) fn seccomp_profile(&self) -> &runtime::LinuxSeccomp {
     container::custom_seccomp(&self.seccomp_profile)
   }
@@ -260,7 +263,7 @@ impl linux_pod::PodVolume {
     }
   }
 
-  /// An `nbd` source's, in seconds.
+  /// An `nbd` source's timeout, in seconds.
   pub(crate) fn timeout(&self) -> Option<f64> {
     match self.source {
       pod_volume::Source::Nbd { timeout, .. } => timeout.map(|timeout| timeout.as_secs_f64()),
@@ -275,7 +278,7 @@ impl linux_pod::PodVolume {
     }
   }
 
-  /// A `tmpfs` source's.
+  /// A `tmpfs` source's size.
   pub(crate) fn size_bytes(&self) -> Option<u64> {
     match self.source {
       pod_volume::Source::Tmpfs { size_bytes } => size_bytes,
@@ -349,7 +352,7 @@ impl linux_pod::ContainerConfiguration {
     self.dns.is_some()
   }
 
-  /// Only when [`Self::has_dns`].
+  /// Swift calls this only when [`Self::has_dns`] is true.
   pub(crate) fn dns(&self) -> &containerization::network::DNS {
     present(&self.dns)
   }
@@ -358,7 +361,7 @@ impl linux_pod::ContainerConfiguration {
     self.hosts.is_some()
   }
 
-  /// Only when [`Self::has_hosts`].
+  /// Swift calls this only when [`Self::has_hosts`] is true.
   pub(crate) fn hosts(&self) -> &containerization::network::Hosts {
     present(&self.hosts)
   }
@@ -367,12 +370,12 @@ impl linux_pod::ContainerConfiguration {
     self.seccomp_profile.is_some()
   }
 
-  /// Only when [`Self::has_seccomp_profile`].
+  /// Swift calls this only when [`Self::has_seccomp_profile`] is true.
   pub(crate) fn seccomp_mode(&self) -> ffi::SeccompMode {
     container::seccomp_mode(self.own_seccomp_profile())
   }
 
-  /// Only when [`Self::seccomp_mode`] is `Profile`.
+  /// Swift calls this only when [`Self::seccomp_mode`] is `Profile`.
   pub(crate) fn seccomp_profile(&self) -> &runtime::LinuxSeccomp {
     container::custom_seccomp(self.own_seccomp_profile())
   }

@@ -74,8 +74,8 @@ impl vm::BootLog {
     }
   }
 
-  /// Empty unless [`Self::kind`] is `File`, and `None` if the file's path
-  /// isn't UTF-8.
+  /// The file's path. It is empty unless [`Self::kind`] is `File`, and
+  /// `None` if the path isn't UTF-8.
   pub(crate) fn path(&self) -> Option<String> {
     match self {
       Self::File { path, .. } => accessors::path(path),
@@ -96,7 +96,7 @@ impl vm::BootLog {
     matches!(self, Self::File { append: true, .. })
   }
 
-  /// `-1` unless [`Self::kind`] is `FileHandle`.
+  /// The descriptor, which is `-1` unless [`Self::kind`] is `FileHandle`.
   pub(crate) fn file_handle(&self) -> i32 {
     match self {
       Self::FileHandle(descriptor) => *descriptor,
@@ -129,12 +129,12 @@ impl vm::VMConfiguration {
     interface_kind(&self.interfaces[index])
   }
 
-  /// Only when [`Self::interface_kind_at`] is `Nat`.
+  /// Swift calls this only when [`Self::interface_kind_at`] is `Nat`.
   pub(crate) fn nat_interface_at(&self, index: usize) -> &network::NATInterface {
     nat_interface(&self.interfaces[index])
   }
 
-  /// Only when [`Self::interface_kind_at`] is `Vmnet`.
+  /// Swift calls this only when [`Self::interface_kind_at`] is `Vmnet`.
   pub(crate) fn vmnet_interface_at(&self, index: usize) -> ffi::CzVmnetInterface {
     vmnet_interface(&self.interfaces[index])
   }
@@ -163,7 +163,7 @@ impl vm::VMConfiguration {
     self.boot_log.is_some()
   }
 
-  /// Only when [`Self::has_boot_log`].
+  /// Swift calls this only when [`Self::has_boot_log`] is true.
   pub(crate) fn boot_log(&self) -> &vm::BootLog {
     accessors::present(&self.boot_log)
   }

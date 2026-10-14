@@ -1,14 +1,14 @@
 use std::ops::BitOr;
 
-/// `StatCategory`, the statistics [`super::LinuxContainer::statistics`]
-/// reports.
+/// `StatCategory`, which selects the statistics that
+/// [`super::LinuxContainer::statistics`] reports.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct StatCategory {
   pub raw_value: i64,
 }
 
 impl StatCategory {
-  /// `StatCategory.process`: `pids.current` and `pids.max`.
+  /// `StatCategory.process`, which covers `pids.current` and `pids.max`.
   pub const PROCESS: Self = Self::new(1 << 0);
   /// `StatCategory.memory`.
   pub const MEMORY: Self = Self::new(1 << 1);

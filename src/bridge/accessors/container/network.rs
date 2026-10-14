@@ -52,12 +52,12 @@ impl network::NATInterface {
     self.ipv6_address.is_some()
   }
 
-  /// Only when [`Self::has_ipv6_address`].
+  /// Swift calls this only when [`Self::has_ipv6_address`] is true.
   pub(crate) fn ipv6_address(&self) -> &address::IPv6Address {
     &self.ipv6_cidr().address
   }
 
-  /// Only when [`Self::has_ipv6_address`].
+  /// Swift calls this only when [`Self::has_ipv6_address`] is true.
   pub(crate) fn ipv6_prefix(&self) -> u8 {
     self.ipv6_cidr().prefix.length
   }
@@ -70,7 +70,7 @@ impl network::NATInterface {
     self.ipv6_gateway.is_some()
   }
 
-  /// Only when [`Self::has_ipv6_gateway`].
+  /// Swift calls this only when [`Self::has_ipv6_gateway`] is true.
   pub(crate) fn ipv6_gateway(&self) -> &address::IPv6Address {
     accessors::present(&self.ipv6_gateway)
   }
@@ -171,7 +171,8 @@ pub(in super::super) fn vmnet_interface(interface: &network::Interface) -> ffi::
   }
 }
 
-/// A `NATInterface` of its IPv4 fields: Swift sets its IPv6 ones after.
+/// A `NATInterface` built from its IPv4 fields. Swift sets its IPv6 ones
+/// afterwards.
 pub(in super::super) fn nat(
   ipv4_address: u32,
   ipv4_prefix: u8,
@@ -246,7 +247,7 @@ pub(in super::super) fn hosts(comment: Option<String>) -> network::Hosts {
   }
 }
 
-/// Only after `set_hosts`.
+/// Swift calls this only after `set_hosts`.
 pub(in super::super) fn push_hosts_entry(
   hosts: &mut Option<network::Hosts>,
   ip_address: String,

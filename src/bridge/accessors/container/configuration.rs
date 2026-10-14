@@ -204,12 +204,14 @@ impl linux_container::Configuration {
     self.interfaces.push(vmnet(interface));
   }
 
-  /// Only after [`Self::push_interface`], for the interface it pushed.
+  /// Swift calls this only after [`Self::push_interface`], and it sets the
+  /// interface that call pushed.
   pub(crate) fn set_interface_ipv6_address(&mut self, high: u64, low: u64, zone: Option<String>, prefix: u8) {
     set_ipv6_address(&mut self.interfaces, high, low, zone, prefix);
   }
 
-  /// Only after [`Self::push_interface`], for the interface it pushed.
+  /// Swift calls this only after [`Self::push_interface`], and it sets the
+  /// interface that call pushed.
   pub(crate) fn set_interface_ipv6_gateway(&mut self, high: u64, low: u64, zone: Option<String>) {
     set_ipv6_gateway(&mut self.interfaces, high, low, zone);
   }
@@ -252,7 +254,7 @@ impl linux_container::Configuration {
     self.hosts = Some(hosts(comment));
   }
 
-  /// Only after [`Self::set_hosts`].
+  /// Swift calls this only after [`Self::set_hosts`].
   pub(crate) fn push_hosts_entry(&mut self, ip_address: String, hostnames: Vec<String>, comment: Option<String>) {
     push_hosts_entry(&mut self.hosts, ip_address, hostnames, comment);
   }
@@ -306,12 +308,12 @@ impl linux_container::Configuration {
     interface_kind(&self.interfaces[index])
   }
 
-  /// Only when [`Self::interface_kind_at`] is `Nat`.
+  /// Swift calls this only when [`Self::interface_kind_at`] is `Nat`.
   pub(crate) fn nat_interface_at(&self, index: usize) -> &network::NATInterface {
     nat_interface(&self.interfaces[index])
   }
 
-  /// Only when [`Self::interface_kind_at`] is `Vmnet`.
+  /// Swift calls this only when [`Self::interface_kind_at`] is `Vmnet`.
   pub(crate) fn vmnet_interface_at(&self, index: usize) -> ffi::CzVmnetInterface {
     vmnet_interface(&self.interfaces[index])
   }
@@ -352,7 +354,7 @@ impl linux_container::Configuration {
     self.dns.is_some()
   }
 
-  /// Only when [`Self::has_dns`].
+  /// Swift calls this only when [`Self::has_dns`] is true.
   pub(crate) fn dns(&self) -> &network::DNS {
     accessors::present(&self.dns)
   }
@@ -361,7 +363,7 @@ impl linux_container::Configuration {
     self.hosts.is_some()
   }
 
-  /// Only when [`Self::has_hosts`].
+  /// Swift calls this only when [`Self::has_hosts`] is true.
   pub(crate) fn hosts(&self) -> &network::Hosts {
     accessors::present(&self.hosts)
   }
@@ -374,7 +376,7 @@ impl linux_container::Configuration {
     self.boot_log.is_some()
   }
 
-  /// Only when [`Self::has_boot_log`].
+  /// Swift calls this only when [`Self::has_boot_log`] is true.
   pub(crate) fn boot_log(&self) -> &vm::BootLog {
     accessors::present(&self.boot_log)
   }
@@ -418,7 +420,7 @@ pub(in super::super) fn seccomp_mode(profile: &linux_container::SeccompProfile) 
   }
 }
 
-/// Only when the mode is `Profile`.
+/// Swift asks for this only when the mode is `Profile`.
 pub(in super::super) fn custom_seccomp(profile: &linux_container::SeccompProfile) -> &runtime::LinuxSeccomp {
   match profile {
     linux_container::SeccompProfile::Profile(profile) => profile,

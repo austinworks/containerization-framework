@@ -1,16 +1,16 @@
-//! Rust bindings for Apple's [Containerization] framework: Linux containers,
-//! each in its own lightweight VM, in-process and with no daemon.
+//! Rust bindings for Apple's [Containerization] framework, which runs each
+//! Linux container in its own lightweight VM, in-process and with no daemon.
 //!
 //! # Shape
 //!
-//! The Rust API mirrors Containerization's Swift API, as much as possible.
+//! The Rust API mirrors Containerization's Swift API as closely as it can.
 //! Modules are named after the Swift modules, types after the Swift types, and
-//! methods after their Swift methods, written in Rust's snake case. Within a
-//! module, the types are grouped by what they work on, so `ImageStore` is in
+//! methods after the Swift methods, in snake case. Within a module, the types
+//! are grouped by what they work on, so `ImageStore` is in
 //! `containerization::image` and `LinuxContainer` is in
 //! `containerization::container`. A Swift type nested in another, like
-//! `LinuxContainer.Configuration`, is found in a module named after its parent,
-//! in the parent's group: `container::linux_container::Configuration`.
+//! `LinuxContainer.Configuration`, is in a module named after its parent, in
+//! the parent's group: `container::linux_container::Configuration`.
 //!
 //! Swift's `async` methods block until they finish, and errors they throw are
 //! returned as [`Error`].
@@ -57,8 +57,8 @@
 //!
 //! **A binary using this crate must be codesigned with the
 //! `com.apple.security.virtualization` entitlement** to create a container. A
-//! plain `cargo build` drops the signature, so re-sign after each one;
-//! `containerization.entitlements` in this crate is the file to pass to
+//! rebuild drops the signature, so after every build, sign the binary again
+//! and pass this crate's `containerization.entitlements` to
 //! `codesign --entitlements`.
 //!
 //! Elsewhere this crate compiles, so a cross-platform workspace builds, but

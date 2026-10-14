@@ -12,7 +12,7 @@ pub enum BootLog {
 }
 
 impl BootLog {
-  /// `BootLog.file(path:)`, appending.
+  /// `BootLog.file(path:)`, which appends, as Swift's default does.
   pub fn file(path: impl Into<PathBuf>) -> Self {
     Self::File {
       path: path.into(),

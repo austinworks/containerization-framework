@@ -161,7 +161,7 @@ final class CzExt4Formatter: @unchecked Sendable {
   }
 
   /// The dates are seconds since 1970. `buf` stands for `nil` when `hasBuf` is
-  /// false, and the xattrs when `hasXattrs` is.
+  /// false, and the xattrs do when `hasXattrs` is false.
   func create(
     path: RustStr,
     link: RustString?,

@@ -12,9 +12,12 @@ use std::fmt;
 use std::os::fd::FromRawFd;
 use std::os::fd::OwnedFd;
 
-/// `VZVirtualMachineInstance`. Made by
-/// [`super::VZVirtualMachineManager::create`], or reached through
-/// [`crate::containerization::container::LinuxContainer::with_virtual_machine_instance`].
+/// `VZVirtualMachineInstance`. [`super::VZVirtualMachineManager::create`]
+/// makes one, and
+/// [`crate::containerization::container::LinuxContainer::with_virtual_machine_instance`]
+/// and
+/// [`crate::containerization::container::LinuxPod::with_virtual_machine_instance`]
+/// lend one.
 ///
 /// `vzVirtualMachine`, `vmQueue`, `withMountRegistry`, `withInstanceLock`,
 /// `hotplugProvider` and the initializer taking a configuration closure
@@ -33,7 +36,8 @@ impl VZVirtualMachineInstance {
     self.handle.state().into()
   }
 
-  /// `VZVirtualMachineInstance.mounts`, by the ID of what they're for.
+  /// `VZVirtualMachineInstance.mounts`, keyed by the ID of the workload they
+  /// belong to.
   pub fn mounts(&self) -> BTreeMap<String, Vec<AttachedFilesystem>> {
     self.handle.mounts().attached_filesystems_by_id()
   }
@@ -63,15 +67,15 @@ impl VZVirtualMachineInstance {
     platform::outcome(self.handle.resume(), "resume the virtual machine").map(drop)
   }
 
-  /// `VZVirtualMachineInstance.dialAgent()`: a client of the agent running in
-  /// the guest, connected on [`Vminitd::PORT`].
+  /// `VZVirtualMachineInstance.dialAgent()`, which returns a client of the
+  /// guest's agent, connected on [`Vminitd::PORT`].
   pub fn dial_agent(&self) -> Result<Vminitd, Error> {
     platform::outcome(self.handle.dial_agent(), "dial the guest agent").map(|outcome| Vminitd {
       handle: outcome.vminitd(),
     })
   }
 
-  /// `VZVirtualMachineInstance.dial(_:)`. Swift hands over the connection's
+  /// `VZVirtualMachineInstance.dial(_:)`. The caller owns the connection's
   /// descriptor.
   pub fn dial(&self, port: u32) -> Result<OwnedFd, Error> {
     platform::outcome(self.handle.dial(port), format!("dial vsock port {port}"))
@@ -131,8 +135,7 @@ impl VZVirtualMachineInstance {
     platform::outcome(self.handle.release_virtio_fs(id), format!("release {id}'s shares")).map(drop)
   }
 
-  /// `VZVirtualMachineInstance.Configuration.installRosetta()`. Swift calls
-  /// `fatalError` on a Mac that isn't Apple silicon.
+  /// `VZVirtualMachineInstance.Configuration.installRosetta()`.
   pub fn install_rosetta() -> Result<(), Error> {
     platform::outcome(ffi::cz_install_rosetta(), "install Rosetta").map(drop)
   }

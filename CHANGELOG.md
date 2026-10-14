@@ -9,7 +9,9 @@
 - A progress handler or `ingest` body that calls back into the crate no
   longer hangs when Swift's thread pool is busy. Closures passed to
   `exec_with`, `add_container`, `exec_in_container` and `ContainerManager`'s
-  `create` methods still mustn't call back, and their docs now say so.
+  `create` methods still run on that pool, so they shouldn't call a method
+  that wraps an `async` Swift method. Their docs now say so, and say that
+  synchronous calls, such as parsing an address, are fine.
 - Values that Rust allows and Swift doesn't no longer kill the process. A
   `usize` too large for Swift's `Int` returns an error, the last of several
   string keys Swift considers equal wins, and an NBD timeout of

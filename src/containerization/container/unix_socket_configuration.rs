@@ -29,8 +29,8 @@ unsafe impl Send for UnixSocketConfiguration {}
 unsafe impl Sync for UnixSocketConfiguration {}
 
 impl UnixSocketConfiguration {
-  /// `UnixSocketConfiguration(source:destination:)`, with its other arguments
-  /// at their defaults.
+  /// `UnixSocketConfiguration(source:destination:)`, with the other arguments
+  /// left at their defaults.
   pub fn new(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> Result<Self, Error> {
     let source = platform::path(source.as_ref())?;
     let destination = platform::path(destination.as_ref())?;
@@ -118,7 +118,7 @@ impl fmt::Debug for UnixSocketConfiguration {
   }
 }
 
-/// Two configurations are equal when the five fields Swift shows are equal,
+/// Two configurations are equal when their five public fields are equal,
 /// including `id`, so only a configuration and its copies are equal. Swift's
 /// type isn't `Equatable`.
 impl PartialEq for UnixSocketConfiguration {

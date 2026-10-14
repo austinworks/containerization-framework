@@ -4,8 +4,8 @@
 //
 // Rust to Swift reads the opaque Rust values (`RustMount`, ...) once, on the
 // calling thread, into `Sendable` types the async work can carry. Swift to Rust
-// fills a value Rust hands over: the configuration `ContainerManager.create`
-// seeds for Rust to change.
+// fills a value Rust hands over, such as the configuration
+// `ContainerManager.create` seeds for Rust to change.
 //===----------------------------------------------------------------------===//
 
 import Containerization

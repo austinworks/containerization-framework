@@ -265,7 +265,6 @@ final class CzVminitd: Sendable {
     return CzOutcome { try blocking { try await agent.setTime(sec: sec, usec: usec) } }
   }
 
-  /// The settings cross as their keys and their values in the same order.
   func sysctl(keys: RustVec<RustString>, values: RustVec<RustString>) -> CzOutcome {
     let agent = agent
     let settings = dictionary(keys, values)

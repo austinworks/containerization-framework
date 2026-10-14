@@ -5,7 +5,8 @@
 import Containerization
 import Foundation
 
-// Made from the store they take, which swift-bridge can't pass as an argument.
+// The inits that take a store are methods on it, because swift-bridge can't
+// pass a borrowed Swift type as an argument.
 extension CzImageStore {
   func containerManager(
     kernel: RustKernel,
@@ -62,7 +63,7 @@ extension CzImageStore {
   }
 }
 
-/// `root` is `nil` for `ImageStore.default`'s.
+/// When `root` is `nil`, the manager uses `ImageStore.default`.
 func containerManagerAtRoot(
   kernel: RustKernel,
   initfs: RustMount,
@@ -126,13 +127,14 @@ func containerManager(vmm: CzVirtualMachineManager, network: CzNetwork) -> CzOut
   return CzOutcome { CzContainerManager(try ContainerManager(vmm: vmm, network: network)) }
 }
 
-/// The manager's configuration closure: fills `seed` with what the manager
+/// The manager's configuration closure. It fills `seed` with what the manager
 /// seeded, lets Rust's closure change it, and takes it back.
 private func configured(
   _ seed: RustLinuxContainerConfiguration,
   by configuration: RustConfigure
 ) -> @Sendable (inout LinuxContainer.Configuration) throws -> Void {
-  // Rust's: the manager calls this once, while `blocking` waits.
+  // Not `Sendable`, but only this closure uses them, and the manager calls it
+  // once, while `blocking` waits.
   nonisolated(unsafe) let seed = seed
   nonisolated(unsafe) let configuration = configuration
 
@@ -196,7 +198,7 @@ final class CzContainerManager: @unchecked Sendable {
   }
 
   /// `configuration` is Rust's closure. It runs inside the manager's closure,
-  /// so on Swift's thread.
+  /// so on a thread of Swift's cooperative pool.
   ///
   /// `seed` is Rust's to fill with what the manager seeded, for `configuration`
   /// to change: Swift never makes a Rust value.

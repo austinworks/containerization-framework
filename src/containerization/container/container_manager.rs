@@ -17,7 +17,7 @@ use std::fmt;
 use std::path::Path;
 
 /// The defaulted arguments of `ContainerManager`'s initializers, after the
-/// image store or root. [`Default`] is Swift's defaults.
+/// image store or root. [`Default`] uses Swift's defaults.
 #[derive(Debug, Default)]
 pub struct ContainerManagerOptions {
   /// Swift's `Network?`, of which `VmnetNetwork` is the conforming type on
@@ -29,7 +29,7 @@ pub struct ContainerManagerOptions {
 
 /// `ContainerManager.create(_:image:...)`'s defaulted arguments, between the
 /// image and the configuration, which `create(_:reference:...)` shares.
-/// [`Default`] is Swift's defaults.
+/// [`Default`] uses Swift's defaults.
 pub struct CreateOptions {
   pub rootfs_size_in_bytes: u64,
   pub writable_layer_size_in_bytes: Option<u64>,
@@ -67,7 +67,7 @@ impl fmt::Debug for CreateOptions {
 }
 
 /// `ContainerManager.create(_:image:rootfs:...)`'s defaulted arguments, between
-/// the rootfs and the configuration. [`Default`] is Swift's defaults.
+/// the rootfs and the configuration. [`Default`] uses Swift's defaults.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CreateWithRootfsOptions {
   pub writable_layer: Option<Mount>,
@@ -143,7 +143,7 @@ impl ContainerManager {
   }
 
   /// `ContainerManager(kernel:initfs:root:network:rosetta:nestedVirtualization:)`.
-  /// A `None` root is `ImageStore.default`'s.
+  /// A `None` root uses [`image::ImageStore::default_store`].
   pub fn at_root(
     kernel: &vm::Kernel,
     initfs: &Mount,
@@ -164,7 +164,7 @@ impl ContainerManager {
   }
 
   /// `ContainerManager(kernel:initfsReference:root:network:rosetta:nestedVirtualization:)`.
-  /// A `None` root is `ImageStore.default`'s.
+  /// A `None` root uses [`image::ImageStore::default_store`].
   pub fn at_root_with_initfs_reference(
     kernel: &vm::Kernel,
     initfs_reference: &str,
@@ -184,7 +184,8 @@ impl ContainerManager {
     )
   }
 
-  /// `ContainerManager(vmm:network:logger:)`, on `ImageStore.default`.
+  /// `ContainerManager(vmm:network:logger:)`, which uses
+  /// [`image::ImageStore::default_store`].
   pub fn with_vmm(vmm: &vm::VZVirtualMachineManager, network: Option<network::VmnetNetwork>) -> Result<Self, Error> {
     Self::made(
       ffi::cz_container_manager_with_vmm(vmm.handle.duplicate(), network_crossing(network)),
@@ -240,12 +241,14 @@ impl ContainerManager {
   /// `ContainerManager.create(_:image:rootfsSizeInBytes:writableLayerSizeInBytes:readOnly:networking:vm:progress:configuration:)`.
   ///
   /// `configuration` runs on another thread, as Swift's closure does, against
-  /// the configuration the manager seeded. An error it returns is thrown and
-  /// returned by `create`.
+  /// the configuration the manager seeded. If it returns an error, `create`
+  /// returns that error.
   ///
-  /// The closure shouldn't call into this crate. It runs on one of Swift's
-  /// pool threads, and each call blocks that thread until it returns. If
-  /// every pool thread is blocked this way, nothing can return.
+  /// The closure runs on one of Swift's pool threads, so it shouldn't call a
+  /// method that wraps an `async` Swift method. Such a call blocks the thread
+  /// until Swift's work finishes, and if every pool thread is blocked this
+  /// way, nothing can finish. Synchronous calls, such as parsing an address,
+  /// are fine.
   pub fn create(
     &mut self,
     id: &str,
@@ -278,11 +281,12 @@ impl ContainerManager {
   ///
   /// `configuration` runs on another thread, as Swift's closure does, against
   /// the configuration the manager seeded. Swift seeds a boot log in the
-  /// manager's directory for `id`, but only the image `create` makes that
-  /// directory, so set `boot_log` to somewhere that exists.
+  /// manager's directory for `id`, and only [`Self::create`] and
+  /// [`Self::create_with_reference`] make that directory, so set `boot_log`
+  /// to a path that exists.
   ///
-  /// The closure shouldn't call into this crate, for the reason
-  /// [`Self::create`] gives.
+  /// The closure shouldn't call a method that wraps an `async` Swift method,
+  /// for the reason [`Self::create`] gives.
   pub fn create_with_rootfs(
     &mut self,
     id: &str,

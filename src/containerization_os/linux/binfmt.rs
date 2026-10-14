@@ -18,7 +18,7 @@ pub struct Entry {
 }
 
 /// `Binfmt.Entry(name:type:offset:magic:mask:flags:)`'s defaulted arguments.
-/// [`Default`] is Swift's defaults.
+/// [`Default`] uses Swift's defaults.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct EntryOptions {
   pub r#type: String,

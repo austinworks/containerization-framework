@@ -11,8 +11,8 @@ use crate::platform::ffi;
 use std::collections::BTreeMap;
 use std::fmt;
 
-/// `Vminitd`, the client of the agent running in the guest. Made by
-/// [`super::VZVirtualMachineInstance::dial_agent`].
+/// `Vminitd`, the client of the agent running in the guest.
+/// [`super::VZVirtualMachineInstance::dial_agent`] makes one.
 ///
 /// Like Swift's, it keeps its connection until [`Vminitd::close`] closes it.
 /// `init(connection:group:)` takes a NIO event loop group and isn't bound;
@@ -29,7 +29,7 @@ unsafe impl Send for Vminitd {}
 unsafe impl Sync for Vminitd {}
 
 impl Vminitd {
-  /// `Vminitd.port`: the vsock port the agent listens on.
+  /// `Vminitd.port`, the vsock port the agent listens on.
   pub const PORT: u32 = 1024;
 
   /// `Vminitd.standardSetup()`.
@@ -166,9 +166,8 @@ impl Vminitd {
     .map(drop)
   }
 
-  /// `Vminitd.waitProcess(id:containerID:timeoutInSeconds:)`. Swift's
-  /// `timeoutInSeconds` defaults to `nil`, which waits for as long as it
-  /// takes.
+  /// `Vminitd.waitProcess(id:containerID:timeoutInSeconds:)`. A `None`
+  /// timeout, which is Swift's default, waits for as long as it takes.
   pub fn wait_process(
     &self,
     id: &str,
@@ -304,8 +303,9 @@ impl Vminitd {
     .map(drop)
   }
 
-  /// `Vminitd.stat(root:path:)`: `path`'s metadata, resolved as if `root`
-  /// were the guest's root directory.
+  /// `Vminitd.stat(root:path:)`, which returns `path`'s metadata. The guest
+  /// resolves `path` as if `root` were the root directory, and confines it
+  /// there.
   pub fn stat(&self, root: &str, path: &str) -> Result<containerization_os::Stat, Error> {
     platform::outcome(self.handle.stat(root, path), format!("stat {path} in the guest")).map(|outcome| outcome.stat())
   }

@@ -1,7 +1,7 @@
 //! `ContainerStatistics`, and the statistics nested in it.
 
-/// `ContainerStatistics`. Made by [`super::LinuxContainer::statistics`],
-/// with each category it wasn't asked for as `None`.
+/// `ContainerStatistics`. [`super::LinuxContainer::statistics`] makes it, and
+/// leaves each category it wasn't asked for as `None`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ContainerStatistics {
   pub id: String,
@@ -82,7 +82,8 @@ pub struct NetworkStatistics {
   pub transmitted_errors: u64,
 }
 
-/// `ContainerStatistics.MemoryEventStatistics`: cgroup2's `memory.events`.
+/// `ContainerStatistics.MemoryEventStatistics`, the counters in cgroup2's
+/// `memory.events`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MemoryEventStatistics {
   pub low: u64,
@@ -92,7 +93,8 @@ pub struct MemoryEventStatistics {
   pub oom_kill: u64,
 }
 
-/// `ContainerStatistics.FilesystemStatistics`: one mount's `statfs(2)`.
+/// `ContainerStatistics.FilesystemStatistics`, the `statfs(2)` figures for
+/// one mount.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FilesystemStatistics {
   pub mount_point: String,

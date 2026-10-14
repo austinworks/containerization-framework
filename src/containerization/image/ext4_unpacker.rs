@@ -9,8 +9,8 @@ use crate::platform;
 use crate::platform::ffi;
 use std::path::Path;
 
-/// `EXT4Unpacker`. A value, as Swift's is a struct, and its fields are private,
-/// as Swift's are.
+/// `EXT4Unpacker`. It is a value because Swift's is a struct, and its fields
+/// aren't public because Swift's aren't.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EXT4Unpacker {
   pub(crate) capacity_in_bytes: u64,

@@ -11,7 +11,7 @@ use crate::platform::ffi;
 use std::fmt;
 
 /// The defaulted arguments of `VZVirtualMachineManager`'s initializer, after
-/// the initial filesystem. [`Default`] is Swift's defaults. `group` and
+/// the initial filesystem. [`Default`] uses Swift's defaults. `group` and
 /// `logger` are SwiftNIO's and swift-log's, and are left at `nil`.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct VZVirtualMachineManagerOptions {
@@ -49,9 +49,9 @@ impl VZVirtualMachineManager {
     })
   }
 
-  /// `VZVirtualMachineManager.create(config:)`, with a `StandardVMConfig` of
-  /// `config`. Swift returns `any VirtualMachineInstance`, which on macOS is
-  /// always a `VZVirtualMachineInstance`.
+  /// `VZVirtualMachineManager.create(config:)`, with `config` wrapped in a
+  /// `StandardVMConfig`. Swift returns `any VirtualMachineInstance`, which on
+  /// macOS is always a `VZVirtualMachineInstance`.
   pub fn create(&self, config: &VMConfiguration) -> Result<VZVirtualMachineInstance, Error> {
     platform::outcome(self.handle.create(config.clone()), "create a virtual machine").map(|outcome| {
       VZVirtualMachineInstance {
@@ -71,7 +71,7 @@ impl Clone for VZVirtualMachineManager {
   }
 }
 
-/// Without its fields, which Swift keeps private.
+/// Leaves out the fields, which Swift keeps private.
 impl fmt::Debug for VZVirtualMachineManager {
   fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
     formatter

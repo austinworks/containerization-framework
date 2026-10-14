@@ -79,7 +79,9 @@ impl Default for Configuration {
   }
 }
 
-/// `copyIn(from:to:mode:createParents:chunkSize:)`'s defaults.
+/// The defaulted arguments of
+/// `LinuxContainer.copyIn(from:to:mode:createParents:chunkSize:)`.
+/// [`Default`] uses Swift's defaults.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct CopyInOptions {
   pub mode: u32,
@@ -87,8 +89,6 @@ pub struct CopyInOptions {
   pub chunk_size: usize,
 }
 
-/// Mode `0o644`, creating parents, in chunks of
-/// [`LinuxContainer::DEFAULT_COPY_CHUNK_SIZE`].
 impl Default for CopyInOptions {
   fn default() -> Self {
     Self {
@@ -99,14 +99,15 @@ impl Default for CopyInOptions {
   }
 }
 
-/// `copyOut(from:to:createParents:chunkSize:)`'s defaults.
+/// The defaulted arguments of
+/// `LinuxContainer.copyOut(from:to:createParents:chunkSize:)`. [`Default`] is
+/// Swift's defaults.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct CopyOutOptions {
   pub create_parents: bool,
   pub chunk_size: usize,
 }
 
-/// Creating parents, in chunks of [`LinuxContainer::DEFAULT_COPY_CHUNK_SIZE`].
 impl Default for CopyOutOptions {
   fn default() -> Self {
     Self {
@@ -116,8 +117,8 @@ impl Default for CopyOutOptions {
   }
 }
 
-/// `LinuxContainer`. Made by [`super::ContainerManager::create`], or by
-/// [`Self::new`] on a VM manager of the caller's.
+/// `LinuxContainer`. [`super::ContainerManager::create`] makes one, and so
+/// does [`Self::new`] with a VM manager the caller supplies.
 pub struct LinuxContainer {
   pub(crate) handle: ffi::CzLinuxContainer,
 }
@@ -138,7 +139,7 @@ impl LinuxContainer {
   /// `LinuxContainer.maxIDLength`.
   pub const MAX_ID_LENGTH: usize = 64;
 
-  /// `LinuxContainer.defaultCopyChunkSize`: 1 MiB.
+  /// `LinuxContainer.defaultCopyChunkSize`.
   pub const DEFAULT_COPY_CHUNK_SIZE: usize = 1024 * 1024;
 
   /// `LinuxContainer(_:rootfs:writableLayer:vmm:vm:configuration:logger:)`.
@@ -218,17 +219,17 @@ impl LinuxContainer {
     }
   }
 
-  /// `LinuxContainer.cpus`: the configuration's.
+  /// `LinuxContainer.cpus`, which Swift reads from the configuration.
   pub fn cpus(&self) -> u32 {
     self.config().cpus
   }
 
-  /// `LinuxContainer.memoryInBytes`: the configuration's.
+  /// `LinuxContainer.memoryInBytes`, which Swift reads from the configuration.
   pub fn memory_in_bytes(&self) -> u64 {
     self.config().memory_in_bytes
   }
 
-  /// `LinuxContainer.interfaces`: the configuration's.
+  /// `LinuxContainer.interfaces`, which Swift reads from the configuration.
   pub fn interfaces(&self) -> Vec<network::Interface> {
     self.config().interfaces
   }
@@ -280,11 +281,13 @@ impl LinuxContainer {
   }
 
   /// `LinuxContainer.exec(_:configuration:)` with a closure, which changes a
-  /// `LinuxProcessConfiguration()`. Swift calls it once, on its own thread,
-  /// and an error it returns is thrown.
+  /// `LinuxProcessConfiguration()`. Swift calls it once, on its own thread.
+  /// If it returns an error, `exec_with` returns that error.
   ///
-  /// The closure must not call this container. Swift holds the container's
-  /// lock while the closure runs, so the call would never return.
+  /// The closure shouldn't call a method that wraps an `async` Swift method,
+  /// for the reason [`super::ContainerManager::create`] gives. It must not
+  /// call this container at all, because Swift holds the container's lock
+  /// while the closure runs, so the call would never return.
   pub fn exec_with(
     &self,
     id: &str,
@@ -304,7 +307,7 @@ impl LinuxContainer {
     })
   }
 
-  /// `LinuxContainer.dialVsock(port:)`. Swift hands over the connection's
+  /// `LinuxContainer.dialVsock(port:)`. The caller owns the connection's
   /// descriptor.
   pub fn dial_vsock(&self, port: u32) -> Result<OwnedFd, Error> {
     platform::outcome(
@@ -316,9 +319,9 @@ impl LinuxContainer {
     .map(|outcome| unsafe { OwnedFd::from_raw_fd(outcome.int32()) })
   }
 
-  /// `LinuxContainer.withVirtualMachineInstance(_:)`. Swift runs its closure
-  /// on the instance it hands out, once it has checked the container is
-  /// created; `body` runs the same way, on this thread.
+  /// `LinuxContainer.withVirtualMachineInstance(_:)`. Like Swift's, it fails
+  /// unless the container is created, started or paused, and otherwise runs
+  /// `body` with the instance on this thread.
   pub fn with_virtual_machine_instance<T>(
     &self,
     body: impl FnOnce(&vm::VZVirtualMachineInstance) -> Result<T, Error>,
@@ -436,8 +439,8 @@ impl LinuxContainer {
     strings(&["/proc/bus", "/proc/fs", "/proc/irq", "/proc/sys", "/proc/sysrq-trigger"])
   }
 
-  /// `LinuxContainer.defaultOCIMounts()`: the mounts OCI runtimes expect, with
-  /// `/dev` as a tmpfs.
+  /// `LinuxContainer.defaultOCIMounts()`, the mounts that OCI runtimes expect,
+  /// with `/dev` as a tmpfs.
   pub fn default_oci_mounts() -> Vec<Mount> {
     let defaults = ["nosuid", "noexec", "nodev"];
 
@@ -465,8 +468,8 @@ impl LinuxContainer {
   }
 }
 
-/// A `Mount?`, as it crosses to Swift: the mount stands for `nil` when the
-/// flag is false.
+/// Returns a `Mount?` as it crosses to Swift. The mount stands for `nil` when
+/// the flag is false.
 fn writable_layer_crossing(writable_layer: Option<Mount>) -> (bool, Mount) {
   match writable_layer {
     Some(writable_layer) => (true, writable_layer),

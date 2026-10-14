@@ -1,5 +1,5 @@
-//! `RegistryClient`, the options for its host init:
-//! [`RegistryClientOptions`], and the [`RetryOptions`] they take.
+//! `RegistryClient`, the [`RegistryClientOptions`] that its host init takes,
+//! and the [`RetryOptions`] among them.
 //!
 //! Neither init takes Swift's `tlsConfiguration` or `logger`, which are
 //! swift-nio and swift-log types.
@@ -15,7 +15,8 @@ use std::fmt;
 use std::path::Path;
 
 /// `RetryOptions`, without its `shouldRetry` closure, which takes an
-/// AsyncHTTPClient response.
+/// AsyncHTTPClient response. Without that closure, a client retries only a
+/// request that fails outright, never one that a server error answers.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct RetryOptions {
   pub max_retries: isize,
@@ -33,8 +34,8 @@ impl RetryOptions {
   }
 }
 
-/// `RegistryClient(host:...)`'s defaulted arguments. [`Default`] is Swift's
-/// defaults.
+/// The defaulted arguments of `RegistryClient(host:...)`. Its [`Default`]
+/// holds Swift's defaults.
 #[derive(Clone, Debug)]
 pub struct RegistryClientOptions {
   pub scheme: Option<String>,
@@ -77,7 +78,7 @@ unsafe impl Sync for RegistryClient {}
 
 impl RegistryClient {
   /// `RegistryClient(reference:insecure:auth:)`, which retries a request that
-  /// a server error answers.
+  /// fails or that a server error answers.
   pub fn new(reference: &str, insecure: bool, auth: Option<&Authentication>) -> Result<Self, Error> {
     platform::outcome(
       ffi::cz_registry_client_new(reference, insecure, authentication::crossing(auth)?),

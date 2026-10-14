@@ -90,7 +90,8 @@ impl<'a> WriteEntry<'a> {
     self.handle.set_permissions(permissions);
   }
 
-  /// `owner`.
+  /// `owner`. Swift's setter stores `None` as 0, so this returns `None` only
+  /// for an id that doesn't fit in a `u32`.
   pub fn owner(&self) -> Option<u32> {
     self.handle.has_owner().then(|| self.handle.owner())
   }
@@ -101,7 +102,8 @@ impl<'a> WriteEntry<'a> {
       .set_owner(owner.is_some(), owner.unwrap_or_default());
   }
 
-  /// `group`.
+  /// `group`. Swift's setter stores `None` as 0, so this returns `None` only
+  /// for an id that doesn't fit in a `u32`.
   pub fn group(&self) -> Option<u32> {
     self.handle.has_group().then(|| self.handle.group())
   }

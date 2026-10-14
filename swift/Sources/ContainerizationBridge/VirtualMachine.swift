@@ -199,7 +199,8 @@ final class CzVsockListener: @unchecked Sendable {
 // MARK: LinuxContainer
 
 extension CzLinuxContainer {
-  /// What `withVirtualMachineInstance` hands its closure, for Rust's to use.
+  /// What `withVirtualMachineInstance` hands its closure, for Rust's closure
+  /// to use.
   func virtualMachineInstance() -> CzOutcome {
     let container = container
 

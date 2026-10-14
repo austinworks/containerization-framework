@@ -9,8 +9,8 @@ import Foundation
 /// Blocking a thread of Swift's cooperative pool could leave no thread to run
 /// the body. Rust calls in on its own threads, and Swift calls the Rust
 /// closures it awaits through `offPool`, so neither blocks the pool. Swift
-/// calls Rust's synchronous configuration closures on the pool, which is one
-/// reason their docs say not to call back.
+/// calls Rust's synchronous configuration closures on the pool, which is why
+/// their docs say not to make calls that go through `blocking`.
 ///
 /// The task releases `body` before it signals, so nothing holds it after this
 /// returns and a caller may pass a closure from `withoutActuallyEscaping`.

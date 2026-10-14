@@ -2,15 +2,19 @@
 //! fills them with.
 //!
 //! Each getter lends what the value holds, so Swift's copy is the only one.
-//! Swift calls each by its `swift_name` in `bridge::ffi`, Rust's in camel case.
-//! Shapes swift-bridge can't return become sets: optional nested value →
-//! `has_x` + `x`; list → `x_len` + `x_at`; map → length + key and value at an
-//! index; enum → kind + payload. Swift asks for an index only below the length.
+//! Swift calls each by the `swift_name` it has in `bridge::ffi`, which is the
+//! Rust name in camel case.
 //!
-//! Swift never makes a Rust value: it fills one Rust hands it, clearing and
-//! pushing what it holds, so it can hand back a configuration it seeded. (A
-//! Rust function returning one to Swift gets a redundant cast in
-//! swift-bridge's glue.)
+//! A shape swift-bridge can't return becomes a set of getters. An optional
+//! nested value is read through `has_x` and `x`, and a list through `x_len`
+//! and `x_at`. A map is read as its length and the key and value at an
+//! index, and an enum as its kind and then its payload. Swift asks for an
+//! index only below the length.
+//!
+//! Swift never makes a Rust value. It fills one that Rust hands it, clearing
+//! and pushing what it holds, so that it can hand back a configuration it
+//! seeded. A Rust function that returned a new one to Swift would get a
+//! redundant cast in swift-bridge's glue.
 
 mod addresses;
 mod archive;

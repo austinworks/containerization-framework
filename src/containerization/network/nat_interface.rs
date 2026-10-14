@@ -12,8 +12,8 @@ pub struct NATInterface {
 }
 
 impl NATInterface {
-  /// `NATInterface(ipv4Address:ipv4Gateway:)`, its other arguments at their
-  /// defaults.
+  /// `NATInterface(ipv4Address:ipv4Gateway:)`, with the other arguments left
+  /// at their defaults.
   pub fn new(
     ipv4_address: containerization_extras::address::CIDRv4,
     ipv4_gateway: Option<containerization_extras::address::IPv4Address>,

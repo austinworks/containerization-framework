@@ -39,7 +39,7 @@ pub(super) fn has_journal_mode(journal: Option<journal_config::JournalConfig>) -
   journal.and_then(|journal| journal.default_mode).is_some()
 }
 
-/// Only when [`has_journal_mode`].
+/// Swift asks for this only when [`has_journal_mode`] is true.
 pub(super) fn journal_mode(journal: Option<journal_config::JournalConfig>) -> ffi::JournalModeKind {
   match journal
     .and_then(|journal| journal.default_mode)

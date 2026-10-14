@@ -5,9 +5,9 @@ use crate::platform;
 use crate::platform::ffi;
 use std::collections::BTreeMap;
 
-/// `ProxyUtils.proxyFromEnvironment(scheme:host:env:)`: the proxy URL to
-/// reach `host` through, or `None` to connect directly. With `env` as `None`,
-/// Swift reads its default, the process environment.
+/// `ProxyUtils.proxyFromEnvironment(scheme:host:env:)`. It returns the proxy
+/// URL to reach `host` through, or `None` to connect directly. With `env` as
+/// `None`, Swift reads its default, the process environment.
 pub fn proxy_from_environment(
   scheme: Option<&str>,
   host: &str,

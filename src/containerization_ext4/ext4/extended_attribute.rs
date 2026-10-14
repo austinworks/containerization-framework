@@ -26,8 +26,8 @@ impl ExtendedAttribute {
     Self { _private: () }
   }
 
-  /// `compressName(_:)`: the id of the name's longest known prefix, and the
-  /// rest of the name.
+  /// `compressName(_:)`. It returns the id of the name's longest known prefix
+  /// and the rest of the name.
   pub fn compress_name(name: &str) -> Result<(u8, String), Error> {
     platform::outcome(
       ffi::cz_ext4_extended_attribute_compress_name(name),

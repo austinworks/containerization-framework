@@ -58,8 +58,8 @@ impl Inode {
     mode.0 | perm
   }
 
-  /// `EXT4.Inode.Root()`: the root directory's inode, with its times set to
-  /// now.
+  /// `EXT4.Inode.Root()`, which makes the root directory's inode with its
+  /// times set to now.
   pub fn root() -> Result<Self, Error> {
     platform::outcome(ffi::cz_ext4_inode_root(), "make a root inode").map(|outcome| outcome.inode())
   }

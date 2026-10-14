@@ -1,5 +1,5 @@
-/// `AttachedFilesystem`: a filesystem attached to a VM, as its guest mounts
-/// it. Its initializer that takes an `AddressAllocator` isn't bound.
+/// `AttachedFilesystem`, a filesystem attached to a VM as its guest mounts
+/// it. The initializer that takes an `AddressAllocator` isn't bound.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct AttachedFilesystem {
   pub r#type: String,

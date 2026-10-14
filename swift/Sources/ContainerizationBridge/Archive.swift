@@ -265,7 +265,6 @@ final class CzWriteEntry: @unchecked Sendable {
     CzOutcome { entry.xattrs }
   }
 
-  /// `values` is every value joined, each `lengths` long in turn.
   func setXattrs(names: RustVec<RustString>, lengths: RustVec<UInt64>, values: RustVec<UInt8>) {
     entry.xattrs = dataMap(names: names, lengths: lengths, values: values)
   }

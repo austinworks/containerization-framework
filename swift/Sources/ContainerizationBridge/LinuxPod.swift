@@ -52,8 +52,9 @@ final class CzLinuxPod: Sendable {
     pod.vm.memoryInBytes
   }
 
-  /// `seed` is Rust's `ContainerConfiguration()`, which is Swift's, for
-  /// `configuration` to change: Swift never fills one.
+  /// `seed` is Rust's `ContainerConfiguration()`, for `configuration` to
+  /// change. Swift doesn't fill it, because the pod seeds Swift's default,
+  /// which Rust's matches.
   func addContainer(
     id: RustStr,
     rootfs: RustMount,
@@ -63,7 +64,8 @@ final class CzLinuxPod: Sendable {
     let pod = pod
     let id = id.toString()
     let rootfs = Containerization.Mount(rootfs)
-    // Rust's: the pod calls the closure once, while `blocking` waits.
+    // Not `Sendable`, but only the closure below uses them, and the pod calls
+    // it once, while `blocking` waits.
     nonisolated(unsafe) let seed = seed
     nonisolated(unsafe) let configuration = configuration
 
@@ -147,7 +149,7 @@ final class CzLinuxPod: Sendable {
     }
   }
 
-  /// Swift's doesn't throw, so nor does `blocking` here.
+  /// Swift's `listContainers` doesn't throw, so `blocking` can't fail here.
   func listContainers() -> RustVec<RustString> {
     let pod = pod
 
@@ -171,7 +173,8 @@ final class CzLinuxPod: Sendable {
     return CzOutcome { try blocking { try await pod.dialVsock(port: port) }.fileDescriptor }
   }
 
-  /// What `withVirtualMachineInstance` hands its closure, for Rust's to use.
+  /// What `withVirtualMachineInstance` hands its closure, for Rust's closure
+  /// to use.
   func virtualMachineInstance() -> CzOutcome {
     let pod = pod
 

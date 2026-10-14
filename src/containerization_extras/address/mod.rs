@@ -36,9 +36,9 @@ fn description(outcome: ffi::CzOutcome, action: &str) -> Result<String, Error> {
   platform::outcome(outcome, action).map(|outcome| outcome.text())
 }
 
-/// Swift's `<`, asked both ways, as Rust's partial order. `None` when neither
-/// is less but the two differ. Off macOS, where Swift can't be asked, it
-/// panics.
+/// Swift's `<`, asked both ways, as Rust's partial order. It returns `None`
+/// when neither is less but the two differ. Off macOS, where Swift can't be
+/// asked, it panics.
 fn ordering<T: PartialEq>(lhs: &T, rhs: &T, less: impl Fn(&T, &T) -> Result<bool, Error>) -> Option<Ordering> {
   let less = |lhs, rhs| less(lhs, rhs).unwrap_or_else(|error| panic!("{error}"));
 

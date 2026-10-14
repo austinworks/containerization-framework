@@ -93,7 +93,7 @@ pub struct Kernel {
 }
 
 impl Kernel {
-  /// `Kernel(path:platform:)`, with its default command line.
+  /// `Kernel(path:platform:)`, with the default command line.
   pub fn new(path: impl Into<PathBuf>, platform: SystemPlatform) -> Self {
     Self {
       path: path.into(),
@@ -102,12 +102,12 @@ impl Kernel {
     }
   }
 
-  /// `Kernel.kernelArgs`, its command line's.
+  /// `Kernel.kernelArgs`, which reads them from the command line.
   pub fn kernel_args(&self) -> &[String] {
     &self.command_line.kernel_args
   }
 
-  /// `Kernel.initArgs`, its command line's.
+  /// `Kernel.initArgs`, which reads them from the command line.
   pub fn init_args(&self) -> &[String] {
     &self.command_line.init_args
   }

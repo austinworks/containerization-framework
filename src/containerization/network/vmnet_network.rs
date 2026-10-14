@@ -70,7 +70,7 @@ impl Clone for Interface {
   }
 }
 
-/// Without the network, which Swift keeps private.
+/// Leaves out the network, which Swift keeps private.
 impl fmt::Debug for Interface {
   fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
     formatter
@@ -85,8 +85,8 @@ impl fmt::Debug for Interface {
   }
 }
 
-/// Equal when the six fields Swift shows are. Swift's isn't `Equatable`, and
-/// the network it attaches to is private.
+/// Two interfaces are equal when their six public fields are. Swift's type
+/// isn't `Equatable`, and the network it attaches to is private.
 impl PartialEq for Interface {
   fn eq(&self, other: &Self) -> bool {
     self.ipv4_address() == other.ipv4_address()
@@ -110,7 +110,7 @@ pub struct VmnetNetwork {
 unsafe impl Send for VmnetNetwork {}
 unsafe impl Sync for VmnetNetwork {}
 
-/// Without its allocations, which Swift keeps private.
+/// Leaves out the allocations, which Swift keeps private.
 impl fmt::Debug for VmnetNetwork {
   fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
     formatter

@@ -2,10 +2,9 @@
 #
 # Runs the integration suites: builds their test binaries, signs them, runs them.
 #
-# The entitlement check is `SecTaskCreateFromSelf`, so it is the *test binary*
-# that must carry `com.apple.security.virtualization` — these tests boot VMs in
-# their own process rather than driving something else that does. Cargo builds
-# them unsigned and signs nothing, hence this.
+# These tests boot VMs in their own process, so it is the test binary that must
+# carry `com.apple.security.virtualization`. Cargo builds them unsigned, hence
+# this script.
 #
 # Further arguments reach nextest, so a single test can be run the way it
 # usually takes one:
@@ -17,7 +16,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
 
-# Only what is in `tests/`.
+# Only the suites in `tests/`, not the unit tests.
 targets=()
 for suite in tests/*.rs; do
   [ -e "$suite" ] || continue

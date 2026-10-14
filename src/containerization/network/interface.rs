@@ -2,7 +2,7 @@ use super::NATInterface;
 use super::vmnet_network;
 use crate::containerization_extras;
 
-/// `any Interface`: one of its conforming types on macOS.
+/// `any Interface`, which holds one of the types that conform to it on macOS.
 ///
 /// `NATNetworkInterface` is not among them. Its one initializer available on
 /// macOS 26 takes a `vmnet_network_ref`, which Rust can't make.

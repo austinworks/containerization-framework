@@ -94,7 +94,8 @@ impl ArchiveReader {
     platform::outcome(self.handle.throw_if_stream_failed(), "read an archive").map(drop)
   }
 
-  /// `ArchiveReader.extractContents(to:)`: the member paths it rejected.
+  /// `ArchiveReader.extractContents(to:)`. It returns the member paths it
+  /// rejected.
   pub fn extract_contents(&self, to: &Path) -> Result<Vec<String>, Error> {
     platform::outcome(
       self.handle.extract_contents(platform::path(to)?),

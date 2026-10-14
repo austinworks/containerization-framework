@@ -6,7 +6,10 @@ use crate::platform;
 use crate::platform::ffi;
 use std::fmt;
 
-/// `LinuxProcess`. Made by [`crate::containerization::container::LinuxContainer::exec`].
+/// `LinuxProcess`. [`crate::containerization::container::LinuxContainer::exec`],
+/// [`crate::containerization::container::LinuxContainer::exec_with`] and
+/// [`crate::containerization::container::LinuxPod::exec_in_container`] make
+/// one.
 pub struct LinuxProcess {
   pub(crate) handle: ffi::CzLinuxProcess,
 }

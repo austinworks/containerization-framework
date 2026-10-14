@@ -3,9 +3,9 @@
 # Signs a binary with `com.apple.security.virtualization`, which
 # Virtualization.framework requires and every rebuild drops.
 #
-# DEVELOPMENT_TEAM picks that team's identity. Without it, ad hoc: enough for
-# the entitlement, but a new code identity per build, so anything keyed to one
-# prompts again.
+# DEVELOPMENT_TEAM picks that team's identity. Without it the binary is signed
+# ad hoc, which is enough for the entitlement but gives every build a new code
+# identity, so anything keyed to the identity prompts again.
 
 set -e
 

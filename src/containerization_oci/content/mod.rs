@@ -1,5 +1,4 @@
 //! Content: blobs addressed by their digest, and the store they are kept in.
-//! `Content` is here.
 
 mod content_writer;
 mod local_content_store;

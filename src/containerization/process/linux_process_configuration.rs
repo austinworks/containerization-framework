@@ -13,7 +13,8 @@ use std::os::fd::RawFd;
 /// `stdin`, `stdout` and `stderr` are descriptors where Swift takes a
 /// `ReaderStream` or `Writer`. Swift streams a duplicate of each, so the caller
 /// keeps its own. When `stdout` and `stderr` are the same descriptor, they
-/// share one duplicate, so their writes don't interleave.
+/// share one duplicate, so neither's write can land in the middle of the
+/// other's.
 ///
 /// An `exec`ed process's duplicates close when the process is deleted. A
 /// container's or pod's own process keeps them until the container or pod is
@@ -38,8 +39,8 @@ impl LinuxProcessConfiguration {
   /// `LinuxProcessConfiguration.defaultPath`.
   pub const DEFAULT_PATH: &str = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
-  /// `LinuxProcessConfiguration(arguments:)`, its other arguments at their
-  /// defaults.
+  /// `LinuxProcessConfiguration(arguments:)`, with the other arguments left at
+  /// their defaults.
   pub fn new(arguments: &[&str]) -> Self {
     Self {
       arguments: strings(arguments),
@@ -47,8 +48,8 @@ impl LinuxProcessConfiguration {
     }
   }
 
-  /// `LinuxProcessConfiguration(from:)`: the process an image's
-  /// configuration describes.
+  /// `LinuxProcessConfiguration(from:)`, which makes the process that an
+  /// image's configuration describes.
   pub fn from_image_config(config: &containerization_oci::image::ImageConfig) -> Result<Self, Error> {
     platform::filled_process(
       |receive| ffi::cz_linux_process_configuration_from_image_config(config.clone(), Self::default(), receive),
@@ -56,9 +57,10 @@ impl LinuxProcessConfiguration {
     )
   }
 
-  /// `LinuxProcessConfiguration.setTerminalIO(terminal:)`: sets what a pty
-  /// needs, and `terminal` as stdin and stdout. Where Swift keeps the
-  /// terminal, `stdin` and `stdout` hold its descriptor.
+  /// `LinuxProcessConfiguration.setTerminalIO(terminal:)`, which turns on
+  /// `terminal`, appends `TERM=xterm` to the environment, and uses the
+  /// terminal for stdin and stdout. Where Swift holds the terminal itself,
+  /// `stdin` and `stdout` hold its descriptor.
   pub fn set_terminal_io(&mut self, terminal: &terminal::Terminal) -> Result<(), Error> {
     let process = platform::filled_process(
       |receive| ffi::cz_linux_process_configuration_set_terminal_io(self.clone(), terminal.handle.duplicate(), receive),

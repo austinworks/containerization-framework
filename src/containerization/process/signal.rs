@@ -48,23 +48,25 @@ impl Signal {
     platform::outcome(outcome, format!("parse the signal {name}")).map(|outcome| Self::new(outcome.int32()))
   }
 
-  /// `Signal.linux`: every Linux signal by name, without its `SIG` prefix,
-  /// real-time signals included.
+  /// `Signal.linux`, which maps the name of each Linux signal, without the
+  /// `SIG` prefix, to its number. It includes the real-time signals.
   pub fn linux() -> Result<BTreeMap<String, i32>, Error> {
     platform::outcome(ffi::cz_signal_linux(), "list Linux's signals").map(|outcome| outcome.int32_map())
   }
 
-  /// `Signal.platform`: every signal of the host, by name.
+  /// `Signal.platform`, which maps the name of each of the host's signals to
+  /// its number.
   pub fn platform() -> Result<BTreeMap<String, i32>, Error> {
     platform::outcome(ffi::cz_signal_platform(), "list the host's signals").map(|outcome| outcome.int32_map())
   }
 
-  /// `Signal.platformName()`: this signal's name on the host.
+  /// `Signal.platformName()`, which returns this signal's name on the host.
   pub fn platform_name(self) -> Result<Option<String>, Error> {
     Self::platform_name_of(self.raw_value)
   }
 
-  /// `Signal.platformName(_:)`: a signal number's name on the host.
+  /// `Signal.platformName(_:)`, which returns a signal number's name on the
+  /// host.
   pub fn platform_name_of(signal: i32) -> Result<Option<String>, Error> {
     platform::outcome(
       ffi::cz_signal_platform_name(signal),
@@ -73,8 +75,8 @@ impl Signal {
     .map(|outcome| outcome.optional_text())
   }
 
-  /// `Signal.linuxSignal()`: the Linux signal of the same name as this host
-  /// signal.
+  /// `Signal.linuxSignal()`, which returns the Linux signal that has the same
+  /// name as this host signal.
   pub fn linux_signal(self) -> Result<Option<Self>, Error> {
     platform::outcome(
       ffi::cz_signal_linux_signal(self.raw_value),
@@ -139,8 +141,8 @@ pub mod linux {
     RTMAX = 64,
   );
 
-  /// `Signal.Linux.rtmin(offset:)`: the real-time signal `offset` past the
-  /// first. Swift's `offset` defaults to 0.
+  /// `Signal.Linux.rtmin(offset:)`, the real-time signal `offset` places past
+  /// the first. Swift's `offset` defaults to 0.
   pub const fn rtmin(offset: i32) -> super::Signal {
     super::Signal::new(34 + offset)
   }

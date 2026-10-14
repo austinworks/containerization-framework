@@ -51,7 +51,7 @@ pub struct ContainerConfiguration {
   pub sockets: Vec<UnixSocketConfiguration>,
   pub dns: Option<network::DNS>,
   pub hosts: Option<network::Hosts>,
-  /// The pod's when `None`.
+  /// `None` uses the pod's profile.
   pub seccomp_profile: Option<linux_container::SeccompProfile>,
   pub use_init: bool,
 }
@@ -77,7 +77,7 @@ impl Default for ContainerConfiguration {
   }
 }
 
-/// `LinuxPod.PodVolume`: storage attached to the pod, which its containers
+/// `LinuxPod.PodVolume`, storage attached to the pod that its containers
 /// mount by name with [`Mount::shared_mount`].
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PodVolume {
@@ -103,12 +103,13 @@ pub mod pod_volume {
     },
     /// `.diskImage(path:readOnly:)`, a disk image on the host.
     DiskImage { path: PathBuf, read_only: bool },
-    /// `.tmpfs(sizeBytes:)`, in the guest's memory.
+    /// `.tmpfs(sizeBytes:)`, a volume in the guest's memory.
     Tmpfs { size_bytes: Option<u64> },
   }
 }
 
-/// `LinuxPod`: containers sharing one VM.
+/// `LinuxPod`, which runs several containers in one VM. Swift marks it
+/// experimental.
 pub struct LinuxPod {
   pub(crate) handle: ffi::CzLinuxPod,
 }
@@ -125,8 +126,9 @@ unsafe impl Sync for LinuxPod {}
 
 impl LinuxPod {
   /// `LinuxPod(_:vmm:vm:logger:configuration:)`, whose closure changes a
-  /// `LinuxPod.Configuration()`. Swift calls it before anything else, so it
-  /// runs here, and Swift's closure takes what it made.
+  /// `LinuxPod.Configuration()`. It runs here, before Swift is called, and
+  /// Swift's closure takes what it made. Unlike Swift's, it runs even when
+  /// Swift then rejects the id as too long.
   pub fn new(
     id: &str,
     vmm: &vm::VZVirtualMachineManager,
@@ -165,26 +167,28 @@ impl LinuxPod {
     }
   }
 
-  /// `LinuxPod.cpus`: the VM's.
+  /// `LinuxPod.cpus`, which Swift reads from the VM's resources.
   pub fn cpus(&self) -> u32 {
     self.vm().cpus
   }
 
-  /// `LinuxPod.memoryInBytes`: the VM's.
+  /// `LinuxPod.memoryInBytes`, which Swift reads from the VM's resources.
   pub fn memory_in_bytes(&self) -> u64 {
     self.vm().memory_in_bytes
   }
 
-  /// `LinuxPod.interfaces`: the configuration's.
+  /// `LinuxPod.interfaces`, which Swift reads from the configuration.
   pub fn interfaces(&self) -> Vec<network::Interface> {
     self.config().interfaces
   }
 
   /// `LinuxPod.addContainer(_:rootfs:configuration:)`, whose closure changes a
   /// `LinuxPod.ContainerConfiguration()`. Swift calls it once, on its own
-  /// thread, and an error it returns is thrown.
+  /// thread. If it returns an error, `add_container` returns that error.
   ///
-  /// The closure must not call this pod. Swift holds the pod's lock while the
+  /// The closure shouldn't call a method that wraps an `async` Swift method,
+  /// for the reason [`super::ContainerManager::create`] gives. It must not
+  /// call this pod at all, because Swift holds the pod's lock while the
   /// closure runs, so the call would never return.
   pub fn add_container(
     &self,
@@ -266,11 +270,13 @@ impl LinuxPod {
   }
 
   /// `LinuxPod.execInContainer(_:processID:configuration:)`. The closure
-  /// changes the container's process configuration, less its arguments,
-  /// terminal and stdio. Swift calls it once, on its own thread, and an error
-  /// it returns is thrown.
+  /// changes a copy of the container's process configuration, with the
+  /// arguments, terminal and stdio reset. Swift calls it once, on its own
+  /// thread. If it returns an error, `exec_in_container` returns that error.
   ///
-  /// The closure must not call this pod. Swift holds the pod's lock while the
+  /// The closure shouldn't call a method that wraps an `async` Swift method,
+  /// for the reason [`super::ContainerManager::create`] gives. It must not
+  /// call this pod at all, because Swift holds the pod's lock while the
   /// closure runs, so the call would never return.
   pub fn exec_in_container(
     &self,
@@ -300,8 +306,8 @@ impl LinuxPod {
     self.handle.list_containers()
   }
 
-  /// `LinuxPod.statistics(containerIDs:categories:)`. `None` is every
-  /// container's.
+  /// `LinuxPod.statistics(containerIDs:categories:)`. `None` asks for every
+  /// container's statistics.
   pub fn statistics(
     &self,
     container_ids: Option<&[&str]>,
@@ -320,7 +326,7 @@ impl LinuxPod {
     .map(|outcome| outcome.container_statistics_list())
   }
 
-  /// `LinuxPod.dialVsock(port:)`. Swift hands over the connection's
+  /// `LinuxPod.dialVsock(port:)`. The caller owns the connection's
   /// descriptor.
   pub fn dial_vsock(&self, port: u32) -> Result<OwnedFd, Error> {
     platform::outcome(
@@ -332,8 +338,9 @@ impl LinuxPod {
     .map(|outcome| unsafe { OwnedFd::from_raw_fd(outcome.int32()) })
   }
 
-  /// `LinuxPod.withVirtualMachineInstance(_:)`, as
-  /// [`LinuxContainer::with_virtual_machine_instance`] is.
+  /// `LinuxPod.withVirtualMachineInstance(_:)`. Like Swift's, it fails unless
+  /// the pod is created, and otherwise runs `body` with the instance on this
+  /// thread.
   pub fn with_virtual_machine_instance<T>(
     &self,
     body: impl FnOnce(&vm::VZVirtualMachineInstance) -> Result<T, Error>,

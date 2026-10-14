@@ -40,9 +40,11 @@ mod ffi {
     type RustConfigureProcess;
     fn call(self: &RustConfigureProcess, process: &mut RustLinuxProcessConfiguration) -> bool;
 
-    // A `(inout LinuxPod.Configuration) throws -> Void`, which takes what
-    // Swift filled, and a `(inout LinuxPod.ContainerConfiguration) throws ->
-    // Void`, which Swift calls once on Rust's default, which is Swift's.
+    // A `(inout LinuxPod.Configuration) throws -> Void`, which Swift calls
+    // with the configuration it filled, and a `(inout
+    // LinuxPod.ContainerConfiguration) throws -> Void`, which Swift calls once
+    // on Rust's default configuration. Swift doesn't fill that one, because
+    // Rust's default matches Swift's.
     type RustConfigurePod;
     fn call(self: &RustConfigurePod, configuration: &mut RustPodConfiguration) -> bool;
     type RustConfigurePodContainer;

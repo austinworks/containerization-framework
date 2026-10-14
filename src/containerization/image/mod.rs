@@ -33,18 +33,19 @@ impl Description {
     }
   }
 
-  /// `Image.Description.digest`: the descriptor's.
+  /// `Image.Description.digest`, the descriptor's digest.
   pub fn digest(&self) -> &str {
     &self.descriptor.digest
   }
 
-  /// `Image.Description.mediaType`: the descriptor's.
+  /// `Image.Description.mediaType`, the descriptor's media type.
   pub fn media_type(&self) -> &str {
     &self.descriptor.media_type
   }
 }
 
-/// A platform in an error's action, without asking Swift for its description.
+/// Names a platform in an error's action without asking Swift for its
+/// description.
 fn named(platform: &containerization_oci::image::Platform) -> String {
   format!("{}/{}", platform.os, platform.architecture)
 }

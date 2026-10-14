@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 // Rust's values for images, content and unpacking read into Containerization's,
-// and a `Platform` filled back into Rust's.
+// and the OCI image types read back by Rust field by field.
 //===----------------------------------------------------------------------===//
 
 import Containerization
@@ -68,8 +68,8 @@ extension EXT4.JournalConfig.JournalMode {
 }
 
 /// Rust's `ProgressHandler?`. Swift may call it from several threads at once,
-/// and Rust's is `Sync`. It runs off the cooperative pool, because Swift's is
-/// `async` and so may call back into Swift.
+/// and Rust's is `Sync`. Swift's handler is `async`, so Rust's can run off the
+/// cooperative pool, where it may call back into Swift.
 func progressHandler(_ handler: RustProgressHandler) -> ProgressHandler? {
   guard handler.isSome() else {
     return nil

@@ -48,7 +48,8 @@ kinds!(
 );
 
 impl Kind {
-  /// `LinuxRLimit.Kind(_:)`, from a kind's OCI name, such as `RLIMIT_NOFILE`.
+  /// `LinuxRLimit.Kind(_:)`, which parses a kind's OCI name, such as
+  /// `RLIMIT_NOFILE`.
   pub fn parse(string: &str) -> Result<Self, Error> {
     platform::outcome(
       ffi::cz_linux_rlimit_kind_parse(string),
@@ -57,7 +58,8 @@ impl Kind {
     .map(|outcome| Self::from_description(&outcome.text()))
   }
 
-  /// The case Swift described. It panics if Swift has a case Rust lacks.
+  /// Returns the case Swift described. It panics if Swift has a case Rust
+  /// lacks.
   fn from_description(description: &str) -> Self {
     Self::ALL
       .iter()

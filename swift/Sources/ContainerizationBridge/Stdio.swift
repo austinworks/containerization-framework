@@ -23,8 +23,9 @@ func duplicate(_ descriptor: Int32) throws -> FileHandle {
 
 /// A descriptor the guest reads, streamed until it reaches end of file.
 ///
-/// Unchecked: `FileHandle` is not `Sendable`, and only the readability handler
-/// touches it, on one queue at a time.
+/// Unchecked: `FileHandle` is not `Sendable`. Only the readability handler
+/// reads from it, on one queue at a time, and the stream's termination only
+/// clears that handler.
 final class FileReader: ReaderStream, @unchecked Sendable {
   private let handle: FileHandle
 
@@ -33,7 +34,8 @@ final class FileReader: ReaderStream, @unchecked Sendable {
   }
 
   /// Reading stops when the stream ends, at end of file or when
-  /// Containerization cancels its relay on deleting the process. Otherwise
+  /// Containerization cancels its relay on closing stdin or deleting the
+  /// process. Otherwise
   /// the handler would go on taking the caller's input until Swift frees it.
   func stream() -> AsyncStream<Data> {
     .init { continuation in

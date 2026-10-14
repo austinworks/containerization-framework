@@ -61,7 +61,7 @@ impl Default for Process {
 }
 
 impl Process {
-  /// `Process(from: ImageConfig)`.
+  /// `Process(from:)`, which takes an `ImageConfig`.
   pub fn from_image_config(config: &image::ImageConfig) -> Result<Self, Error> {
     platform::outcome(
       ffi::cz_process_from_image_config(config.clone()),
@@ -695,8 +695,8 @@ impl Arch {
     })
   }
 
-  /// `Arch.currentVerified()`, which also fails when `current` is `None` or
-  /// isn't the architecture running.
+  /// `Arch.currentVerified()`, which fails when `current` is `None` or isn't
+  /// the architecture that is running.
   pub fn current_verified() -> Result<Self, Error> {
     platform::outcome(ffi::cz_arch_current_verified(), "read the current seccomp architecture")
       .map(|outcome| Self::from_swift(&outcome.text()))

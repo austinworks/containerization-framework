@@ -42,16 +42,17 @@ impl Terminal {
     })
   }
 
-  /// `Terminal.current`: the first of stderr, stdout and stdin that is a
-  /// terminal.
+  /// `Terminal.current`, which returns the first of stderr, stdout and stdin
+  /// that is a terminal.
   pub fn current() -> Result<Self, Error> {
     platform::outcome(ffi::cz_terminal_current(), "find the current terminal").map(|outcome| Self {
       handle: outcome.terminal(),
     })
   }
 
-  /// `Terminal.create(initialSize:)`: a new pty, as its parent and child.
-  /// Swift's `initialSize` defaults to `nil`, which Swift takes as 120 by 40.
+  /// `Terminal.create(initialSize:)`, which opens a new pty and returns its
+  /// parent and child. Swift's `initialSize` defaults to `nil`, which Swift
+  /// takes as 120 by 40.
   pub fn create(initial_size: Option<Size>) -> Result<(Self, Self), Error> {
     let size = initial_size.unwrap_or(Size { width: 0, height: 0 });
 
@@ -128,13 +129,13 @@ impl Terminal {
     platform::outcome(self.handle.close(), "close a terminal").map(drop)
   }
 
-  /// `reset()`: the attributes the terminal had when it was made with
-  /// `set_init_state`, or else nothing.
+  /// `reset()`, which restores the attributes the terminal had when it was
+  /// made with `set_init_state`, and otherwise does nothing.
   pub fn reset(&self) -> Result<(), Error> {
     platform::outcome(self.handle.reset(), "reset a terminal").map(drop)
   }
 
-  /// `tryReset()`: [`Terminal::reset`], ignoring its error.
+  /// `tryReset()`, which calls [`Terminal::reset`] and ignores its error.
   pub fn try_reset(&self) {
     self.handle.try_reset();
   }

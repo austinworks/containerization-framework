@@ -86,8 +86,8 @@ impl Mount {
     }
   }
 
-  /// `Mount.clone(to:)`: copies the source to `to`, and returns this mount
-  /// with `to` as its source. `clone` itself is `Clone`'s.
+  /// `Mount.clone(to:)`, which copies the source to `to` and returns this
+  /// mount with `to` as its source. The name `clone` is taken by `Clone`.
   pub fn clone_to(&self, to: &str) -> Result<Self, Error> {
     platform::outcome(
       ffi::cz_mount_clone(self.clone(), to),
@@ -101,7 +101,8 @@ impl Mount {
     matches!(self.runtime_options, RuntimeOptions::Virtioblk(_))
   }
 
-  /// `Mount.tagHash`: a hash of the source, with symlinks resolved.
+  /// `Mount.tagHash`, which hashes the source path after resolving its
+  /// symlinks. It doesn't read the contents.
   pub fn tag_hash(&self) -> Result<String, Error> {
     platform::outcome(ffi::cz_mount_tag_hash(self.clone()), format!("hash {}", self.source))
       .map(|outcome| outcome.text())

@@ -1,16 +1,15 @@
 # containerization-framework
 
 Rust bindings for Apple's [Containerization](https://github.com/apple/containerization)
-framework: Linux containers.
+framework, which runs each Linux container in its own lightweight VM.
 
-The Rust API mirrors Containerization's Swift API as much as possible.
+The Rust API mirrors Containerization's Swift API as closely as it can.
 Modules are named after the Swift modules, types after the Swift types, and
-methods after their Swift methods, except for using snake case. A Swift type
-nested in another, like `LinuxContainer.Configuration`, is found in a module
-named after its parent: `linux_container::Configuration`. Types are grouped
-into modules of related types, such as `containerization::container` and
-`containerization_oci::image`, so a path reads
-`containerization::container::linux_container::Configuration`.
+methods after the Swift methods, in snake case. Types are grouped into modules
+of related types, such as `containerization::container` and
+`containerization_oci::image`. A Swift type nested in another, like
+`LinuxContainer.Configuration`, is in a module named after its parent, so its
+path is `containerization::container::linux_container::Configuration`.
 
 ```rust
 use containerization_framework as cfw;
@@ -57,9 +56,10 @@ and stops when that process exits.
 - macOS 26 on Apple silicon, and Xcode 26 to build. On macOS the crate builds
   only on and for `aarch64-apple-darwin`, and any other target fails with a
   message saying so.
-- Network on a first build: the build script compiles the bundled Swift package,
-  which resolves Containerization and its dependencies through SwiftPM. Versions
-  are pinned by the `Package.resolved` that ships with this crate.
+- A network connection on the first build. The build script compiles the
+  bundled Swift package, and SwiftPM fetches Containerization and its
+  dependencies at the versions pinned in the `Package.resolved` that ships
+  with this crate.
 
 On other platforms this crate compiles, so a cross-platform workspace builds,
 but every call that would reach Swift returns `Error::Unavailable`. Values
@@ -72,9 +72,8 @@ usual.
 entitlement.** Without it Virtualization.framework refuses to start a VM, and
 `LinuxContainer::create` fails.
 
-A `containerization.entitlements` file ships with this crate; binaries compiled
-against `containerization-framework` should pass it, or a copy of it, to `codesign`
-after compilation.
+This crate ships a `containerization.entitlements` file. A rebuild drops the
+signature, so pass that file, or a copy of it, to `codesign` after every build:
 
 ```sh
 cargo build --release
@@ -82,23 +81,20 @@ codesign --force --sign - --entitlements containerization.entitlements \
   target/release/your-binary
 ```
 
-Signing ad hoc (`--sign -`) satisfies the entitlement but gives the binary a new
-code identity on every rebuild, so anything keyed to that identity — Keychain
-access, for one — prompts again. Sign with a development identity to keep it
+Signing ad hoc (`--sign -`) grants the entitlement, but gives the binary a new
+code identity on every rebuild, so anything keyed to that identity, such as
+Keychain access, prompts again. Sign with a development identity to keep it
 stable.
-
-A rebuild drops the signature, so this runs after every build.
 
 ## Linking
 
-The Swift runtime this links against is dynamic and referenced as
-`@rpath/libswift_Concurrency.dylib`, which dyld resolves against `/usr/lib/swift`
-in macOS. Anything that links this crate — a binary of yours, and the
-test binaries of any crate of yours that links it — needs that rpath, or it
-links and then dies in dyld at launch.
+This crate links the Swift runtime dynamically, as
+`@rpath/libswift_Concurrency.dylib`, which dyld finds in `/usr/lib/swift`.
+Every binary that links this crate, including your crates' test binaries,
+needs that rpath, or it builds and then dies in dyld at launch.
 
-A build script's link arguments reach only its package's targets, so the rpath
-belongs in `.cargo/config.toml`, where a rustflag covers every kind of target:
+A build script's link arguments reach only its own package's targets, so set
+the rpath in your `.cargo/config.toml`, where a rustflag covers every target:
 
 ```toml
 [target.'cfg(target_os = "macos")']
@@ -116,7 +112,7 @@ rustflags = ["-C", "link-arg=-Wl,-rpath,/usr/lib/swift"]
   `ContainerManager`, `LinuxContainer`, `LinuxPod`, `Mount`, and the
   configuration types they take (`linux_container::Configuration`, ...).
   `process`: `LinuxProcess`, `LinuxProcessConfiguration`, `Signal`,
-  `LinuxCapabilities`, `ExitStatus`. Their defaults match Containerization's.
+  `LinuxCapabilities`, `ExitStatus`.
 - `containerization_oci`, in four groups. `content`: `LocalContentStore`,
   `Content`, `ContentWriter`. `image`: `Descriptor`, `Platform`, `Reference`,
   `Manifest`. `client`: `RegistryClient`, `Authentication`, `KeychainHelper`.
@@ -141,8 +137,8 @@ A few things work differently because Rust can't express them the way Swift
 does:
 
 - Rust has no default arguments, so `ContainerManager.create`'s optional
-  arguments are fields of `container::container_manager::CreateOptions`. Its
-  `Default` uses the same values as Swift. An initializer's options struct is
+  arguments are fields of `container::container_manager::CreateOptions`, whose
+  `Default` uses Swift's default values. An initializer's options struct is
   named after its type, such as `ContainerManagerOptions`, and a method's is
   named after the Rust method, such as `CreateWithRootfsOptions`.
 - Rust has no overloading either. Where Swift overloads a name, the second
@@ -157,7 +153,8 @@ does:
 - `ContainerManager.create` takes a Rust closure. It receives the
   configuration the manager has prepared and runs on a Swift thread, so it
   must be `Send + 'static`. So must `LocalContentStore.ingest`'s body and a
-  `ProgressHandler`, and a `ProgressHandler` must also be `Sync`.
+  `ProgressHandler`, and a `ProgressHandler` must also be `Sync`. Each
+  method's docs say whether its closure may call back into this crate.
 - Swift's configuration closures can throw, so Rust's return
   `Result<(), Error>`. To throw, return `Err(Error::failed(...))`. An error
   the closure returns is the one the call returns.

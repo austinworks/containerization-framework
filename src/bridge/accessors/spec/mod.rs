@@ -131,7 +131,7 @@ mod tests {
   use crate::bridge::ffi;
   use crate::containerization_oci::runtime;
 
-  /// Each enum's raw values, in Rust's order, against Swift's.
+  /// Checks each enum's raw values, in Rust's order, against Swift's.
   #[test]
   fn copies_swifts_raw_values() {
     fn raw_values<T: Copy>(all: &[T], raw_value: fn(T) -> &'static str) -> Vec<&'static str> {
@@ -182,7 +182,7 @@ mod tests {
     assert_eq!(ffi::cz_seccomp_fd_name(), runtime::SECCOMP_FD_NAME);
   }
 
-  /// Each `Default` against Swift's initializer with no arguments.
+  /// Checks each `Default` against Swift's initializer with no arguments.
   #[test]
   fn defaults_as_swift_does() {
     assert_eq!(ffi::cz_default("Spec").spec(), runtime::Spec::default());

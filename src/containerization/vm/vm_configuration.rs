@@ -12,13 +12,14 @@ pub struct VMConfiguration {
   pub cpus: u32,
   pub memory_in_bytes: u64,
   pub interfaces: Vec<network::Interface>,
-  /// Mounts by the ID of what they're for, such as a container's.
+  /// Mounts keyed by the ID of the workload they belong to, such as a
+  /// container's ID.
   pub mounts_by_id: BTreeMap<String, Vec<container::Mount>>,
   pub boot_log: Option<BootLog>,
   pub nested_virtualization: bool,
 }
 
-/// `VMConfiguration()`: 4 CPUs and 1024 MiB.
+/// `VMConfiguration()`.
 impl Default for VMConfiguration {
   fn default() -> Self {
     Self {

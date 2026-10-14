@@ -2,8 +2,9 @@ use crate::error::Error;
 use crate::platform;
 use crate::platform::ffi;
 
-/// `Platform`. Swift reads one through `Platform(arch:os:osVersion:osFeatures:variant:)`,
-/// and so normalizes its `architecture` as that does.
+/// `Platform`. Swift rebuilds one with
+/// `Platform(arch:os:osVersion:osFeatures:variant:)`, so Swift sees its
+/// `architecture` normalized, `aarch64` as `arm64` for example.
 ///
 /// `==` is Swift's, which treats an `arm64` platform with no variant as
 /// `arm64/v8` and ignores `os_version` and `os_features`. Off macOS, where
@@ -37,7 +38,7 @@ impl Platform {
     platform::outcome(ffi::cz_platform_current(), "read the current platform").map(|outcome| outcome.platform())
   }
 
-  /// `Platform(from platform: String)`, such as `linux/arm64`.
+  /// `Platform(from:)`, which parses a string such as `linux/arm64`.
   pub fn parse(platform: &str) -> Result<Self, Error> {
     platform::outcome(
       ffi::cz_platform_parse(platform),

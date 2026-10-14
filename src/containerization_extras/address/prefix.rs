@@ -10,17 +10,17 @@ pub struct Prefix {
 }
 
 impl Prefix {
-  /// `Prefix(length:)`: `None` above 128.
+  /// `Prefix(length:)`, which returns `None` above 128.
   pub fn new(length: u8) -> Result<Option<Self>, Error> {
     Self::made(ffi::cz_prefix_new(length), length)
   }
 
-  /// `Prefix.ipv4(_:)`: `None` above 32.
+  /// `Prefix.ipv4(_:)`, which returns `None` above 32.
   pub fn ipv4(length: u8) -> Result<Option<Self>, Error> {
     Self::made(ffi::cz_prefix_ipv4(length), length)
   }
 
-  /// `Prefix.ipv6(_:)`: `None` above 128.
+  /// `Prefix.ipv6(_:)`, which returns `None` above 128.
   pub fn ipv6(length: u8) -> Result<Option<Self>, Error> {
     Self::made(ffi::cz_prefix_ipv6(length), length)
   }

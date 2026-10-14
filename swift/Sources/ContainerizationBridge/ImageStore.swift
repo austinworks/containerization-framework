@@ -17,8 +17,8 @@ func defaultImageStore() -> CzOutcome {
   CzOutcome { CzImageStore(ImageStore.default) }
 }
 
-// Made from the content store they take, which swift-bridge can't pass as an
-// argument.
+// The calls that take a content store are methods on it, because swift-bridge
+// can't pass a borrowed Swift type as an argument.
 extension CzLocalContentStore {
   func imageStore(path: RustStr) -> CzOutcome {
     let path = URL(filePath: path.toString())

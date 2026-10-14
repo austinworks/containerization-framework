@@ -70,8 +70,8 @@ mod ffi {
     fn os(self: &RustSystemPlatform) -> PlatformOs;
     fn architecture(self: &RustSystemPlatform) -> PlatformArchitecture;
 
-    // The emulator `Vminitd.setupEmulator` registers. (`type` is a Swift
-    // keyword.)
+    // The emulator `Vminitd.setupEmulator` registers. Its `type` is read as
+    // `entryType`, because `type` is a Swift keyword.
     type RustBinfmtEntry;
     fn name(self: &RustBinfmtEntry) -> &str;
     #[swift_bridge(swift_name = "entryType")]

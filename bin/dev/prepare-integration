@@ -29,8 +29,8 @@ if [ ! -f "$kernel" ]; then
   staging="$(mktemp -d "${kernels}/staging.XXXXXX")"
   trap 'rm -rf "$staging"' EXIT
 
-  # macOS's own bsdtar, whose libarchive reads xz itself: a `tar` earlier in
-  # PATH, like GNU tar, would need an `xz` binary.
+  # This is macOS's own bsdtar, whose libarchive reads xz itself. A `tar`
+  # earlier in PATH, like GNU tar, would need an `xz` binary.
   curl --fail --location --silent --show-error "$url" |
     /usr/bin/tar -xJf - -C "$staging" "opt/kata/share/kata-containers/vmlinux*"
 

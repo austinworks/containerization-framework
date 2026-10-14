@@ -13,7 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 /// `EXT4.Formatter(_:blockSize:minDiskSize:journal:)`'s defaulted arguments.
-/// [`Default`] is Swift's defaults.
+/// [`Default`] uses Swift's defaults.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct FormatterOptions {
   pub block_size: u32,
@@ -31,8 +31,8 @@ impl Default for FormatterOptions {
   }
 }
 
-/// `EXT4.Formatter.create(path:link:mode:...)`'s defaulted arguments, after
-/// the mode. [`Default`] is Swift's defaults. Swift's `buf` is a
+/// `EXT4.Formatter.create(path:link:mode:ts:buf:uid:gid:xattrs:recursion:)`'s
+/// defaulted arguments. [`Default`] uses Swift's defaults. Swift's `buf` is a
 /// `ReadableStream`; here it is the file's bytes, which Swift reads through an
 /// `InputStream`. Swift's `fileBuffer` is a raw scratch buffer, and is left
 /// out.
@@ -48,7 +48,7 @@ pub struct CreateOptions<'a> {
 }
 
 /// `EXT4.Formatter.unpack(source:format:compression:progress:)`'s defaulted
-/// arguments. [`Default`] is Swift's defaults.
+/// arguments. [`Default`] uses Swift's defaults.
 pub struct UnpackOptions {
   pub format: containerization_archive::Format,
   pub compression: containerization_archive::Filter,
@@ -206,8 +206,9 @@ impl Formatter {
     .map(drop)
   }
 
-  /// `EXT4.Formatter.scanArchiveHeaders(format:filter:file:)`: the total
-  /// size of the regular files, and the number of entries.
+  /// `EXT4.Formatter.scanArchiveHeaders(format:filter:file:)`. It returns the
+  /// total size of the regular files that aren't hard links, and the number
+  /// of entries that have a path.
   pub fn scan_archive_headers(
     format: containerization_archive::Format,
     filter: containerization_archive::Filter,

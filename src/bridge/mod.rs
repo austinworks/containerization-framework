@@ -1,4 +1,4 @@
-//! The Swift types Rust holds, and the Rust values Swift reads and builds.
+//! The Swift types Rust holds, and the Rust values Swift reads and fills.
 //!
 //! swift-bridge's parser refuses a `cfg` on the bridge module, so the gate is
 //! on `mod bridge` in `lib.rs`.
@@ -10,11 +10,13 @@
 //! types.
 //!
 //! Value types cross as opaque Rust types (`Rust`-prefixed, to avoid
-//! Containerization's `Mount`, `User`, etc.): Swift reads them through
-//! `accessors`, and builds them through the constructors there when it hands
-//! one back. swift-bridge can't put a `String`-holding struct in a `Vec`
-//! (declined upstream, swift-bridge#305). (No doc comments inside a bridge
-//! module: swift-bridge can't parse them.)
+//! Containerization's `Mount`, `User`, etc.). Swift reads them through the
+//! getters in `accessors`, and to hand one back it fills one Rust lent it
+//! through the setters there. They aren't shared structs because swift-bridge
+//! can't put a `String`-holding struct in a `Vec` (declined upstream,
+//! swift-bridge#305).
+//! Comments inside a bridge module are plain `//`, since swift-bridge can't
+//! parse doc comments there.
 //!
 //! The bridge is several `#[swift_bridge::bridge]` modules, and `build.rs`
 //! parses each of them. This one declares the shared enums and every Swift
@@ -82,7 +84,8 @@ use crate::platform::Progress as RustProgressHandler;
 
 #[swift_bridge::bridge]
 pub(crate) mod ffi {
-  // `Mount.RuntimeOptions`, less its options. (`Any` is a Swift keyword.)
+  // `Mount.RuntimeOptions`, less its options. Its `any` case is `Generic`,
+  // because `Any` is a Swift keyword.
   enum RuntimeKind {
     Virtioblk,
     Virtiofs,
@@ -96,7 +99,7 @@ pub(crate) mod ffi {
     OutOf,
   }
 
-  // `SeccompProfile`, less a custom profile.
+  // `SeccompProfile`, less the profile its `profile` case carries.
   enum SeccompMode {
     Unconfined,
     Default,
@@ -226,7 +229,7 @@ pub(crate) mod ffi {
     Bridged,
   }
 
-  // Which conforming type of `Interface` a configuration's holds.
+  // Which type conforming to `Interface` a configuration holds.
   enum InterfaceKind {
     Nat,
     Vmnet,
@@ -489,8 +492,8 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "useInit")]
     fn use_init(self: &RustLinuxContainerConfiguration) -> bool;
 
-    // Its `mountsByID` is a map of lists: the length and key at an index, and
-    // the length and mounts of the list at that index.
+    // Its `mountsByID` is a map of lists, read as the map's length, the key
+    // at an index, and the length and mounts of the list at that index.
     type RustVmConfiguration;
     fn cpus(self: &RustVmConfiguration) -> u32;
     #[swift_bridge(swift_name = "memoryInBytes")]
@@ -1297,7 +1300,7 @@ pub(crate) mod ffi {
 
     // `ProxyUtils.proxyFromEnvironment(scheme:host:env:)`, with `env` as its
     // keys and values, or Swift's default when `has_env` is false. The
-    // outcome holds the URL's `absoluteString`, or nothing.
+    // outcome holds the URL's `absoluteString`, or `Absent`.
     #[swift_bridge(swift_name = "proxyFromEnvironment")]
     fn cz_proxy_from_environment(
       scheme: Option<String>,
@@ -1307,7 +1310,7 @@ pub(crate) mod ffi {
       #[swift_bridge(label = "envValues")] env_values: Vec<String>,
     ) -> CzOutcome;
 
-    // Addresses, field by field: Rust builds its own. Each address getter
+    // Addresses cross field by field, and Rust builds its own. Each address getter
     // also reads the address in an `IPAddress`, a CIDR block or a `CIDR`, and
     // `prefixLength` the prefix of a CIDR block or a `CIDR`.
     fn boolean(self: &CzOutcome) -> bool;
@@ -1548,9 +1551,9 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "decompressExtendedAttributeName")]
     fn cz_ext4_extended_attribute_decompress_name(id: isize, suffix: &str) -> CzOutcome;
 
-    // `create`'s timestamps cross as seconds since 1970, `buf` stands for
-    // `nil` when `has_buf` is false, and so do the xattrs when `has_xattrs`
-    // is. Their values are joined into one, with each one's length.
+    // `create`'s timestamps cross as seconds since 1970. `buf` stands for
+    // `nil` when `has_buf` is false, and the xattrs do when `has_xattrs` is
+    // false. The xattrs' values are joined into one, with each one's length.
     type CzExt4Formatter;
     #[swift_bridge(swift_name = "newExt4Formatter")]
     fn cz_ext4_formatter_new(
@@ -1803,8 +1806,8 @@ pub(crate) mod ffi {
     type CzStreamingIterator;
     fn next(self: &CzStreamingIterator) -> CzOutcome;
 
-    // `read(_:maxLength:)`: the outcome holds the bytes read, or fails for
-    // Swift's `-1`.
+    // `read(_:maxLength:)`. The outcome holds the bytes read, or fails when
+    // Swift's call returns `-1`.
     type CzArchiveEntryReader;
     fn read(self: &CzArchiveEntryReader, #[swift_bridge(label = "maxLength")] max_length: usize) -> CzOutcome;
 
@@ -1977,7 +1980,7 @@ pub(crate) mod ffi {
     fn mount_runtime_kind(self: &CzOutcome) -> RuntimeKind;
     #[swift_bridge(swift_name = "mountRuntimeOptions")]
     fn mount_runtime_options(self: &CzOutcome) -> Vec<String>;
-    // An `AttachedFilesystem`, field by field: Rust builds its own.
+    // An `AttachedFilesystem` crosses field by field, and Rust builds its own.
     #[swift_bridge(swift_name = "attachedFilesystemType")]
     fn attached_filesystem_type(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "attachedFilesystemSource")]
@@ -2130,7 +2133,7 @@ pub(crate) mod ffi {
     fn total_allocated_size(self: &CzLocalContentStore) -> CzOutcome;
     fn duplicate(self: &CzLocalContentStore) -> CzLocalContentStore;
     // `ImageStore(path:contentStore:)` and `Image(description:contentStore:)`,
-    // on the store they take.
+    // as methods on the content store they take.
     #[swift_bridge(swift_name = "imageStore")]
     fn image_store(self: &CzLocalContentStore, path: &str) -> CzOutcome;
     fn image(self: &CzLocalContentStore, description: RustImageDescription) -> CzImage;
@@ -2325,9 +2328,9 @@ pub(crate) mod ffi {
     fn calculate_orphaned_blobs_size(self: &CzImageStore) -> CzOutcome;
     fn create(self: &CzImageStore, description: RustImageDescription) -> CzOutcome;
     fn load(self: &CzImageStore, from: &str, progress: RustProgressHandler) -> CzOutcome;
-    // `InitImage.create` and `KernelImage.create`, on the image store they
-    // take, with the content store as a `duplicate()` and `labels` as its keys
-    // and values.
+    // `InitImage.create` and `KernelImage.create`, as methods on the image
+    // store they take. The content store crosses as a `duplicate()`, and
+    // `labels` as its keys and values.
     #[swift_bridge(swift_name = "createInitImage")]
     fn create_init_image(
       self: &CzImageStore,
@@ -2347,8 +2350,8 @@ pub(crate) mod ffi {
       #[swift_bridge(label = "labelValues")] label_values: Vec<String>,
       #[swift_bridge(label = "contentStore")] content_store: CzLocalContentStore,
     ) -> CzOutcome;
-    // `ContainerManager`'s inits taking a store, on the store they take:
-    // swift-bridge can't pass a `&` Swift type as an argument.
+    // `ContainerManager`'s inits that take an image store are methods on that
+    // store, because swift-bridge can't pass a `&` Swift type as an argument.
     #[swift_bridge(swift_name = "containerManager")]
     fn container_manager(
       self: &CzImageStore,
@@ -2402,7 +2405,7 @@ pub(crate) mod ffi {
     // For a test that compares Rust's copy with it.
     #[swift_bridge(swift_name = "kernelImageMediaType")]
     fn cz_kernel_image_media_type() -> String;
-    // A `Kernel`, field by field: Rust builds its own.
+    // A `Kernel` crosses field by field, and Rust builds its own.
     #[swift_bridge(swift_name = "kernelPath")]
     fn kernel_path(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "kernelPlatformOs")]
@@ -2419,9 +2422,10 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "initBlock")]
     fn init_block(self: &CzInitImage, at: &str, platform: RustSystemPlatform) -> CzOutcome;
 
-    // `create` takes the image as a `duplicate()`, for the same reason, and a
-    // `seed` to fill with the configuration it seeds before `configuration`
-    // changes it.
+    // `create` and `createWithRootfs` take the image as a `duplicate()`, since
+    // swift-bridge can't pass a `&` Swift type. Each create method takes a
+    // `seed`, which Swift fills with the configuration the manager seeds
+    // before Rust's `configuration` changes it.
     type CzContainerManager;
     #[swift_bridge(swift_name = "containerManagerAtRoot")]
     fn cz_container_manager_at_root(

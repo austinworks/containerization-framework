@@ -162,8 +162,8 @@ pub(crate) fn configured<T>(
   outcome(returned, action)
 }
 
-/// What `call` returned, and the value its Swift call filled and handed to
-/// the closure `call` passes it, if it did.
+/// Runs `call` with a closure that keeps the value Swift hands it, and
+/// returns what `call` returned along with that value, if Swift handed one.
 pub(crate) fn filled<T: Default + Send + 'static, R>(call: impl FnOnce(Configure<T>) -> R) -> (R, Option<T>) {
   let filled = Arc::new(Mutex::new(None));
   let slot = Arc::clone(&filled);
@@ -178,8 +178,8 @@ pub(crate) fn filled<T: Default + Send + 'static, R>(call: impl FnOnce(Configure
   (returned, value)
 }
 
-/// The process configuration a throwing Swift call filled and handed to the
-/// closure `call` passes it.
+/// The process configuration that the throwing Swift call in `call` filled
+/// and handed back, or what that call threw as a failure of `action`.
 pub(crate) fn filled_process(
   call: impl FnOnce(ConfigureProcess) -> ffi::CzOutcome,
   action: impl Into<String>,
