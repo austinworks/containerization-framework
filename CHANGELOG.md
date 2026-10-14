@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.7.0
+
 - A panic in a closure that Swift calls, such as a configuration closure,
   the `ingest` body or a progress handler, now resumes on the calling thread
   instead of aborting. Swift sees a panicking configuration closure as one
