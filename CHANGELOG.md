@@ -2,62 +2,40 @@
 
 ## Unreleased
 
+- A panic in a closure that Swift calls, such as a configuration closure,
+  the `ingest` body or a progress handler, now resumes on the calling thread
+  instead of aborting. Swift sees a panicking configuration closure as one
+  that threw.
 - A progress handler or `ingest` body that calls back into the crate no
-  longer hangs when every thread of Swift's pool is busy. Swift now runs them
-  on a concurrent dispatch queue of the bridge's own.
-- The docs for `exec_with`, `add_container`, `exec_in_container` and
-  `ContainerManager`'s `create` methods now say their closures mustn't call
-  back. Swift holds the container's or pod's lock while the closure runs, or
-  runs it on its own pool.
-- A `usize` larger than Swift's `Int` can hold, such as a `count` of
-  `usize::MAX` for `Ext4Reader::read_file`, now returns an error instead of
-  killing the process.
-- A string map whose keys Swift considers equal, such as `"caf\u{e9}"` and
-  `"cafe\u{301}"`, no longer kills the process. As Swift's own bridge does
-  for other maps, the last of the equal keys wins.
-- An NBD volume's timeout of `Duration::MAX` now reads back as
-  `Duration::MAX` from `LinuxPod::config`, instead of panicking.
-- A panic in a closure that Swift calls is now resumed on the thread that
-  called the crate, instead of aborting the process. This covers
-  configuration closures, the `ingest` body and progress handlers. Swift sees
-  a panicking configuration closure as one that threw. A progress handler
-  that panics is not called again, the operation finishes, and then the
-  panic resumes.
-- A deleted process no longer reads its `stdin` descriptor. The bridge's
-  duplicate used to go on taking the caller's input until the process was
-  dropped.
-- An `exec`ed process's `stdout` and `stderr` duplicates now close when the
-  process is deleted, so a caller reading its own pipe reaches end of file.
-  A container's or pod's own process still keeps them until the container
-  or pod is dropped, because a stopped one can be created again.
-- When `stdout` and `stderr` are the same descriptor, they now share one
-  duplicate, so their writes no longer interleave.
-- `config().boot_log` now reports the descriptor a `BootLog::FileHandle` was
-  given, instead of the number of Swift's duplicate.
-- A macOS build for any target but `aarch64-apple-darwin`, or on an Intel
-  Mac, now fails in the build script with a message saying why. It used to
-  fail at link time with every bridge symbol undefined.
-- The build script now also searches the Command Line Tools' Swift libraries.
-- `FileTimestamps`' getters now match what Swift writes for a fractional
-  date before about 1984. Swift holds a date as seconds since 2001, which
-  shifts such a date's nanoseconds slightly; the getters used seconds since
-  1970.
+  longer hangs when Swift's thread pool is busy. Closures passed to
+  `exec_with`, `add_container`, `exec_in_container` and `ContainerManager`'s
+  `create` methods still mustn't call back, and their docs now say so.
+- Values that Rust allows and Swift doesn't no longer kill the process. A
+  `usize` too large for Swift's `Int` returns an error, the last of several
+  string keys Swift considers equal wins, and an NBD timeout of
+  `Duration::MAX` reads back unchanged.
+- Deleting a process stops it reading `stdin`, and closes an `exec`ed
+  process's `stdout` and `stderr` so the caller's pipe reaches end of file.
+  When `stdout` and `stderr` are the same descriptor, their writes no longer
+  interleave. `config().boot_log` reports the caller's descriptor rather
+  than Swift's duplicate.
+- `FileTimestamps`' getters now match Swift for fractional dates before
+  about 1984.
+- Building for an unsupported target now fails early with a clear message
+  instead of at link time. The build also finds Swift's libraries in the
+  Command Line Tools.
 
 ### Breaking changes
 
-- `WriteEntry::modification_date`, `creation_date` and `content_access_date`
-  return `Result<Option<SystemTime>, Error>`. An archive can hold a date that
-  `SystemTime` can't, and reading it used to panic. A wait's exit status,
-  and the dates in keychain results, fail the same way instead of panicking.
-- `WriteEntry` and `ArchiveWriterTransaction` take a lifetime and are no
-  longer `Send`. A transaction, and an entry made with
-  `WriteEntry::with_archive`, borrow their writer, so they can't outlive it
-  or be used from another thread. Entries from `WriteEntry::new` and from an
-  `ArchiveReader` are `WriteEntry<'static>`.
-- `ArchiveWriter::finish_encoding` takes `&mut self`, so it can't free the
-  archive while a transaction or borrowing entry still uses it.
-- `Content` is no longer `Sync`. Swift's `LocalContent` seeks one shared file
-  handle before each read, so two threads reading one `Content` could read
+- `WriteEntry`'s date getters return `Result<Option<SystemTime>, Error>`, and
+  a wait's exit status and keychain dates fail the same way. Each used to
+  panic on a date that `SystemTime` can't hold.
+- `WriteEntry` and `ArchiveWriterTransaction` borrow their writer, so they
+  take a lifetime and are no longer `Send`. Entries from `WriteEntry::new`
+  or an `ArchiveReader` are `WriteEntry<'static>`.
+  `ArchiveWriter::finish_encoding` takes `&mut self`, so it can't free the
+  archive while either is still in use.
+- `Content` is no longer `Sync`, because two threads reading one could get
   the wrong bytes.
 
 ## v0.6.0
