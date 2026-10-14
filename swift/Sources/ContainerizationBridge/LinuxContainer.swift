@@ -81,7 +81,10 @@ final class CzLinuxContainer: Sendable {
     return CzOutcome {
       let configuration = try LinuxProcessConfiguration(configuration)
 
-      return CzLinuxProcess(try blocking { try await container.exec(id, configuration: configuration) })
+      return CzLinuxProcess(
+        try blocking { try await container.exec(id, configuration: configuration) },
+        output: Output(configuration)
+      )
     }
   }
 
@@ -90,10 +93,11 @@ final class CzLinuxContainer: Sendable {
   func execWith(id: RustStr, seed: RustLinuxProcessConfiguration, configuration: RustConfigureProcess) -> CzOutcome {
     let id = id.toString()
     let container = container
-    let configure = configured(seed, by: configuration)
+    let output = Output()
+    let configure = configured(seed, by: configuration, keeping: output)
 
     return CzOutcome {
-      CzLinuxProcess(try blocking { try await container.exec(id, configuration: configure) })
+      CzLinuxProcess(try blocking { try await container.exec(id, configuration: configure) }, output: output)
     }
   }
 
@@ -169,10 +173,12 @@ final class CzLinuxContainer: Sendable {
 }
 
 /// The closure an `exec` takes: fills `seed` with the configuration Swift
-/// seeded, lets Rust's closure change it, and takes it back.
+/// seeded, lets Rust's closure change it, and takes it back, keeping its
+/// writers in `output`.
 func configured(
   _ seed: RustLinuxProcessConfiguration,
-  by configuration: RustConfigureProcess
+  by configuration: RustConfigureProcess,
+  keeping output: Output
 ) -> @Sendable (inout LinuxProcessConfiguration) throws -> Void {
   // Rust's: an `exec` calls this once, while `blocking` waits.
   nonisolated(unsafe) let seed = seed
@@ -182,6 +188,7 @@ func configured(
     fill(seed, from: config)
     if configuration.call(seed) { throw BridgeError.bodyFailed }
     config = try LinuxProcessConfiguration(seed)
+    output.keep(config)
   }
 }
 
@@ -270,9 +277,11 @@ extension CzOutcome {
 
 final class CzLinuxProcess: Sendable {
   let process: LinuxProcess
+  let output: Output
 
-  init(_ process: LinuxProcess) {
+  init(_ process: LinuxProcess, output: Output) {
     self.process = process
+    self.output = output
   }
 
   func id() -> String {
@@ -319,7 +328,12 @@ final class CzLinuxProcess: Sendable {
 
   func delete() -> CzOutcome {
     let process = process
+    let output = output
 
-    return CzOutcome { try blocking { try await process.delete() } }
+    return CzOutcome {
+      try blocking { try await process.delete() }
+      output.close()
+      return ()
+    }
   }
 }

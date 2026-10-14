@@ -25,7 +25,7 @@ fn sh(pod: &cfw::containerization::container::LinuxPod, container: &str, id: &st
   let code = support::container::finish(&process, &format!("{id} in {container}"));
   drop(write);
 
-  (code, support::container::drain(&mut read))
+  (code, support::container::read_to_end(&mut read))
 }
 
 #[test]

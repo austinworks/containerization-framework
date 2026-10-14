@@ -12,7 +12,13 @@ use std::os::fd::RawFd;
 ///
 /// `stdin`, `stdout` and `stderr` are descriptors where Swift takes a
 /// `ReaderStream` or `Writer`. Swift streams a duplicate of each, so the caller
-/// keeps its own.
+/// keeps its own. When `stdout` and `stderr` are the same descriptor, they
+/// share one duplicate, so their writes don't interleave.
+///
+/// An `exec`ed process's duplicates close when the process is deleted. A
+/// container's or pod's own process keeps them until the container or pod is
+/// dropped, because a stopped one can be created again with the same
+/// configuration.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LinuxProcessConfiguration {
   pub arguments: Vec<String>,

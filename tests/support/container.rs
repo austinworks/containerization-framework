@@ -194,7 +194,7 @@ impl Container {
     drop(write);
     assert_eq!(code, 0, "{arguments:?} failed in {}", self.container.id());
 
-    drain(&mut read)
+    read_to_end(&mut read)
   }
 
   /// What a `/bin/sh` script wrote to stdout, which it must exit 0 from.
@@ -248,27 +248,33 @@ pub fn keep_alive(
   Ok(())
 }
 
-/// Everything already in the pipe, stopping where a read would block.
+/// Everything written to the pipe, up to end of file. That comes once the
+/// test has dropped its write end and the process that had it is deleted.
 ///
-/// Not read to end-of-file: Swift's duplicate of the write end may outlive the
-/// process. The process has exited by now, so what it wrote is all there.
-pub fn drain(read: &mut std::io::PipeReader) -> String {
-  // SAFETY: the read end is ours; `F_SETFL` only changes how it reads.
-  unsafe { libc::fcntl(read.as_raw_fd(), libc::F_SETFL, libc::O_NONBLOCK) };
-
+/// It panics if end of file doesn't come within ten seconds, because then a
+/// duplicate of the write end is still open.
+pub fn read_to_end(read: &mut std::io::PipeReader) -> String {
+  let mut ready = libc::pollfd {
+    fd: read.as_raw_fd(),
+    events: libc::POLLIN,
+    revents: 0,
+  };
   let mut written = Vec::new();
   let mut chunk = [0u8; 8192];
 
   loop {
-    match read.read(&mut chunk) {
-      Ok(0) => break,
-      Ok(count) => written.extend_from_slice(&chunk[..count]),
-      Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
-      Err(error) => panic!("the guest's output should be readable: {error}"),
+    // SAFETY: `ready` is one entry, for the read end, which is ours.
+    let polled = unsafe { libc::poll(&mut ready, 1, 10_000) };
+    assert!(
+      polled > 0,
+      "the pipe should reach end of file, but a write end is still open"
+    );
+
+    match read.read(&mut chunk).expect("the pipe should be readable") {
+      0 => return String::from_utf8_lossy(&written).into_owned(),
+      count => written.extend_from_slice(&chunk[..count]),
     }
   }
-
-  String::from_utf8_lossy(&written).into_owned()
 }
 
 impl Drop for Container {

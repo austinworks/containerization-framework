@@ -23,6 +23,17 @@
   a panicking configuration closure as one that threw. A progress handler
   that panics is not called again, the operation finishes, and then the
   panic resumes.
+- A deleted process no longer reads its `stdin` descriptor. The bridge's
+  duplicate used to go on taking the caller's input until the process was
+  dropped.
+- An `exec`ed process's `stdout` and `stderr` duplicates now close when the
+  process is deleted, so a caller reading its own pipe reaches end of file.
+  A container's or pod's own process still keeps them until the container
+  or pod is dropped, because a stopped one can be created again.
+- When `stdout` and `stderr` are the same descriptor, they now share one
+  duplicate, so their writes no longer interleave.
+- `config().boot_log` now reports the descriptor a `BootLog::FileHandle` was
+  given, instead of the number of Swift's duplicate.
 
 ### Breaking changes
 

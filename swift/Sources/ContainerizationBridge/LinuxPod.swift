@@ -136,11 +136,13 @@ final class CzLinuxPod: Sendable {
     let pod = pod
     let id = id.toString()
     let processID = processID.toString()
-    let configure = configured(seed, by: configuration)
+    let output = Output()
+    let configure = configured(seed, by: configuration, keeping: output)
 
     return CzOutcome {
       CzLinuxProcess(
-        try blocking { try await pod.execInContainer(id, processID: processID, configuration: configure) }
+        try blocking { try await pod.execInContainer(id, processID: processID, configuration: configure) },
+        output: output
       )
     }
   }

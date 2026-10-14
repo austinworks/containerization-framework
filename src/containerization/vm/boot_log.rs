@@ -7,7 +7,7 @@ pub enum BootLog {
   /// `BootLog.file(path:append:)`.
   File { path: PathBuf, append: bool },
   /// `BootLog.fileHandle(_:)`. Swift writes to a duplicate, so the caller keeps
-  /// this descriptor.
+  /// this descriptor, and a configuration read back reports it.
   FileHandle(RawFd),
 }
 

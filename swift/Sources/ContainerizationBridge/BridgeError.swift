@@ -15,6 +15,8 @@ enum BridgeError: Error, CustomStringConvertible {
   case bodyFailed
   /// `ArchiveEntryReader.read(_:maxLength:)` returned `-1`.
   case readFailed
+  /// A write to stdout or stderr after its process was deleted.
+  case closed
 
   var description: String {
     switch self {
@@ -24,6 +26,8 @@ enum BridgeError: Error, CustomStringConvertible {
       return "the Rust closure failed"
     case .readFailed:
       return "the archive entry's data could not be read"
+    case .closed:
+      return "the output was closed when its process was deleted"
     case .malformed(let what, let value):
       return "malformed \(what): \(value.debugDescription)"
     case .tooLarge(let what, let value):

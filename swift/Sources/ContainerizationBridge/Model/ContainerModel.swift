@@ -133,6 +133,10 @@ var rlimitKinds: [(LinuxRLimit.Kind, RlimitKind)] {
 
 extension LinuxProcessConfiguration {
   init(_ process: RustLinuxProcessConfigurationRef) throws {
+    let stdout = try process.stdout().map { FileWriter(try duplicate($0)) }
+    let stderr =
+      process.stderr() == process.stdout() ? stdout : try process.stderr().map { FileWriter(try duplicate($0)) }
+
     self.init(
       arguments: strings(process.argumentsLen(), process.argumentsAt),
       environmentVariables: strings(process.environmentVariablesLen(), process.environmentVariablesAt),
@@ -151,8 +155,8 @@ extension LinuxProcessConfiguration {
       capabilities: try LinuxCapabilities(process.capabilities()),
       terminal: process.terminal(),
       stdin: try process.stdin().map { FileReader(try duplicate($0)) },
-      stdout: try process.stdout().map { FileWriter(try duplicate($0)) },
-      stderr: try process.stderr().map { FileWriter(try duplicate($0)) }
+      stdout: stdout,
+      stderr: stderr
     )
   }
 }
@@ -170,7 +174,7 @@ extension BootLog {
     switch bootLog.kind() {
     case .File:
       .file(path: try lentPath(bootLog.path()?.toString(), "boot log", bootLog.lossyPath), append: bootLog.append())
-    case .FileHandle: .fileHandle(try duplicate(bootLog.fileHandle()))
+    case .FileHandle: .fileHandle(try duplicate(bootLog: bootLog.fileHandle()))
     }
   }
 }
@@ -582,7 +586,7 @@ private func fill(
   if let bootLog {
     switch representation(of: bootLog) {
     case .file(let path, let append): built.setBootLogFile(rust(path.path(percentEncoded: false)), append)
-    case .fileHandle(let handle): built.setBootLogFileHandle(handle.fileDescriptor)
+    case .fileHandle(let handle): built.setBootLogFileHandle(lentDescriptor(handle))
     }
   }
 

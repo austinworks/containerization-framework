@@ -12,6 +12,8 @@
 mod support;
 
 use containerization_framework as cfw;
+use std::io::Write;
+use std::os::fd::AsRawFd;
 use support::container::Container;
 
 #[test]
@@ -98,6 +100,51 @@ fn reports_what_it_was_made_with() {
     1,
     "the suite gives each container one interface"
   );
+}
+
+/// The bridge duplicates each descriptor a process is given. Once the process
+/// is deleted, the duplicates must stop reading the caller's input and stop
+/// holding their output open, though the caller still holds the process.
+#[test]
+fn lets_go_of_the_callers_descriptors_once_a_process_is_deleted() {
+  let booted = Container::boot("cfw-test-container-descriptors");
+  let container = booted.container();
+  let (mut stdin, mut input) = std::io::pipe().expect("a pipe should be creatable");
+  let (mut read, output) = std::io::pipe().expect("a pipe should be creatable");
+
+  let process = container
+    .exec(
+      "both",
+      cfw::containerization::process::LinuxProcessConfiguration {
+        stdin: Some(stdin.as_raw_fd()),
+        stdout: Some(output.as_raw_fd()),
+        stderr: Some(output.as_raw_fd()),
+        ..cfw::containerization::process::LinuxProcessConfiguration::new(&["/bin/sh", "-c", "echo out; echo err >&2"])
+      },
+    )
+    .expect("the process should exec");
+  assert_eq!(support::container::finish(&process, "both"), 0);
+
+  drop(output);
+  let written = support::container::read_to_end(&mut read);
+  assert!(
+    written.contains("out\n") && written.contains("err\n"),
+    "stdout and stderr should share the descriptor, but wrote {written:?}"
+  );
+
+  input
+    .write_all(b"still ours")
+    .expect("the pipe should take input");
+  drop(input);
+  // Time for a duplicate still reading to take the input first.
+  std::thread::sleep(std::time::Duration::from_secs(1));
+  assert_eq!(
+    support::container::read_to_end(&mut stdin),
+    "still ours",
+    "the deleted process should no longer read stdin"
+  );
+
+  drop(process);
 }
 
 #[test]

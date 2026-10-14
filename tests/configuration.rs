@@ -293,6 +293,30 @@ fn writes_its_boot_log_where_told() {
   );
 }
 
+#[test]
+fn reads_back_the_boot_log_descriptor_it_was_given() {
+  let logs = tempfile::tempdir().expect("a temporary directory");
+  let log = logs.path().join("boot.log");
+  let file = std::fs::File::create(&log).expect("the boot log should create");
+  let boot_log = cfw::containerization::vm::BootLog::FileHandle(std::os::fd::AsRawFd::as_raw_fd(&file));
+  let configured = boot_log.clone();
+
+  let container = Container::boot_with("cfw-test-config-boot-log-handle", move |configuration| {
+    configuration.boot_log = Some(configured);
+  });
+
+  assert!(
+    std::fs::metadata(&log).is_ok_and(|metadata| metadata.len() > 0),
+    "the guest's console should be written to {}",
+    log.display()
+  );
+  assert_eq!(
+    container.container().config().boot_log,
+    Some(boot_log),
+    "the configuration should report the caller's descriptor, not Swift's duplicate"
+  );
+}
+
 /// Only an M3 or later can: elsewhere the container fails, which is the
 /// behavior asked for, and there is nothing further to check.
 #[test]
