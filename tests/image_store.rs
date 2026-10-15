@@ -193,6 +193,15 @@ const LAYER: &str = "application/vnd.oci.image.layer.v1.tar";
 /// `ContentWriter`, returning its index's descriptor. Nothing unpacks the
 /// layer, so it needn't be a tar.
 fn write_image(directory: &Path) -> Result<cfw::containerization_oci::image::Descriptor, cfw::Error> {
+  write_sparse_image(directory, &[])
+}
+
+/// The same, except that the index also lists a linux manifest for each
+/// architecture in `absent`, whose blob isn't written.
+fn write_sparse_image(
+  directory: &Path,
+  absent: &[&str],
+) -> Result<cfw::containerization_oci::image::Descriptor, cfw::Error> {
   let writer = cfw::containerization_oci::content::ContentWriter::new(directory)?;
   let scratch = tempfile::tempdir().expect("a temporary directory");
   let blob = |name: &str, contents: &str| {
@@ -212,10 +221,20 @@ fn write_image(directory: &Path) -> Result<cfw::containerization_oci::image::Des
       r#"{{"schemaVersion":2,"mediaType":"{MANIFEST}","config":{{"mediaType":"{CONFIG}","digest":"{config}","size":{config_size}}},"layers":[{{"mediaType":"{LAYER}","digest":"{layer}","size":{layer_size}}}]}}"#
     ),
   )?;
+  let absent: String = absent
+    .iter()
+    .enumerate()
+    .map(|(number, architecture)| {
+      format!(
+        r#",{{"mediaType":"{MANIFEST}","digest":"sha256:{:064x}","size":1,"platform":{{"architecture":"{architecture}","os":"linux"}}}}"#,
+        number + 1
+      )
+    })
+    .collect();
   let (index_size, index) = blob(
     "index",
     &format!(
-      r#"{{"schemaVersion":2,"mediaType":"{INDEX}","manifests":[{{"mediaType":"{MANIFEST}","digest":"{manifest}","size":{manifest_size},"platform":{{"architecture":"arm64","os":"linux"}}}}]}}"#
+      r#"{{"schemaVersion":2,"mediaType":"{INDEX}","manifests":[{{"mediaType":"{MANIFEST}","digest":"{manifest}","size":{manifest_size},"platform":{{"architecture":"arm64","os":"linux"}}}}{absent}]}}"#
     ),
   )?;
 
@@ -257,6 +276,20 @@ fn creates_an_image_from_ingested_blobs() {
   assert_eq!(store.get(reference, false).expect("the new tag").digest(), index.digest);
 }
 
+/// Writes an OCI layout holding `index` under `reference`. Its blobs must
+/// already be in the layout's `blobs/sha256`.
+fn write_layout(layout: &Path, index: &cfw::containerization_oci::image::Descriptor, reference: &str) {
+  std::fs::write(layout.join("oci-layout"), r#"{"imageLayoutVersion":"1.0.0"}"#).expect("oci-layout");
+  std::fs::write(
+    layout.join("index.json"),
+    format!(
+      r#"{{"schemaVersion":2,"manifests":[{{"mediaType":"{INDEX}","digest":"{}","size":{},"annotations":{{"io.containerd.image.name":"{reference}"}}}}]}}"#,
+      index.digest, index.size
+    ),
+  )
+  .expect("index.json");
+}
+
 #[test]
 fn loads_an_oci_layout_and_reports_its_progress() {
   let layout = tempfile::tempdir().expect("a temporary directory");
@@ -265,15 +298,7 @@ fn loads_an_oci_layout_and_reports_its_progress() {
   std::fs::create_dir_all(&blobs).expect("the layout's blob directory");
 
   let index = write_image(&blobs).expect("the image's blobs should write");
-  std::fs::write(layout.path().join("oci-layout"), r#"{"imageLayoutVersion":"1.0.0"}"#).expect("oci-layout");
-  std::fs::write(
-    layout.path().join("index.json"),
-    format!(
-      r#"{{"schemaVersion":2,"manifests":[{{"mediaType":"{INDEX}","digest":"{}","size":{},"annotations":{{"io.containerd.image.name":"{reference}"}}}}]}}"#,
-      index.digest, index.size
-    ),
-  )
-  .expect("index.json");
+  write_layout(layout.path(), &index, reference);
 
   let directory = tempfile::tempdir().expect("a temporary directory");
   let store = cfw::containerization::image::ImageStore::new(directory.path()).expect("a new image store should open");
@@ -292,6 +317,39 @@ fn loads_an_oci_layout_and_reports_its_progress() {
       .expect("the recording")
       .contains(&cfw::containerization_extras::ProgressEvent::AddTotalItems(1)),
     "the index is counted before it's fetched"
+  );
+}
+
+#[test]
+fn loads_the_platforms_a_layout_holds_when_its_index_lists_more() {
+  let layout = tempfile::tempdir().expect("a temporary directory");
+  let blobs = layout.path().join("blobs").join("sha256");
+  let reference = "containerization-framework/test-sparse:latest";
+  std::fs::create_dir_all(&blobs).expect("the layout's blob directory");
+
+  let index = write_sparse_image(&blobs, &["amd64"]).expect("the image's blobs should write");
+  write_layout(layout.path(), &index, reference);
+
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let loaded = cfw::containerization::image::ImageStore::new(directory.path())
+    .expect("a new image store should open")
+    .load(layout.path(), None)
+    .expect("a layout missing one platform's manifest should load");
+
+  assert_eq!(loaded.len(), 1);
+  assert_eq!(
+    loaded[0]
+      .index()
+      .expect("the loaded image's index")
+      .manifests
+      .len(),
+    2,
+    "the index should be kept as it was"
+  );
+  let arm64 = cfw::containerization_oci::image::Platform::parse("linux/arm64").expect("a platform");
+  assert!(
+    loaded[0].manifest(&arm64).is_ok(),
+    "the platform that was present should be usable"
   );
 }
 

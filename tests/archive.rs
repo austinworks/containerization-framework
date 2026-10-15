@@ -320,6 +320,38 @@ fn extracts_an_archive_and_rejects_paths_that_escape_it() {
 }
 
 #[test]
+fn extracts_a_member_with_an_absolute_name_beneath_the_target() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let archive = directory.path().join("absolute.tar");
+  let into = directory.path().join("into");
+  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
+    cfw::containerization_archive::Format::Pax,
+    cfw::containerization_archive::Filter::None,
+    Default::default(),
+    &archive,
+  )
+  .expect("a writer");
+  let mut file = entry(
+    "/absolute.txt",
+    cfw::containerization_archive::URLFileResourceType::Regular,
+  );
+  file.set_size(Some(4));
+  writer.write_entry(&file, Some(b"kept")).expect("an entry");
+  writer.finish_encoding().expect("the archive should finish");
+
+  let rejected = cfw::containerization_archive::ArchiveReader::new(&archive)
+    .expect("the archive should open")
+    .extract_contents(&into)
+    .expect("the archive should extract");
+
+  assert!(rejected.is_empty(), "nothing should be rejected, but {rejected:?} was");
+  assert_eq!(
+    std::fs::read(into.join("absolute.txt")).expect("the file beneath the target"),
+    b"kept"
+  );
+}
+
+#[test]
 fn reads_from_a_file_handle_it_owns() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let root = directory.path().join("root");

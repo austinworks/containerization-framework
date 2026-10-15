@@ -165,3 +165,33 @@ fn shares_a_volume_between_its_containers() {
     .expect("the reader should stop");
   pod.stop().expect("the pod should stop");
 }
+
+#[test]
+fn writes_a_containers_unified_cgroup_files() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let vmm = support::store::vmm();
+  let pod = cfw::containerization::container::LinuxPod::new("cfw-test-unified-pod", &vmm, support::vm(), |_| Ok(()))
+    .expect("a pod should be made");
+  let rootfs = support::store::unpack(&directory.path().join("unified.ext4"));
+
+  pod
+    .add_container("unified", rootfs, |configuration| {
+      configuration.process.arguments = support::container::KEEPALIVE.map(String::from).to_vec();
+      configuration.cpus = support::TEST_CPUS;
+      configuration.memory_in_bytes = support::TEST_MEMORY_IN_BYTES;
+      configuration.unified = [("memory.oom.group".to_string(), "1".to_string())].into();
+      Ok(())
+    })
+    .expect("the container should be added");
+  pod.create().expect("the pod should create");
+  pod
+    .start_container("unified")
+    .expect("the container should start");
+
+  assert_eq!(
+    sh(&pod, "unified", "oom-group", "cat /sys/fs/cgroup/memory.oom.group"),
+    (0, "1\n".to_string())
+  );
+
+  pod.stop().expect("the pod should stop");
+}

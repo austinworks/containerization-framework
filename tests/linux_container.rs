@@ -215,6 +215,21 @@ fn reports_statistics_and_refuses_a_port_nothing_listens_on() {
     "the network category should report protocol traffic"
   );
 
+  booted.sh("ping", "ping -c 1 -W 1 127.0.0.1 >/dev/null 2>&1; true");
+  let protocols = container
+    .statistics(cfw::containerization::container::StatCategory::NETWORK)
+    .expect("the container should report network statistics")
+    .protocols
+    .expect("the network category should report protocol traffic");
+  assert!(
+    protocols.icmp.received_packets > 0 && protocols.icmp.transmitted_packets > 0,
+    "a ping should count as ICMP, not as {protocols:?}"
+  );
+  assert!(
+    protocols.ip.received_packets >= protocols.icmp.received_packets,
+    "every ICMP packet is also an IP packet: {protocols:?}"
+  );
+
   assert!(
     container.dial_vsock(9999).is_err(),
     "nothing in the guest listens on the port"
