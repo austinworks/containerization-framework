@@ -54,6 +54,11 @@ pub struct ContainerConfiguration {
   /// `None` uses the pod's profile.
   pub seccomp_profile: Option<linux_container::SeccompProfile>,
   pub use_init: bool,
+  /// cgroup v2 files to write in the container's cgroup, as OCI's
+  /// `linux.resources.unified`. Each key is a file name and each value what
+  /// to write to it, for example `memory.oom.group` and `1`. The guest writes
+  /// them after the limits above, so a key here overrides them, as in runc.
+  pub unified: BTreeMap<String, String>,
 }
 
 /// `LinuxPod.ContainerConfiguration()`.
@@ -73,6 +78,7 @@ impl Default for ContainerConfiguration {
       hosts: None,
       seccomp_profile: None,
       use_init: false,
+      unified: BTreeMap::new(),
     }
   }
 }

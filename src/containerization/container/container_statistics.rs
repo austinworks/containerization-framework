@@ -12,6 +12,9 @@ pub struct ContainerStatistics {
   pub networks: Option<Vec<NetworkStatistics>>,
   pub memory_events: Option<MemoryEventStatistics>,
   pub filesystem: Option<Vec<FilesystemStatistics>>,
+  /// Per-protocol traffic for the network namespace, which the network
+  /// category reports. `None` if the guest doesn't report it.
+  pub protocols: Option<NetworkProtocolStatistics>,
 }
 
 /// `ContainerStatistics.ProcessStatistics`.
@@ -80,6 +83,48 @@ pub struct NetworkStatistics {
   pub transmitted_bytes: u64,
   pub received_errors: u64,
   pub transmitted_errors: u64,
+  /// Packets the device dropped, for example because its receive ring or
+  /// transmit queue was full.
+  pub received_dropped: u64,
+  pub transmitted_dropped: u64,
+}
+
+/// `ContainerStatistics.NetworkProtocolCounters`, the packet and byte counters
+/// for one protocol. [`Default`] is Swift's initializer with every counter
+/// left at zero.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct NetworkProtocolCounters {
+  pub received_packets: u64,
+  pub transmitted_packets: u64,
+  /// Zero when the protocol has no byte counter. Linux only has one for IP
+  /// as a whole.
+  pub received_bytes: u64,
+  pub transmitted_bytes: u64,
+  /// Packets the stack discarded for lack of resources or a destination. The
+  /// kernel attributes drops to different causes for each protocol, so they
+  /// can be compared over time for one protocol but not across protocols.
+  /// Zero when the kernel has no matching counter, which doesn't mean that
+  /// none happened.
+  pub received_drops: u64,
+  pub transmitted_drops: u64,
+  /// Packets that were malformed or failed processing. As with drops, the
+  /// causes differ for each protocol.
+  pub received_errors: u64,
+  pub transmitted_errors: u64,
+}
+
+/// `ContainerStatistics.NetworkProtocolStatistics`, the per-protocol traffic
+/// for a container's network namespace. It covers the whole namespace,
+/// including loopback, not one interface, so containers that share a
+/// namespace report the same values.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct NetworkProtocolStatistics {
+  pub tcp: NetworkProtocolCounters,
+  pub udp: NetworkProtocolCounters,
+  pub icmp: NetworkProtocolCounters,
+  /// All IP traffic, including what TCP, UDP and ICMP don't count, such as
+  /// raw IP.
+  pub ip: NetworkProtocolCounters,
 }
 
 /// `ContainerStatistics.MemoryEventStatistics`, the counters in cgroup2's

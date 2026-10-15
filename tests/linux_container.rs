@@ -210,6 +210,10 @@ fn reports_statistics_and_refuses_a_port_nothing_listens_on() {
   assert!(statistics.process.is_some());
   assert!(statistics.cpu.is_some());
   assert!(statistics.memory_events.is_some());
+  assert!(
+    statistics.protocols.is_some(),
+    "the network category should report protocol traffic"
+  );
 
   assert!(
     container.dial_vsock(9999).is_err(),

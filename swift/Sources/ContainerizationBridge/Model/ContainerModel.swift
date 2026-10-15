@@ -205,6 +205,7 @@ extension LinuxContainer.Configuration {
     ociRuntimePath = configuration.ociRuntimePath()?.toString()
     seccompProfile = lentSeccompProfile(configuration.seccompMode(), configuration.seccompProfile)
     useInit = configuration.useInit()
+    unified = dictionary(configuration.unifiedLen(), configuration.unifiedKeyAt, configuration.unifiedValueAt)
   }
 }
 
@@ -283,6 +284,7 @@ extension LinuxPod.ContainerConfiguration {
       configuration.hasSeccompProfile()
       ? lentSeccompProfile(configuration.seccompMode(), configuration.seccompProfile) : nil
     useInit = configuration.useInit()
+    unified = dictionary(configuration.unifiedLen(), configuration.unifiedKeyAt, configuration.unifiedValueAt)
   }
 }
 
@@ -452,11 +454,16 @@ func fill(_ built: RustLinuxContainerConfigurationRefMut, from configuration: Li
   built.setOciRuntimePath(rust(configuration.ociRuntimePath))
   built.setUseInit(configuration.useInit)
   built.clearSysctl()
+  built.clearUnified()
   built.clearSockets()
   built.clearMounts()
 
   for (key, value) in configuration.sysctl.sorted(by: { $0.key < $1.key }) {
     built.insertSysctl(rust(key), rust(value))
+  }
+
+  for (key, value) in configuration.unified.sorted(by: { $0.key < $1.key }) {
+    built.insertUnified(rust(key), rust(value))
   }
 
   fill(

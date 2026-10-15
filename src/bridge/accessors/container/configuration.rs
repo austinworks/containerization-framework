@@ -159,6 +159,10 @@ impl linux_container::Configuration {
     self.sysctl.clear();
   }
 
+  pub(crate) fn clear_unified(&mut self) {
+    self.unified.clear();
+  }
+
   pub(crate) fn clear_interfaces(&mut self) {
     self.interfaces.clear();
   }
@@ -185,6 +189,10 @@ impl linux_container::Configuration {
 
   pub(crate) fn insert_sysctl(&mut self, key: String, value: String) {
     self.sysctl.insert(key, value);
+  }
+
+  pub(crate) fn insert_unified(&mut self, key: String, value: String) {
+    self.unified.insert(key, value);
   }
 
   pub(crate) fn push_interface(
@@ -397,6 +405,18 @@ impl linux_container::Configuration {
 
   pub(crate) fn use_init(&self) -> bool {
     self.use_init
+  }
+
+  pub(crate) fn unified_len(&self) -> usize {
+    self.unified.len()
+  }
+
+  pub(crate) fn unified_key_at(&self, index: usize) -> &str {
+    entry_at(&self.unified, index).0
+  }
+
+  pub(crate) fn unified_value_at(&self, index: usize) -> &str {
+    entry_at(&self.unified, index).1
   }
 }
 

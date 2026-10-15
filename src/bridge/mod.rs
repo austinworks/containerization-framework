@@ -362,6 +362,8 @@ pub(crate) mod ffi {
     fn set_use_init(self: &mut RustLinuxContainerConfiguration, use_init: bool);
     #[swift_bridge(swift_name = "clearSysctl")]
     fn clear_sysctl(self: &mut RustLinuxContainerConfiguration);
+    #[swift_bridge(swift_name = "clearUnified")]
+    fn clear_unified(self: &mut RustLinuxContainerConfiguration);
     #[swift_bridge(swift_name = "clearInterfaces")]
     fn clear_interfaces(self: &mut RustLinuxContainerConfiguration);
     #[swift_bridge(swift_name = "clearSockets")]
@@ -376,6 +378,8 @@ pub(crate) mod ffi {
     fn clear_boot_log(self: &mut RustLinuxContainerConfiguration);
     #[swift_bridge(swift_name = "insertSysctl")]
     fn insert_sysctl(self: &mut RustLinuxContainerConfiguration, key: String, value: String);
+    #[swift_bridge(swift_name = "insertUnified")]
+    fn insert_unified(self: &mut RustLinuxContainerConfiguration, key: String, value: String);
     #[swift_bridge(swift_name = "pushInterface")]
     fn push_interface(
       self: &mut RustLinuxContainerConfiguration,
@@ -491,6 +495,12 @@ pub(crate) mod ffi {
     fn seccomp_profile(self: &RustLinuxContainerConfiguration) -> &RustLinuxSeccomp;
     #[swift_bridge(swift_name = "useInit")]
     fn use_init(self: &RustLinuxContainerConfiguration) -> bool;
+    #[swift_bridge(swift_name = "unifiedLen")]
+    fn unified_len(self: &RustLinuxContainerConfiguration) -> usize;
+    #[swift_bridge(swift_name = "unifiedKeyAt")]
+    fn unified_key_at(self: &RustLinuxContainerConfiguration, index: usize) -> &str;
+    #[swift_bridge(swift_name = "unifiedValueAt")]
+    fn unified_value_at(self: &RustLinuxContainerConfiguration, index: usize) -> &str;
 
     // Its `mountsByID` is a map of lists, read as the map's length, the key
     // at an index, and the length and mounts of the list at that index.
@@ -673,6 +683,12 @@ pub(crate) mod ffi {
     fn seccomp_profile(self: &RustPodContainerConfiguration) -> &RustLinuxSeccomp;
     #[swift_bridge(swift_name = "useInit")]
     fn use_init(self: &RustPodContainerConfiguration) -> bool;
+    #[swift_bridge(swift_name = "unifiedLen")]
+    fn unified_len(self: &RustPodContainerConfiguration) -> usize;
+    #[swift_bridge(swift_name = "unifiedKeyAt")]
+    fn unified_key_at(self: &RustPodContainerConfiguration, index: usize) -> &str;
+    #[swift_bridge(swift_name = "unifiedValueAt")]
+    fn unified_value_at(self: &RustPodContainerConfiguration, index: usize) -> &str;
   }
 
   extern "Swift" {
@@ -2113,13 +2129,16 @@ pub(crate) mod ffi {
     // `ContainerStatistics`, which `LinuxContainer.statistics` returns: the
     // `id`, `interface` or `mountPoint` of the statistics held, their `UInt64`
     // fields in Swift's order, and the part a `StatCategory` reports, or
-    // `Absent`. Block I/O's part is its `devices`.
+    // `Absent`. Block I/O's part is its `devices`. `protocols` is held as its
+    // `tcp`, `udp`, `icmp` and `ip` counters, in that order, or `Absent`.
     #[swift_bridge(swift_name = "statisticsName")]
     fn statistics_name(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "statisticsNumbers")]
     fn statistics_numbers(self: &CzOutcome) -> Vec<u64>;
     #[swift_bridge(swift_name = "statisticsCategory")]
     fn statistics_category(self: &CzOutcome, category: i64) -> CzOutcome;
+    #[swift_bridge(swift_name = "statisticsProtocols")]
+    fn statistics_protocols(self: &CzOutcome) -> CzOutcome;
 
     type CzLocalContentStore;
     #[swift_bridge(swift_name = "openLocalContentStore")]

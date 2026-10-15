@@ -387,4 +387,16 @@ impl linux_pod::ContainerConfiguration {
   pub(crate) fn use_init(&self) -> bool {
     self.use_init
   }
+
+  pub(crate) fn unified_len(&self) -> usize {
+    self.unified.len()
+  }
+
+  pub(crate) fn unified_key_at(&self, index: usize) -> &str {
+    entry_at(&self.unified, index).0
+  }
+
+  pub(crate) fn unified_value_at(&self, index: usize) -> &str {
+    entry_at(&self.unified, index).1
+  }
 }

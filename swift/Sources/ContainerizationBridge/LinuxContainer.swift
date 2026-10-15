@@ -243,7 +243,12 @@ extension CzOutcome {
       case let network as ContainerStatistics.NetworkStatistics:
         [
           network.receivedPackets, network.transmittedPackets, network.receivedBytes, network.transmittedBytes,
-          network.receivedErrors, network.transmittedErrors,
+          network.receivedErrors, network.transmittedErrors, network.receivedDropped, network.transmittedDropped,
+        ]
+      case let counters as ContainerStatistics.NetworkProtocolCounters:
+        [
+          counters.receivedPackets, counters.transmittedPackets, counters.receivedBytes, counters.transmittedBytes,
+          counters.receivedDrops, counters.transmittedDrops, counters.receivedErrors, counters.transmittedErrors,
         ]
       case let events as ContainerStatistics.MemoryEventStatistics:
         [events.low, events.high, events.max, events.oom, events.oomKill]
@@ -273,6 +278,14 @@ extension CzOutcome {
     case .filesystem: CzOutcome.holding(statistics.filesystem)
     default: preconditionFailure("Rust asks for one category at a time, not \(category)")
     }
+  }
+
+  /// The held `ContainerStatistics`' `protocols`, as its `tcp`, `udp`, `icmp`
+  /// and `ip` counters.
+  func statisticsProtocols() -> CzOutcome {
+    let statistics: ContainerStatistics = taken()
+
+    return CzOutcome.holding(statistics.protocols.map { [$0.tcp, $0.udp, $0.icmp, $0.ip] })
   }
 }
 

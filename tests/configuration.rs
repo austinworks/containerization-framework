@@ -273,6 +273,25 @@ fn runs_its_first_process_under_an_init() {
 }
 
 #[test]
+fn writes_its_unified_cgroup_files() {
+  let container = Container::boot_with("cfw-test-config-unified", |configuration| {
+    configuration.unified = [("memory.oom.group".to_string(), "1".to_string())].into();
+  });
+
+  assert_eq!(
+    container.container().config().unified,
+    [("memory.oom.group".to_string(), "1".to_string())].into(),
+    "the files should read back from Swift"
+  );
+  assert_eq!(
+    container
+      .sh("oom-group", "cat /sys/fs/cgroup/memory.oom.group")
+      .trim(),
+    "1"
+  );
+}
+
+#[test]
 fn writes_its_boot_log_where_told() {
   let logs = tempfile::tempdir().expect("a temporary directory");
   let log = logs.path().join("boot.log");

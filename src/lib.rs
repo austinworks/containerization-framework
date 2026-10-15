@@ -23,7 +23,7 @@
 //! let kernel = cz::vm::Kernel::new("/path/to/vmlinux", cz::vm::SystemPlatform::LINUX_ARM);
 //! let mut manager = cz::container::ContainerManager::with_initfs_reference(
 //!   &kernel,
-//!   "ghcr.io/apple/containerization/vminit:0.49.0",
+//!   "ghcr.io/apple/containerization/vminit:0.51.0",
 //!   &store,
 //!   Default::default(),
 //! )?;

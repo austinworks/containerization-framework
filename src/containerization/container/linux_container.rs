@@ -52,6 +52,11 @@ pub struct Configuration {
   pub oci_runtime_path: Option<String>,
   pub seccomp_profile: SeccompProfile,
   pub use_init: bool,
+  /// cgroup v2 files to write in the container's cgroup, as OCI's
+  /// `linux.resources.unified`. Each key is a file name and each value what
+  /// to write to it, for example `memory.oom.group` and `1`. The guest writes
+  /// them after the limits above, so a key here overrides them, as in runc.
+  pub unified: BTreeMap<String, String>,
 }
 
 /// `LinuxContainer.Configuration()`.
@@ -75,6 +80,7 @@ impl Default for Configuration {
       oci_runtime_path: None,
       seccomp_profile: SeccompProfile::Unconfined,
       use_init: false,
+      unified: BTreeMap::new(),
     }
   }
 }

@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Update Containerization to 0.51.0. Use the matching init image,
+  `ghcr.io/apple/containerization/vminit:0.51.0`.
+  - `ContainerStatistics` has a `protocols` field. When the network category
+    is asked for, it holds the TCP, UDP, ICMP and IP traffic of the
+    container's network namespace as `NetworkProtocolStatistics`.
+  - `NetworkStatistics` has `received_dropped` and `transmitted_dropped`
+    fields, which count the packets each interface dropped.
+  - The configurations of a `LinuxContainer` and of a container in a
+    `LinuxPod` have a `unified` field. It holds the cgroup v2 files to write
+    in the container's cgroup, as OCI's `linux.resources.unified`, and its
+    values override the CPU and memory limits.
+  - `ImageStore::load` now loads an archive whose index lists platforms the
+    archive doesn't contain, keeping the platforms it does contain. It fails
+    only when none of them are present.
+  - `ArchiveReader::extract_contents` now extracts members with absolute
+    names beneath the target directory, as `bsdtar` does, instead of
+    rejecting them. It reports a rejected member by its name in the archive.
+
+### Breaking changes
+
+- `ContainerStatistics`, `NetworkStatistics`, and the `LinuxContainer` and
+  `LinuxPod` container configurations have new public fields, so code that
+  builds one with a struct literal must set them.
+
 ## v0.7.0
 
 - A panic in a closure that Swift calls, such as a configuration closure,

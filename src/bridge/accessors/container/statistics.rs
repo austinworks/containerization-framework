@@ -94,6 +94,8 @@ impl ffi::CzOutcome {
             transmitted_bytes,
             received_errors,
             transmitted_errors,
+            received_dropped,
+            transmitted_dropped,
           ] = network.statistics_fields();
           container_statistics::NetworkStatistics {
             interface: network.statistics_name(),
@@ -103,6 +105,8 @@ impl ffi::CzOutcome {
             transmitted_bytes,
             received_errors,
             transmitted_errors,
+            received_dropped,
+            transmitted_dropped,
           }
         })
       }),
@@ -129,6 +133,38 @@ impl ffi::CzOutcome {
           }
         })
       }),
+      protocols: self.statistics_protocols().optional(|protocols| {
+        let counters = protocols.list(Self::network_protocol_counters);
+        let count = counters.len();
+        let [tcp, udp, icmp, ip] = counters
+          .try_into()
+          .unwrap_or_else(|_| panic!("Swift's protocol statistics have {count} protocols, not 4"));
+        container_statistics::NetworkProtocolStatistics { tcp, udp, icmp, ip }
+      }),
+    }
+  }
+
+  /// The `NetworkProtocolCounters` an outcome holds.
+  fn network_protocol_counters(&self) -> container_statistics::NetworkProtocolCounters {
+    let [
+      received_packets,
+      transmitted_packets,
+      received_bytes,
+      transmitted_bytes,
+      received_drops,
+      transmitted_drops,
+      received_errors,
+      transmitted_errors,
+    ] = self.statistics_fields();
+    container_statistics::NetworkProtocolCounters {
+      received_packets,
+      transmitted_packets,
+      received_bytes,
+      transmitted_bytes,
+      received_drops,
+      transmitted_drops,
+      received_errors,
+      transmitted_errors,
     }
   }
 

@@ -20,7 +20,7 @@ pub const IMAGE: &str = "docker.io/library/alpine:3";
 /// The init image matching the Containerization release in
 /// `swift/Package.swift`: they share a protocol, and a mismatch fails only at
 /// runtime.
-pub const INITFS_REFERENCE: &str = "ghcr.io/apple/containerization/vminit:0.49.0";
+pub const INITFS_REFERENCE: &str = "ghcr.io/apple/containerization/vminit:0.51.0";
 
 const IMAGE_LOCK: &str = ".image.lock";
 const INITFS_LOCK: &str = ".initfs.lock";
@@ -83,8 +83,36 @@ pub fn kernel() -> cfw::containerization::vm::Kernel {
   cfw::containerization::vm::Kernel::new(path, cfw::containerization::vm::SystemPlatform::LINUX_ARM)
 }
 
-/// A manager booting [`kernel`] and [`INITFS_REFERENCE`]. The first one unpacks
-/// the init image into the store, so the lock keeps two from doing it at once.
+/// [`INITFS_REFERENCE`]'s init block, unpacked into the store on a first run.
+///
+/// Swift unpacks a reference into `initfs.ext4` and reuses that file for any
+/// reference, so after an update the suite would boot the old guest agent.
+/// Naming the file after the reference makes a new release unpack a new
+/// block. The lock keeps two tests from unpacking it at once.
+pub fn initfs() -> cfw::containerization::container::Mount {
+  let tag = INITFS_REFERENCE
+    .rsplit_once(':')
+    .map_or(INITFS_REFERENCE, |(_, tag)| tag);
+  let path = root().join(format!("initfs-{tag}.ext4"));
+  let _lock = initfs_lock();
+
+  if !path.is_file() {
+    // Unpack beside the block and then rename it, so a run that dies midway
+    // leaves no partial block under the real name.
+    let partial = path.with_extension("ext4.partial");
+    let _ = std::fs::remove_file(&partial);
+    image_store()
+      .get_init_image(INITFS_REFERENCE, None, None)
+      .unwrap_or_else(|error| panic!("{INITFS_REFERENCE} should pull: {error}"))
+      .init_block(&partial, cfw::containerization::vm::SystemPlatform::LINUX_ARM)
+      .unwrap_or_else(|error| panic!("{INITFS_REFERENCE} should unpack to {}: {error}", partial.display()));
+    std::fs::rename(&partial, &path).expect("the unpacked init block should be renamed into place");
+  }
+
+  cfw::containerization::container::Mount::block("ext4", path.display().to_string(), "/", &["ro"], &[])
+}
+
+/// A manager booting [`kernel`] and [`initfs`].
 pub fn manager(store: &cfw::containerization::image::ImageStore) -> cfw::containerization::container::ContainerManager {
   manager_with(store, Default::default())
 }
@@ -94,32 +122,17 @@ pub fn manager_with(
   store: &cfw::containerization::image::ImageStore,
   options: cfw::containerization::container::container_manager::ContainerManagerOptions,
 ) -> cfw::containerization::container::ContainerManager {
-  let kernel = kernel();
-  let _lock = initfs_lock();
-
-  cfw::containerization::container::ContainerManager::with_initfs_reference(&kernel, INITFS_REFERENCE, store, options)
+  cfw::containerization::container::ContainerManager::new(&kernel(), &initfs(), store, options)
     .unwrap_or_else(|error| panic!("a manager booting {INITFS_REFERENCE} should be made: {error}"))
 }
 
-/// A VM manager booting [`kernel`] and the init block a container manager
-/// unpacks into the store from [`INITFS_REFERENCE`].
+/// A VM manager booting [`kernel`] and [`initfs`].
 pub fn vmm() -> cfw::containerization::vm::VZVirtualMachineManager {
-  // Unpacks the init block, if no manager has yet.
-  drop(manager(&image_store()));
-
-  let initfs = cfw::containerization::container::Mount::block(
-    "ext4",
-    root().join("initfs.ext4").display().to_string(),
-    "/",
-    &["ro"],
-    &[],
-  );
-
-  cfw::containerization::vm::VZVirtualMachineManager::new(&kernel(), &initfs, Default::default())
+  cfw::containerization::vm::VZVirtualMachineManager::new(&kernel(), &initfs(), Default::default())
     .unwrap_or_else(|error| panic!("a VM manager should be made: {error}"))
 }
 
-/// The lock [`manager`] takes, for a test making a manager of its own.
+/// The lock [`initfs`] takes, for a test making a manager of its own.
 pub fn initfs_lock() -> Lock {
   Lock::take(root().join(INITFS_LOCK))
 }
