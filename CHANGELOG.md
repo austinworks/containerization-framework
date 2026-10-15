@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.8.0
+
 - Update Containerization to 0.51.0. Use the matching init image,
   `ghcr.io/apple/containerization/vminit:0.51.0`.
   - `ContainerStatistics` has a `protocols` field. When the network category
