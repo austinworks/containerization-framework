@@ -18,6 +18,10 @@ argv = ["cargo", "check", "--all-targets"]
 [host.commands.clippy]
 argv = ["cargo", "clippy", "--", "-D", "warnings"]
 
+[host.commands.doctest]
+argv = ["cargo", "test", "--workspace", "--doc"]
+tty = true
+
 [host.commands.fmt]
 argv = ["cargo", "fmt", "--all"]
 

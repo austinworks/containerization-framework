@@ -18,9 +18,11 @@ use crate::containerization::process;
 #[cfg(target_os = "macos")]
 use crate::containerization_error;
 use crate::containerization_extras;
+use crate::containerization_os::file_descriptor_ops;
 use crate::error::Error;
 use std::any::Any;
 use std::collections::BTreeMap;
+use std::os::fd::BorrowedFd;
 use std::panic::AssertUnwindSafe;
 use std::path::Path;
 use std::sync::Arc;
@@ -190,6 +192,113 @@ pub(crate) fn filled_process(
   Ok(process.expect("Swift hands back the configuration it fills"))
 }
 
+/// What a Rust closure that Swift calls threw, or how it panicked, kept for
+/// the thread that called Swift.
+#[derive(Clone, Default)]
+pub(crate) struct Thrown {
+  error: Arc<Mutex<Option<Error>>>,
+  panic: Panic,
+}
+
+impl Thrown {
+  /// Runs `body`, and says whether it threw. Its error or panic is kept.
+  fn threw(&self, body: impl FnOnce() -> Result<(), Error>) -> bool {
+    match self.panic.catch(body) {
+      Some(Ok(())) => false,
+      Some(Err(error)) => {
+        *self.error.lock().unwrap_or_else(PoisonError::into_inner) = Some(error);
+        true
+      }
+      None => true,
+    }
+  }
+
+  /// What the throwing Swift call returned, or what it threw as a failure of
+  /// `action`. If the closure threw, its own error is returned, as Swift
+  /// rethrows it. If it panicked, the panic is resumed here.
+  pub(crate) fn outcome(&self, returned: ffi::CzOutcome, action: impl Into<String>) -> Result<ffi::CzOutcome, Error> {
+    self.panic.resume();
+    if let Some(error) = self
+      .error
+      .lock()
+      .unwrap_or_else(PoisonError::into_inner)
+      .take()
+    {
+      return Err(error);
+    }
+
+    outcome(returned, action)
+  }
+}
+
+type DirectoryBody = Box<dyn FnOnce(BorrowedFd<'_>) -> Result<(), Error>>;
+
+/// A `(FileDescriptor) throws -> Void` closure, as it crosses to Swift. Swift
+/// calls it at most once, with a directory it keeps open for the call.
+pub(crate) struct WithDescriptor {
+  body: Mutex<Option<DirectoryBody>>,
+  pub(crate) thrown: Thrown,
+}
+
+impl WithDescriptor {
+  pub(crate) fn new(body: impl FnOnce(BorrowedFd<'_>) -> Result<(), Error> + 'static) -> Self {
+    Self {
+      body: Mutex::new(Some(Box::new(body))),
+      thrown: Thrown::default(),
+    }
+  }
+
+  /// Runs the closure on `descriptor`, the first time only, and says whether
+  /// it threw.
+  pub(crate) fn call(&self, descriptor: i32) -> bool {
+    let body = self
+      .body
+      .lock()
+      .unwrap_or_else(PoisonError::into_inner)
+      .take();
+
+    // SAFETY: Swift keeps the descriptor open until the call returns.
+    body.is_some_and(|body| {
+      self
+        .thrown
+        .threw(|| body(unsafe { BorrowedFd::borrow_raw(descriptor) }))
+    })
+  }
+}
+
+type EnumerateBody = Box<dyn FnMut(&Path, file_descriptor_ops::EntryType, BorrowedFd<'_>) -> Result<(), Error>>;
+
+/// `FileDescriptorOps.enumerate(_:_:)`'s body, as it crosses to Swift. Swift
+/// calls it once per entry, with the entry's parent directory, which it keeps
+/// open for the call.
+pub(crate) struct Enumerate {
+  body: Mutex<EnumerateBody>,
+  pub(crate) thrown: Thrown,
+}
+
+impl Enumerate {
+  pub(crate) fn new(
+    body: impl FnMut(&Path, file_descriptor_ops::EntryType, BorrowedFd<'_>) -> Result<(), Error> + 'static,
+  ) -> Self {
+    Self {
+      body: Mutex::new(Box::new(body)),
+      thrown: Thrown::default(),
+    }
+  }
+
+  /// Runs the closure on one entry, and says whether it threw.
+  pub(crate) fn call(&self, path: String, entry_type: ffi::FdOpsEntryType, parent: i32) -> bool {
+    let mut body = self.body.lock().unwrap_or_else(PoisonError::into_inner);
+
+    // SAFETY: Swift keeps the descriptor open until the call returns.
+    self.thrown.threw(|| {
+      body(Path::new(&path), entry_type.into(), unsafe {
+        BorrowedFd::borrow_raw(parent)
+      })
+    })
+  }
+}
+
 /// What a throwing Swift call returned, or what it threw as a failure of
 /// `action`.
 pub(crate) fn outcome(outcome: ffi::CzOutcome, action: impl Into<String>) -> Result<ffi::CzOutcome, Error> {
@@ -201,6 +310,13 @@ pub(crate) fn outcome(outcome: ffi::CzOutcome, action: impl Into<String>) -> Res
 
 #[cfg(target_os = "macos")]
 fn error(outcome: &ffi::CzOutcome, action: impl Into<String>, message: String) -> Error {
+  if let Some(error) = outcome.thrown_fd_ops_error() {
+    return Error::FileDescriptorOps {
+      action: action.into(),
+      error,
+    };
+  }
+
   let code = outcome
     .error_code()
     .and_then(|code| containerization_error::Code::from_description(&code));

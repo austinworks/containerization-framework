@@ -16,6 +16,7 @@ import ContainerizationArchive
 import ContainerizationError
 import ContainerizationExtras
 import ContainerizationOCI
+import ContainerizationOS
 import Foundation
 
 /// Unchecked: Rust reads an outcome once, on the thread it was returned to.
@@ -23,19 +24,23 @@ import Foundation
 public final class CzOutcome: @unchecked Sendable {
   private let failure: String?
   private let failureCode: String?
+  private let fdOpsFailure: FileDescriptorOps.Error?
   private let value: Any?
 
   /// Runs `body`, keeping what it returns or the message of what it throws,
-  /// and the code of a thrown `ContainerizationError`.
+  /// the code of a thrown `ContainerizationError`, and a thrown
+  /// `FileDescriptorOps.Error`.
   init(_ body: () throws -> Any) {
     do {
       value = try body()
       failure = nil
       failureCode = nil
+      fdOpsFailure = nil
     } catch {
       value = nil
       failure = "\(error)"
       failureCode = (error as? ContainerizationError)?.code.description
+      fdOpsFailure = error as? FileDescriptorOps.Error
     }
   }
 
@@ -53,6 +58,11 @@ public final class CzOutcome: @unchecked Sendable {
   /// A thrown `ContainerizationError`'s `code.description`.
   func errorCode() -> String? {
     failureCode
+  }
+
+  /// A thrown `FileDescriptorOps.Error`, or `Absent`.
+  func thrownFdOpsError() -> CzOutcome {
+    CzOutcome.holding(fdOpsFailure)
   }
 
   func taken<T>() -> T {

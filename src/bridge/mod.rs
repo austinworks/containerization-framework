@@ -80,7 +80,9 @@ use crate::platform::ConfigureContainer as RustConfigure;
 use crate::platform::ConfigurePod as RustConfigurePod;
 use crate::platform::ConfigurePodContainer as RustConfigurePodContainer;
 use crate::platform::ConfigureProcess as RustConfigureProcess;
+use crate::platform::Enumerate as RustEnumerate;
 use crate::platform::Progress as RustProgressHandler;
+use crate::platform::WithDescriptor as RustWithDescriptor;
 
 #[swift_bridge::bridge]
 pub(crate) mod ffi {
@@ -222,6 +224,31 @@ pub(crate) mod ffi {
     Trim,
   }
 
+  // `FileDescriptorOps.EntryType`.
+  enum FdOpsEntryType {
+    Regular,
+    Directory,
+    Symlink,
+    Other,
+  }
+
+  // `FileDescriptorOps.SymlinkPolicy`.
+  enum FdOpsSymlinkPolicy {
+    Refuse,
+    FollowBeneath,
+  }
+
+  // `FileDescriptorOps.Error`, less what its cases carry.
+  enum FdOpsErrorKind {
+    InvalidRelativePath,
+    InvalidPathComponent,
+    CannotFollowSymlink,
+    NotFound,
+    AlreadyExists,
+    Conflict,
+    SystemError,
+  }
+
   // vmnet's `operating_modes_t`.
   enum VmnetMode {
     Shared,
@@ -338,6 +365,10 @@ pub(crate) mod ffi {
     type RustConfigurePodContainer;
     #[swift_bridge(already_declared)]
     type RustProgressHandler;
+    #[swift_bridge(already_declared)]
+    type RustWithDescriptor;
+    #[swift_bridge(already_declared)]
+    type RustEnumerate;
 
     // The configurations that hold Swift objects stay with the Swift types:
     // swift-bridge can't declare a Swift type in a second module.
@@ -1959,6 +1990,100 @@ pub(crate) mod ffi {
     fn is_block(self: &CzFileInfo) -> bool;
     #[swift_bridge(swift_name = "isChar")]
     fn is_char(self: &CzFileInfo) -> bool;
+
+    // `FileDescriptorOps`. Each takes the caller's descriptor as its number,
+    // and Swift doesn't close it. A descriptor Swift opens crosses back as an
+    // `Int32` the caller owns. A `FilePermissions?` crosses as a flag and a
+    // value. An `EntryType?` or `FileStatus?` result is held, or `Absent`.
+    #[swift_bridge(swift_name = "fdOpsEntryType")]
+    fn cz_fd_ops_entry_type(fd: i32, name: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsOpenDirectory")]
+    fn cz_fd_ops_open_directory(fd: i32, name: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsMakeDirectory")]
+    fn cz_fd_ops_make_directory(
+      fd: i32,
+      name: &str,
+      #[swift_bridge(label = "hasPermissions")] has_permissions: bool,
+      permissions: u16,
+    ) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsUnlink")]
+    fn cz_fd_ops_unlink(fd: i32, name: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsStatusOf")]
+    fn cz_fd_ops_status_of(fd: i32) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsStatus")]
+    fn cz_fd_ops_status(fd: i32, name: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsStatusRelativePath")]
+    fn cz_fd_ops_status_relative_path(
+      fd: i32,
+      #[swift_bridge(label = "relativePath")] relative_path: &str,
+      symlinks: FdOpsSymlinkPolicy,
+    ) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsOpenFile")]
+    fn cz_fd_ops_open_file(fd: i32, name: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsOpenFileRelativePath")]
+    fn cz_fd_ops_open_file_relative_path(
+      fd: i32,
+      #[swift_bridge(label = "relativePath")] relative_path: &str,
+      symlinks: FdOpsSymlinkPolicy,
+    ) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsCreateFile")]
+    fn cz_fd_ops_create_file(
+      fd: i32,
+      name: &str,
+      #[swift_bridge(label = "hasPermissions")] has_permissions: bool,
+      permissions: u16,
+    ) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsMakeSymlink")]
+    fn cz_fd_ops_make_symlink(fd: i32, name: &str, target: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsReadSymlink")]
+    fn cz_fd_ops_read_symlink(fd: i32, name: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsUnlinkRecursive")]
+    fn cz_fd_ops_unlink_recursive(fd: i32, filename: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsEnumerate")]
+    fn cz_fd_ops_enumerate(fd: i32, body: RustEnumerate) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsGetCanonicalPath")]
+    fn cz_fd_ops_get_canonical_path(fd: i32) -> CzOutcome;
+    #[swift_bridge(swift_name = "fdOpsMkdir")]
+    fn cz_fd_ops_mkdir(
+      fd: i32,
+      #[swift_bridge(label = "relativePath")] relative_path: &str,
+      #[swift_bridge(label = "hasPermissions")] has_permissions: bool,
+      permissions: u16,
+      #[swift_bridge(label = "makeIntermediates")] make_intermediates: bool,
+      completion: RustWithDescriptor,
+    ) -> CzOutcome;
+    // For a unit test: `FileDescriptorOps.maximumSymlinksFollowed`.
+    #[swift_bridge(swift_name = "fdOpsMaximumSymlinksFollowed")]
+    fn cz_fd_ops_maximum_symlinks_followed() -> usize;
+    // A held `EntryType`, and a held `FileStatus`'s fields.
+    #[swift_bridge(swift_name = "heldEntryType")]
+    fn held_entry_type(self: &CzOutcome) -> FdOpsEntryType;
+    #[swift_bridge(swift_name = "heldStatusType")]
+    fn held_status_type(self: &CzOutcome) -> FdOpsEntryType;
+    #[swift_bridge(swift_name = "heldStatusPermissions")]
+    fn held_status_permissions(self: &CzOutcome) -> u16;
+    #[swift_bridge(swift_name = "heldStatusSize")]
+    fn held_status_size(self: &CzOutcome) -> i64;
+    #[swift_bridge(swift_name = "heldStatusUserId")]
+    fn held_status_user_id(self: &CzOutcome) -> u32;
+    #[swift_bridge(swift_name = "heldStatusGroupId")]
+    fn held_status_group_id(self: &CzOutcome) -> u32;
+    #[swift_bridge(swift_name = "heldStatusModificationSeconds")]
+    fn held_status_modification_seconds(self: &CzOutcome) -> i64;
+    #[swift_bridge(swift_name = "heldStatusModificationNanoseconds")]
+    fn held_status_modification_nanoseconds(self: &CzOutcome) -> i64;
+    // A failed outcome's thrown `FileDescriptorOps.Error`, or `Absent`, and
+    // that error's kind and what its case carries.
+    #[swift_bridge(swift_name = "thrownFdOpsError")]
+    fn thrown_fd_ops_error_outcome(self: &CzOutcome) -> CzOutcome;
+    #[swift_bridge(swift_name = "heldFdOpsErrorKind")]
+    fn held_fd_ops_error_kind(self: &CzOutcome) -> FdOpsErrorKind;
+    #[swift_bridge(swift_name = "heldFdOpsErrorEntryType")]
+    fn held_fd_ops_error_entry_type(self: &CzOutcome) -> FdOpsEntryType;
+    #[swift_bridge(swift_name = "heldFdOpsErrorOperation")]
+    fn held_fd_ops_error_operation(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "heldFdOpsErrorNumber")]
+    fn held_fd_ops_error_number(self: &CzOutcome) -> i32;
 
     // A held `Stat`: its unsigned fields in Swift's order (`dev` to `rdev`),
     // then its signed ones (`size`, `blksize`, `blocks`, and each `TimeSpec`'s

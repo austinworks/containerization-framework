@@ -4,6 +4,7 @@
 //! directories.
 
 pub mod file;
+pub mod file_descriptor_ops;
 pub mod keychain;
 pub mod linux;
 mod stat;

@@ -1,6 +1,7 @@
 //! The error that every fallible call in this crate returns.
 
 use crate::containerization_error;
+use crate::containerization_os::file_descriptor_ops;
 use std::fmt;
 
 /// An error thrown by Swift or by a Rust closure, a value that could not cross
@@ -18,6 +19,13 @@ pub enum Error {
     message: String,
     /// The code of the thrown `ContainerizationError`, if Swift threw one.
     code: Option<containerization_error::Code>,
+  },
+  /// The call threw a `FileDescriptorOps.Error`.
+  FileDescriptorOps {
+    /// What was attempted, such as `open the file config.json`.
+    action: String,
+    /// What Swift threw.
+    error: file_descriptor_ops::Error,
   },
   /// The call was not attempted, because Containerization runs only on
   /// macOS.
@@ -67,7 +75,7 @@ impl Error {
   /// What was attempted, for a caller rewording the failure.
   pub fn action(&self) -> &str {
     match self {
-      Self::Failed { action, .. } | Self::Unavailable { action, .. } => action,
+      Self::Failed { action, .. } | Self::FileDescriptorOps { action, .. } | Self::Unavailable { action, .. } => action,
     }
   }
 
@@ -82,6 +90,7 @@ impl fmt::Display for Error {
   fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Self::Failed { action, message, .. } => write!(formatter, "could not {action}: {message}"),
+      Self::FileDescriptorOps { action, error } => write!(formatter, "could not {action}: {error}"),
       Self::Unavailable { action, message } => write!(formatter, "cannot {action}: {message}"),
     }
   }
@@ -118,5 +127,19 @@ mod tests {
     assert!(!error.is_code(containerization_error::Code::Exists));
     assert!(!Error::failed("get alpine", "not found").is_code(not_found));
     assert!(!Error::unavailable("get alpine", "not on macOS").is_code(not_found));
+  }
+
+  #[test]
+  fn says_what_file_descriptor_ops_threw() {
+    let error = Error::FileDescriptorOps {
+      action: "open the file config.json".to_string(),
+      error: file_descriptor_ops::Error::Conflict(file_descriptor_ops::EntryType::Directory),
+    };
+
+    assert_eq!(error.action(), "open the file config.json");
+    assert_eq!(
+      error.to_string(),
+      "could not open the file config.json: a directory entry is in the way of a file descriptor operation"
+    );
   }
 }

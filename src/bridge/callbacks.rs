@@ -8,14 +8,19 @@ use crate::platform::ConfigureContainer as RustConfigure;
 use crate::platform::ConfigurePod as RustConfigurePod;
 use crate::platform::ConfigurePodContainer as RustConfigurePodContainer;
 use crate::platform::ConfigureProcess as RustConfigureProcess;
+use crate::platform::Enumerate as RustEnumerate;
 use crate::platform::Progress as RustProgressHandler;
+use crate::platform::WithDescriptor as RustWithDescriptor;
 
+use super::ffi::FdOpsEntryType;
 use super::ffi::ProgressKind;
 
 #[swift_bridge::bridge]
 mod ffi {
   #[swift_bridge(already_declared)]
   enum ProgressKind {}
+  #[swift_bridge(already_declared)]
+  enum FdOpsEntryType {}
 
   extern "Rust" {
     #[swift_bridge(already_declared)]
@@ -55,5 +60,15 @@ mod ffi {
     #[swift_bridge(swift_name = "isSome")]
     fn is_some(self: &RustProgressHandler) -> bool;
     fn call(self: &RustProgressHandler, kinds: Vec<ProgressKind>, values: Vec<i64>);
+
+    // A `(FileDescriptor) throws -> Void`, which
+    // `FileDescriptorOps.mkdir` calls once with the directory it opened.
+    type RustWithDescriptor;
+    fn call(self: &RustWithDescriptor, descriptor: i32) -> bool;
+
+    // `FileDescriptorOps.enumerate`'s body, which Swift calls once for each
+    // entry with its path, its type and the directory that holds it.
+    type RustEnumerate;
+    fn call(self: &RustEnumerate, path: String, entry_type: FdOpsEntryType, parent: i32) -> bool;
   }
 }

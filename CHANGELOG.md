@@ -19,12 +19,26 @@
   - `ArchiveReader::extract_contents` now extracts members with absolute
     names beneath the target directory, as `bsdtar` does, instead of
     rejecting them. It reports a rejected member by its name in the archive.
+- Bind `FileDescriptorOps` as `containerization_os::file_descriptor_ops`. Its
+  functions create, open, inspect, enumerate and remove entries relative to a
+  directory descriptor without following symlinks, unless `SymlinkPolicy`
+  allows them beneath the starting directory. They borrow the descriptors
+  they are given, and return each descriptor they open as an `OwnedFd`.
+- A thrown `FileDescriptorOps.Error` now fails with the new
+  `Error::FileDescriptorOps` variant, which carries it as
+  `file_descriptor_ops::Error`. This includes the errors that
+  `ArchiveReader::extract_contents` rethrows, which used to fail as
+  `Error::Failed`.
 
 ### Breaking changes
 
 - `ContainerStatistics`, `NetworkStatistics`, and the `LinuxContainer` and
   `LinuxPod` container configurations have new public fields, so code that
   builds one with a struct literal must set them.
+- `Error` has a new `FileDescriptorOps` variant. `Error` is
+  `#[non_exhaustive]`, so a `match` on it already needs a wildcard arm, but
+  code that expected every failure to be `Error::Failed` must handle the new
+  variant.
 
 ## v0.7.0
 

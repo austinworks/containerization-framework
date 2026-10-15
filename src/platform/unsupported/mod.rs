@@ -54,6 +54,20 @@ pub(crate) enum HostsEntryName {
   Ipv6AllRouters,
 }
 
+/// `FileDescriptorOps.EntryType`.
+pub(crate) enum FdOpsEntryType {
+  Regular,
+  Directory,
+  Symlink,
+  Other,
+}
+
+/// `FileDescriptorOps.SymlinkPolicy`.
+pub(crate) enum FdOpsSymlinkPolicy {
+  Refuse,
+  FollowBeneath,
+}
+
 /// `FilesystemOperation`.
 pub(crate) enum FilesystemOperationKind {
   Freeze,

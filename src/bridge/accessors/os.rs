@@ -3,6 +3,7 @@
 
 use crate::bridge::ffi;
 use crate::containerization_os;
+use crate::containerization_os::file_descriptor_ops;
 use crate::containerization_os::keychain;
 use crate::containerization_os::linux::binfmt;
 use crate::error::Error;
@@ -86,6 +87,48 @@ impl ffi::CzOutcome {
       created_date: platform::system_time(self.keychain_query_result_created_date())?,
     })
   }
+
+  /// The `EntryType?` an outcome holds.
+  pub(crate) fn optional_fd_ops_entry_type(&self) -> Option<file_descriptor_ops::EntryType> {
+    self.optional(|entry_type| entry_type.held_entry_type().into())
+  }
+
+  /// The `FileStatus` an outcome holds.
+  pub(crate) fn fd_ops_file_status(&self) -> file_descriptor_ops::FileStatus {
+    file_descriptor_ops::FileStatus {
+      r#type: self.held_status_type().into(),
+      permissions: self.held_status_permissions(),
+      size: self.held_status_size(),
+      user_id: self.held_status_user_id(),
+      group_id: self.held_status_group_id(),
+      modification_seconds: self.held_status_modification_seconds(),
+      modification_nanoseconds: self.held_status_modification_nanoseconds(),
+    }
+  }
+
+  /// The `FileStatus?` an outcome holds.
+  pub(crate) fn optional_fd_ops_file_status(&self) -> Option<file_descriptor_ops::FileStatus> {
+    self.optional(Self::fd_ops_file_status)
+  }
+
+  /// The `FileDescriptorOps.Error` a failed outcome threw, if it threw one.
+  pub(crate) fn thrown_fd_ops_error(&self) -> Option<file_descriptor_ops::Error> {
+    self
+      .thrown_fd_ops_error_outcome()
+      .optional(|error| match error.held_fd_ops_error_kind() {
+        ffi::FdOpsErrorKind::InvalidRelativePath => file_descriptor_ops::Error::InvalidRelativePath,
+        ffi::FdOpsErrorKind::InvalidPathComponent => file_descriptor_ops::Error::InvalidPathComponent,
+        ffi::FdOpsErrorKind::CannotFollowSymlink => file_descriptor_ops::Error::CannotFollowSymlink,
+        ffi::FdOpsErrorKind::NotFound => file_descriptor_ops::Error::NotFound,
+        ffi::FdOpsErrorKind::AlreadyExists => file_descriptor_ops::Error::AlreadyExists,
+        ffi::FdOpsErrorKind::Conflict => {
+          file_descriptor_ops::Error::Conflict(error.held_fd_ops_error_entry_type().into())
+        }
+        ffi::FdOpsErrorKind::SystemError => {
+          file_descriptor_ops::Error::SystemError(error.held_fd_ops_error_operation(), error.held_fd_ops_error_number())
+        }
+      })
+  }
 }
 
 #[cfg(test)]
@@ -128,6 +171,14 @@ mod tests {
         amd64.mask,
         amd64.flags,
       ]
+    );
+  }
+
+  #[test]
+  fn copies_swifts_symlink_limit() {
+    assert_eq!(
+      ffi::cz_fd_ops_maximum_symlinks_followed(),
+      containerization_os::file_descriptor_ops::MAXIMUM_SYMLINKS_FOLLOWED
     );
   }
 
