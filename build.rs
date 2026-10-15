@@ -232,12 +232,36 @@ fn link_swift_runtime() {
   }
 }
 
+/// The Containerization release `Package.swift` pins, which
+/// `versions::INIT_IMAGE` names, so that the pin has one home.
+fn pinned_containerization() -> String {
+  const PIN: &str = "let containerization: Version = \"";
+
+  let path = source_package_dir().join("Package.swift");
+  let manifest = std::fs::read_to_string(&path).expect("the swift package's manifest should be readable");
+
+  manifest
+    .lines()
+    .find_map(|line| line.strip_prefix(PIN)?.strip_suffix('"'))
+    .unwrap_or_else(|| panic!("{} should pin Containerization with `{PIN}…\"`", path.display()))
+    .to_string()
+}
+
 fn main() {
   println!("cargo:rerun-if-changed=build.rs");
 
   for module in BRIDGE_MODULES {
     println!("cargo:rerun-if-changed={module}");
   }
+
+  println!(
+    "cargo:rerun-if-changed={}",
+    source_package_dir().join("Package.swift").display()
+  );
+  println!(
+    "cargo:rustc-env=CFW_CONTAINERIZATION_VERSION={}",
+    pinned_containerization()
+  );
 
   if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
     return;
@@ -257,10 +281,6 @@ fn main() {
   }
 
   println!("cargo:rerun-if-changed={}", source_sources_dir().display());
-  println!(
-    "cargo:rerun-if-changed={}",
-    source_package_dir().join("Package.swift").display()
-  );
   println!(
     "cargo:rerun-if-changed={}",
     source_package_dir().join("Package.resolved").display()
@@ -283,6 +303,14 @@ fn main() {
 
   compile_swift();
 
+  // The unit tests check `versions` against Containerization's Makefile.
+  println!(
+    "cargo:rustc-env=CFW_CONTAINERIZATION_CHECKOUT={}",
+    scratch_dir()
+      .join("checkouts")
+      .join("containerization")
+      .display()
+  );
   println!("cargo:rustc-link-lib=static={PACKAGE}");
   println!("cargo:rustc-link-search={}", swift_build_dir().display());
 

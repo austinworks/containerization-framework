@@ -20,7 +20,7 @@ let store = cz::image::ImageStore::new("/Users/me/.cache/containers".as_ref())?;
 let kernel = cz::vm::Kernel::new("/Users/me/.cache/vmlinux", cz::vm::SystemPlatform::LINUX_ARM);
 let mut manager = cz::container::ContainerManager::with_initfs_reference(
     &kernel,
-    "ghcr.io/apple/containerization/vminit:0.51.0",
+    cfw::versions::INIT_IMAGE,
     &store,
     Default::default(),
 )?;
@@ -182,6 +182,11 @@ The init image's `vminitd` must match the Containerization release this crate
 builds against (0.51.0, in `swift/Package.swift`): they share a protocol, and a
 mismatch fails at runtime rather than at build time. As in Containerization,
 the caller chooses the kernel and the init image.
+
+The `versions` module says which releases to download. `INIT_IMAGE` is the
+init image Apple publishes for the pinned release. `KERNEL_ARCHIVE_URL` is the
+Kata Containers archive whose kernel Containerization's Makefile uses, and
+`KERNEL_IN_ARCHIVE` is the kernel's path inside it.
 
 ## Testing
 

@@ -23,7 +23,7 @@
 //! let kernel = cz::vm::Kernel::new("/path/to/vmlinux", cz::vm::SystemPlatform::LINUX_ARM);
 //! let mut manager = cz::container::ContainerManager::with_initfs_reference(
 //!   &kernel,
-//!   "ghcr.io/apple/containerization/vminit:0.51.0",
+//!   cfw::versions::INIT_IMAGE,
 //!   &store,
 //!   Default::default(),
 //! )?;
@@ -118,6 +118,7 @@ pub mod containerization_io;
 pub mod containerization_oci;
 pub mod containerization_os;
 pub mod error;
+pub mod versions;
 
 mod platform;
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add the `versions` module, which names the releases a caller downloads to
+  run this crate. `INIT_IMAGE` is the init image Apple publishes for the
+  Containerization release this crate builds against. `KERNEL_ARCHIVE_URL`
+  is the Kata Containers archive holding the kernel that Containerization's
+  Makefile uses, and `KERNEL_IN_ARCHIVE` is the kernel's path inside it.
+
 ## v0.8.0
 
 - Update Containerization to 0.51.0. Use the matching init image,
