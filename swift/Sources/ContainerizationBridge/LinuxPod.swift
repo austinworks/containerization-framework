@@ -212,3 +212,7 @@ final class CzLinuxPod: Sendable {
     return CzOutcome { try blocking { try await pod.relayUnixSocket(id, socket: socket) } }
   }
 }
+
+extension CzOutcome {
+  func linuxPod() -> CzLinuxPod { taken() }
+}

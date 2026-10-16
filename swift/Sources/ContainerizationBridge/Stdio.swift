@@ -112,6 +112,27 @@ final class Output: Sendable {
   }
 }
 
+/// The closure a container's or a pod's `exec` takes. It fills `seed` with the
+/// configuration Swift seeded, lets Rust's closure change it, and takes it
+/// back, keeping its writers in `output`.
+func configured(
+  _ seed: RustLinuxProcessConfiguration,
+  by configuration: RustConfigureProcess,
+  keeping output: Output
+) -> @Sendable (inout LinuxProcessConfiguration) throws -> Void {
+  // Not `Sendable`, but only this closure uses them, and an `exec` calls it
+  // once, while `blocking` waits.
+  nonisolated(unsafe) let seed = seed
+  nonisolated(unsafe) let configuration = configuration
+
+  return { config in
+    fill(seed, from: config)
+    if configuration.call(seed) { throw BridgeError.bodyFailed }
+    config = try LinuxProcessConfiguration(seed)
+    output.keep(config)
+  }
+}
+
 /// A duplicate of a boot log descriptor, which remembers the caller's number,
 /// so that a configuration read back reports the descriptor they set.
 func duplicate(bootLog descriptor: Int32) throws -> FileHandle {

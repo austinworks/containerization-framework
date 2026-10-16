@@ -216,7 +216,6 @@ final class CzFileInfo: Sendable {
 extension CzOutcome {
   func terminal() -> CzTerminal { taken() }
   func fileInfo() -> CzFileInfo { taken() }
-  func integer() -> Int64 { taken() }
 
   func parentTerminal() -> CzTerminal {
     CzTerminal((taken() as (parent: Terminal, child: Terminal)).parent)
@@ -251,4 +250,36 @@ extension CzOutcome {
   func keychainQueryResultCreatedDate() -> Double {
     (taken() as KeychainQueryResult).createdDate.timeIntervalSince1970
   }
+
+  /// A `Stat`'s unsigned fields, in Swift's order.
+  func statUnsigned() -> RustVec<UInt64> {
+    let stat: ContainerizationOS.Stat = taken()
+    return rustVec([
+      stat.dev, stat.ino, UInt64(stat.mode), stat.nlink, UInt64(stat.uid), UInt64(stat.gid), stat.rdev,
+    ])
+  }
+
+  /// A `Stat`'s signed fields, in Swift's order, with each `TimeSpec` as its
+  /// seconds and nanoseconds.
+  func statSigned() -> RustVec<Int64> {
+    let stat: ContainerizationOS.Stat = taken()
+    return rustVec([
+      stat.size, stat.blksize, stat.blocks,
+      stat.atime.seconds, Int64(stat.atime.nanoseconds),
+      stat.mtime.seconds, Int64(stat.mtime.nanoseconds),
+      stat.ctime.seconds, Int64(stat.ctime.nanoseconds),
+    ])
+  }
+}
+
+/// For a unit test: `Binfmt.path`.
+func binfmtPath() -> String {
+  Binfmt.path
+}
+
+/// For a unit test: `Binfmt.Entry.amd64()`'s fields, in Swift's order.
+func binfmtEntryAmd64() -> RustVec<RustString> {
+  let entry = Binfmt.Entry.amd64()
+
+  return rustStrings([entry.name, entry.type, entry.offset, entry.magic, entry.mask, entry.flags])
 }

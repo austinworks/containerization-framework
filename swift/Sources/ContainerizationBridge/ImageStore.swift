@@ -385,6 +385,10 @@ func kernelImageMediaType() -> String {
 }
 
 extension CzOutcome {
+  func imageStore() -> CzImageStore { taken() }
+  func image() -> CzImage { taken() }
+  func images() -> CzImages { taken() }
+  func initImage() -> CzInitImage { taken() }
   func kernelImage() -> CzKernelImage { taken() }
 
   // A `Kernel`, field by field: Rust builds its own.

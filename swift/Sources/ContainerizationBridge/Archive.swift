@@ -514,3 +514,35 @@ final class CzArchiveEntryReader: @unchecked Sendable {
     }
   }
 }
+
+extension CzOutcome {
+  func archiveWriter() -> CzArchiveWriter { taken() }
+  func archiveReader() -> CzArchiveReader { taken() }
+
+  // An archive entry, alone or with the data or reader it was read with.
+
+  func writeEntry() -> CzWriteEntry {
+    switch value {
+    case let (entry, _) as (WriteEntry, Data): CzWriteEntry(entry)
+    case let (entry, _) as (WriteEntry, ArchiveEntryReader): CzWriteEntry(entry)
+    default: taken()
+    }
+  }
+
+  func entryData() -> RustVec<UInt8> {
+    rustVec((taken() as (WriteEntry, Data)).1)
+  }
+
+  func archiveEntryReader() -> CzArchiveEntryReader {
+    CzArchiveEntryReader((taken() as (WriteEntry, ArchiveEntryReader)).1)
+  }
+
+  /// A held `[String: Data]`'s keys, and the value of one.
+  func dataMapKeys() -> RustVec<RustString> {
+    rustStrings((taken() as [String: Data]).keys)
+  }
+
+  func dataMapValue(key: RustStr) -> RustVec<UInt8> {
+    rustVec((taken() as [String: Data])[key.toString()] ?? Data())
+  }
+}

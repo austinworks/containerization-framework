@@ -129,7 +129,7 @@ func containerManager(vmm: CzVirtualMachineManager, network: CzNetwork) -> CzOut
 
 /// The manager's configuration closure. It fills `seed` with what the manager
 /// seeded, lets Rust's closure change it, and takes it back.
-private func configured(
+private func configuredContainer(
   _ seed: RustLinuxContainerConfiguration,
   by configuration: RustConfigure
 ) -> @Sendable (inout LinuxContainer.Configuration) throws -> Void {
@@ -176,7 +176,7 @@ final class CzContainerManager: @unchecked Sendable {
     let networking = options.networking()
     let vm = VMResources(cpus: Int(options.vmCpus()), memoryInBytes: options.vmMemoryInBytes())
     let progress = progressHandler(progress)
-    let configure = configured(seed, by: configuration)
+    let configure = configuredContainer(seed, by: configuration)
 
     return CzOutcome {
       CzLinuxContainer(
@@ -218,7 +218,7 @@ final class CzContainerManager: @unchecked Sendable {
     let networking = options.networking()
     let vm = VMResources(cpus: Int(options.vmCpus()), memoryInBytes: options.vmMemoryInBytes())
     let progress = progressHandler(progress)
-    let configure = configured(seed, by: configuration)
+    let configure = configuredContainer(seed, by: configuration)
 
     return CzOutcome {
       CzLinuxContainer(
@@ -255,7 +255,7 @@ final class CzContainerManager: @unchecked Sendable {
     let writableLayer = options.hasWritableLayer() ? Containerization.Mount(options.writableLayer()) : nil
     let networking = options.networking()
     let vm = VMResources(cpus: Int(options.vmCpus()), memoryInBytes: options.vmMemoryInBytes())
-    let configure = configured(seed, by: configuration)
+    let configure = configuredContainer(seed, by: configuration)
 
     return CzOutcome {
       CzLinuxContainer(
@@ -285,4 +285,8 @@ final class CzContainerManager: @unchecked Sendable {
 
     return CzOutcome { try self.manager.delete(id) }
   }
+}
+
+extension CzOutcome {
+  func containerManager() -> CzContainerManager { taken() }
 }

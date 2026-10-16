@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// ContainerizationExtras' `ProgressEvent` and `ProxyUtils`.
+// ContainerizationExtras' `ProgressEvent`, `ProgressHandler` and `ProxyUtils`.
 //===----------------------------------------------------------------------===//
 
 import ContainerizationExtras
@@ -15,6 +15,42 @@ extension ProgressEvent {
       case .TotalSize: .addTotalSize(value)
       }
   }
+}
+
+/// Rust's `ProgressHandler?`. Swift may call it from several threads at once,
+/// and Rust's is `Sync`. Swift's handler is `async`, so Rust's can run off the
+/// cooperative pool, where it may call back into Swift.
+func progressHandler(_ handler: RustProgressHandler) -> ProgressHandler? {
+  guard handler.isSome() else {
+    return nil
+  }
+  nonisolated(unsafe) let handler = handler
+
+  return { events in
+    await offPool { call(handler, with: events) }
+  }
+}
+
+private func call(_ handler: RustProgressHandler, with events: [ProgressEvent]) {
+  let kinds = RustVec<ProgressKind>()
+  let values = RustVec<Int64>()
+  for event in events {
+    switch event {
+    case .addItems(let value):
+      kinds.push(value: .Items)
+      values.push(value: Int64(value))
+    case .addTotalItems(let value):
+      kinds.push(value: .TotalItems)
+      values.push(value: Int64(value))
+    case .addSize(let value):
+      kinds.push(value: .Size)
+      values.push(value: value)
+    case .addTotalSize(let value):
+      kinds.push(value: .TotalSize)
+      values.push(value: value)
+    }
+  }
+  handler.call(kinds, values)
 }
 
 func progressEventEvent(kind: ProgressKind, value: Int64) -> CzOutcome {

@@ -1,7 +1,8 @@
 //===----------------------------------------------------------------------===//
-// What Containerization's configuration types compute: `Kernel.CommandLine`'s
-// edits, `Mount`'s copy and hash, `DNS`, `Hosts`, `ExitStatus`,
-// `LinuxRLimit.Kind`, `LinuxProcessConfiguration` and `Signal`.
+// What Containerization's value types compute: `Kernel.CommandLine`'s edits,
+// `Mount`'s copy and hash, `DNS`, `Hosts`, `ExitStatus`, `LinuxRLimit.Kind`,
+// `LinuxProcessConfiguration` and `Signal`. How each type crosses is in
+// `Model/`.
 //
 // A process configuration crosses back the way the manager's configuration
 // does: Swift fills a Rust value with it and hands that to a Rust closure.
@@ -236,8 +237,6 @@ func systemPlatformRawValues() -> RustVec<RustString> {
 }
 
 extension CzOutcome {
-  func int32() -> Int32 { taken() }
-
   func commandLineKernelArgs() -> RustVec<RustString> {
     rustStrings((taken() as Kernel.CommandLine).kernelArgs)
   }

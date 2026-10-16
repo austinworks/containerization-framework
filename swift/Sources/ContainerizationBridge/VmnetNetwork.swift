@@ -145,3 +145,8 @@ func vmnetNetwork(
     return CzVmnetNetwork(try VmnetNetwork(mode: mode, subnet: subnet, prefixV6: prefixV6))
   }
 }
+
+extension CzOutcome {
+  func vmnetNetwork() -> CzVmnetNetwork { taken() }
+  func vmnetInterface() -> CzVmnetInterface { taken() }
+}

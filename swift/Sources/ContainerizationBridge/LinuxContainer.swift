@@ -170,26 +170,44 @@ final class CzLinuxContainer: Sendable {
       }
     }
   }
+
+  /// What `withVirtualMachineInstance` hands its closure, for Rust's closure
+  /// to use.
+  func virtualMachineInstance() -> CzOutcome {
+    let container = container
+
+    return CzOutcome {
+      CzVirtualMachineInstance(try blocking { try await container.withVirtualMachineInstance { $0 } })
+    }
+  }
 }
 
-/// The closure an `exec` takes. It fills `seed` with the configuration Swift
-/// seeded, lets Rust's closure change it, and takes it back, keeping its
-/// writers in `output`.
-func configured(
-  _ seed: RustLinuxProcessConfiguration,
-  by configuration: RustConfigureProcess,
-  keeping output: Output
-) -> @Sendable (inout LinuxProcessConfiguration) throws -> Void {
-  // Not `Sendable`, but only this closure uses them, and an `exec` calls it
-  // once, while `blocking` waits.
-  nonisolated(unsafe) let seed = seed
-  nonisolated(unsafe) let configuration = configuration
+/// `writableLayer` stands for `nil` when `hasWritableLayer` is false.
+func linuxContainer(
+  id: RustStr,
+  rootfs: RustMount,
+  hasWritableLayer: Bool,
+  writableLayer: RustMount,
+  vmm: CzVirtualMachineManager,
+  vmCpus: UInt32,
+  vmMemoryInBytes: UInt64,
+  configuration: RustLinuxContainerConfiguration
+) -> CzOutcome {
+  let id = id.toString()
+  let rootfs = Containerization.Mount(rootfs)
+  let writableLayer = hasWritableLayer ? Containerization.Mount(writableLayer) : nil
 
-  return { config in
-    fill(seed, from: config)
-    if configuration.call(seed) { throw BridgeError.bodyFailed }
-    config = try LinuxProcessConfiguration(seed)
-    output.keep(config)
+  return CzOutcome {
+    CzLinuxContainer(
+      try LinuxContainer(
+        id,
+        rootfs: rootfs,
+        writableLayer: writableLayer,
+        vmm: vmm.manager,
+        vm: VMResources(cpus: Int(vmCpus), memoryInBytes: vmMemoryInBytes),
+        configuration: try LinuxContainer.Configuration(configuration)
+      )
+    )
   }
 }
 
@@ -201,6 +219,11 @@ func linuxContainerDefaultMounts() -> CzOutcome {
 
 func linuxContainerDefaultCopyChunkSize() -> UInt {
   UInt(LinuxContainer.defaultCopyChunkSize)
+}
+
+extension CzOutcome {
+  func linuxContainer() -> CzLinuxContainer { taken() }
+  func linuxProcess() -> CzLinuxProcess { taken() }
 }
 
 // MARK: ContainerStatistics

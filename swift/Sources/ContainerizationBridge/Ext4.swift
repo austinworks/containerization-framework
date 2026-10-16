@@ -241,6 +241,7 @@ final class CzExt4Formatter: @unchecked Sendable {
 }
 
 extension CzOutcome {
+  func ext4Reader() -> CzExt4Reader { taken() }
   func ext4Formatter() -> CzExt4Formatter { taken() }
 
   func inodeNumber() -> UInt32 {

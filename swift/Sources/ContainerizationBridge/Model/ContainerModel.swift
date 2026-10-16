@@ -1,11 +1,16 @@
 //===----------------------------------------------------------------------===//
-// Rust's value types read into Containerization's, and Containerization's
-// filled back into Rust's.
+// Rust's container values read into Containerization's, and Containerization's
+// filled back into Rust's: mounts, users, capabilities, rlimits, process
+// configurations, and the container's and pod's configurations. The Rust side
+// is `bridge::containers` and `bridge::accessors::container`.
 //
 // Rust to Swift reads the opaque Rust values (`RustMount`, ...) once, on the
 // calling thread, into `Sendable` types the async work can carry. Swift to Rust
 // fills a value Rust hands over, such as the configuration
 // `ContainerManager.create` seeds for Rust to change.
+//
+// The network values are in `NetworkModel.swift`, and the VM's in
+// `VMModel.swift`.
 //===----------------------------------------------------------------------===//
 
 import Containerization
@@ -33,50 +38,6 @@ extension Containerization.Mount {
       destination: mount.destination().toString(),
       options: strings(mount.optionsLen(), mount.optionsAt),
       runtimeOptions: runtimeOptions
-    )
-  }
-}
-
-extension NATInterface {
-  init(_ interface: RustNatInterfaceRef) throws {
-    self.init(
-      ipv4Address: try CIDRv4(bridged: interface.ipv4AddressValue(), prefix: interface.ipv4Prefix()),
-      ipv4Gateway: interface.ipv4Gateway().map { IPv4Address($0) },
-      ipv6Address: interface.hasIpv6Address()
-        ? try CIDRv6(bridged: interface.ipv6Address(), prefix: interface.ipv6Prefix()) : nil,
-      ipv6Gateway: interface.hasIpv6Gateway() ? IPv6Address(interface.ipv6Gateway()) : nil,
-      macAddress: interface.macAddress().map { MACAddress($0) },
-      mtu: interface.mtu()
-    )
-  }
-}
-
-extension DNS {
-  init(_ dns: RustDnsRef) {
-    self.init(
-      nameservers: strings(dns.nameserversLen(), dns.nameserversAt),
-      domain: dns.domain()?.toString(),
-      searchDomains: strings(dns.searchDomainsLen(), dns.searchDomainsAt),
-      options: strings(dns.optionsLen(), dns.optionsAt)
-    )
-  }
-}
-
-extension Hosts.Entry {
-  init(_ entry: RustHostsEntryRef) {
-    self.init(
-      ipAddress: entry.ipAddress().toString(),
-      hostnames: strings(entry.hostnamesLen(), entry.hostnamesAt),
-      comment: entry.comment()?.toString()
-    )
-  }
-}
-
-extension Hosts {
-  init(_ hosts: RustHostsRef) {
-    self.init(
-      entries: list(hosts.entriesLen(), hosts.entriesAt).map(Hosts.Entry.init),
-      comment: hosts.comment()?.toString()
     )
   }
 }
@@ -158,24 +119,6 @@ extension LinuxProcessConfiguration {
       stdout: stdout,
       stderr: stderr
     )
-  }
-}
-
-/// The file URL of a path Rust lends. Rust lends `nil` for a path that isn't
-/// UTF-8, which a `String` can't hold, and this throws, naming `what` and the
-/// path as `lossy` gives it.
-func lentPath(_ path: String?, _ what: String, _ lossy: () -> RustString) throws -> URL {
-  guard let path else { throw BridgeError.malformed("\(what) path", lossy().toString()) }
-  return URL(filePath: path)
-}
-
-extension BootLog {
-  static func from(_ bootLog: RustBootLogRef) throws -> BootLog {
-    switch bootLog.kind() {
-    case .File:
-      .file(path: try lentPath(bootLog.path()?.toString(), "boot log", bootLog.lossyPath), append: bootLog.append())
-    case .FileHandle: .fileHandle(try duplicate(bootLog: bootLog.fileHandle()))
-    }
   }
 }
 
@@ -288,105 +231,7 @@ extension LinuxPod.ContainerConfiguration {
   }
 }
 
-/// The interfaces Rust lends by index, each as the conforming type it is.
-func lentInterfaces(
-  _ count: UInt,
-  _ kind: (UInt) -> InterfaceKind,
-  _ nat: (UInt) -> RustNatInterfaceRef,
-  _ vmnet: (UInt) -> CzVmnetInterface
-) throws -> [any Interface] {
-  try list(count) { index -> any Interface in
-    switch kind(index) {
-    case .Nat: try NATInterface(nat(index))
-    case .Vmnet: vmnet(index).interface
-    }
-  }
-}
-
-extension VMConfiguration {
-  init(_ configuration: RustVmConfigurationRef) throws {
-    self.init(
-      cpus: Int(configuration.cpus()),
-      memoryInBytes: configuration.memoryInBytes(),
-      interfaces: try lentInterfaces(
-        configuration.interfacesLen(),
-        configuration.interfaceKindAt,
-        configuration.natInterfaceAt,
-        configuration.vmnetInterfaceAt
-      ),
-      mountsByID: Dictionary(
-        list(configuration.mountsByIdLen()) { index in
-          (
-            configuration.mountsByIdKeyAt(index).toString(),
-            list(configuration.mountsByIdMountsLen(index)) {
-              Containerization.Mount(configuration.mountsByIdMountAt(index, $0))
-            }
-          )
-        },
-        uniquingKeysWith: { _, last in last }
-      ),
-      bootLog: configuration.hasBootLog() ? try BootLog.from(configuration.bootLog()) : nil,
-      nestedVirtualization: configuration.nestedVirtualization()
-    )
-  }
-}
-
-extension AttachedFilesystem {
-  init(_ filesystem: RustAttachedFilesystemRef) {
-    self.init(
-      type: filesystem.filesystemType().toString(),
-      source: filesystem.source().toString(),
-      destination: filesystem.destination().toString(),
-      options: strings(filesystem.optionsLen(), filesystem.optionsAt)
-    )
-  }
-}
-
-extension SystemPlatform {
-  /// Decoded, since its memberwise init is internal.
-  init(_ platform: RustSystemPlatformRef) throws {
-    let os: OS =
-      switch platform.os() {
-      case .Linux: .linux
-      case .Darwin: .darwin
-      }
-    let architecture: Architecture =
-      switch platform.architecture() {
-      case .Arm64: .arm64
-      case .Amd64: .amd64
-      }
-
-    self = try JSONDecoder().decode(
-      SystemPlatform.self,
-      from: Data(#"{"os":"\#(os.rawValue)","architecture":"\#(architecture.rawValue)"}"#.utf8)
-    )
-  }
-}
-
-extension Kernel {
-  init(_ kernel: RustKernelRef) throws {
-    self.init(
-      path: try lentPath(kernel.path()?.toString(), "kernel", kernel.lossyPath),
-      platform: try SystemPlatform(kernel.platform()),
-      commandline: CommandLine(
-        kernelArgs: strings(kernel.kernelArgsLen(), kernel.kernelArgsAt),
-        initArgs: strings(kernel.initArgsLen(), kernel.initArgsAt)
-      )
-    )
-  }
-}
-
 // MARK: Swift to Rust
-
-/// A mount's `RuntimeOptions`, as the bridge's kind and the options it carries.
-func runtimeKind(_ options: Containerization.Mount.RuntimeOptions) -> (RuntimeKind, [String]) {
-  switch options {
-  case .virtioblk(let options): (.Virtioblk, options)
-  case .virtiofs(let options): (.Virtiofs, options)
-  case .shared: (.Shared, [])
-  case .any(let options): (.Generic, options)
-  }
-}
 
 /// `process` into Rust's, all but stdio: Swift's streams don't cross back.
 func fill(_ built: RustLinuxProcessConfigurationRefMut, from process: LinuxProcessConfiguration) {
@@ -599,23 +444,38 @@ private func fill(
   }
 }
 
-/// What a `BootLog` writes to. Containerization keeps it internal, so it is
-/// read by reflection.
-private enum BootLogRepresentation {
-  case file(URL, Bool)
-  case fileHandle(FileHandle)
-}
+// A `Mount` and an `ExitStatus`, field by field: Rust builds its own.
+extension CzOutcome {
+  func mountType() -> String {
+    (taken() as Containerization.Mount).type
+  }
 
-private func representation(of bootLog: BootLog) -> BootLogRepresentation {
-  let base = Mirror(reflecting: bootLog).children.first { $0.label == "base" }!.value
-  let representation = Mirror(reflecting: base).children.first!
+  func mountSource() -> String {
+    (taken() as Containerization.Mount).source
+  }
 
-  switch representation.value {
-  case let (path, append) as (URL, Bool):
-    return .file(path, append)
-  case let handle as FileHandle:
-    return .fileHandle(handle)
-  default:
-    preconditionFailure("BootLog holds \(representation.label ?? "something") this bridge doesn't know")
+  func mountDestination() -> String {
+    (taken() as Containerization.Mount).destination
+  }
+
+  func mountOptions() -> RustVec<RustString> {
+    rustStrings((taken() as Containerization.Mount).options)
+  }
+
+  func mountRuntimeKind() -> RuntimeKind {
+    runtimeKind((taken() as Containerization.Mount).runtimeOptions).0
+  }
+
+  func mountRuntimeOptions() -> RustVec<RustString> {
+    rustStrings(runtimeKind((taken() as Containerization.Mount).runtimeOptions).1)
+  }
+
+  func exitCode() -> Int32 {
+    (taken() as ExitStatus).exitCode
+  }
+
+  /// Seconds since 1970.
+  func exitedAt() -> Double {
+    (taken() as ExitStatus).exitedAt.timeIntervalSince1970
   }
 }

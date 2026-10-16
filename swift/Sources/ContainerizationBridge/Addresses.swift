@@ -1,63 +1,11 @@
 //===----------------------------------------------------------------------===//
-// The address types, from ContainerizationExtras: Rust's read into Swift's,
-// and what Swift computes from them.
-//
-// IPv4 and MAC addresses cross as their values, and a prefix as its length.
-// IPv6 and IP addresses cross as opaque Rust types. Rust builds a result back
-// field by field, through `CzOutcome`'s getters.
+// What Swift computes from the address types, from ContainerizationExtras.
+// How each type crosses is in `Model/AddressModel.swift`.
 //===----------------------------------------------------------------------===//
 
 import Containerization
 import ContainerizationExtras
 import Foundation
-
-// MARK: Rust to Swift
-
-extension IPv6Address {
-  init(_ address: RustIPv6AddressRef) {
-    self.init(UInt128(address.valueHigh()) << 64 | UInt128(address.valueLow()), zone: address.zone()?.toString())
-  }
-}
-
-extension IPAddress {
-  init(_ address: RustIpAddressRef) {
-    self = address.holdsV6() ? .v6(IPv6Address(address.v6())) : .v4(IPv4Address(address.v4Value()))
-  }
-}
-
-extension Prefix {
-  /// A length Rust holds, which Swift made.
-  init(bridged length: UInt8) throws {
-    guard let prefix = Prefix(length: length) else {
-      throw BridgeError.malformed("prefix length", String(length))
-    }
-    self = prefix
-  }
-}
-
-extension CIDRv4 {
-  init(bridged address: UInt32, prefix: UInt8) throws {
-    try self.init(IPv4Address(address), prefix: Prefix(bridged: prefix))
-  }
-}
-
-extension CIDRv6 {
-  init(bridged address: RustIPv6AddressRef, prefix: UInt8) throws {
-    try self.init(IPv6Address(address), prefix: Prefix(bridged: prefix))
-  }
-}
-
-extension CIDR {
-  /// The case Rust holds, made directly as Rust's was.
-  init(bridged address: RustIpAddressRef, prefix: UInt8) throws {
-    let prefix = try Prefix(bridged: prefix)
-    self =
-      switch IPAddress(address) {
-      case .v4(let address): .v4(address, prefix)
-      case .v6(let address): .v6(address, prefix)
-      }
-  }
-}
 
 // MARK: IPv4Address
 

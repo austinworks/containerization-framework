@@ -55,3 +55,15 @@ struct Written {
   let size: Int64
   let digest: String
 }
+
+extension CzOutcome {
+  func contentWriter() -> CzContentWriter { taken() }
+
+  func writtenSize() -> Int64 {
+    (taken() as Written).size
+  }
+
+  func writtenDigest() -> String {
+    (taken() as Written).digest
+  }
+}

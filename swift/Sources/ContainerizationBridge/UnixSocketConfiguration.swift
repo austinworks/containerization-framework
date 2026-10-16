@@ -79,3 +79,7 @@ func unixSocketConfiguration(source: RustStr, destination: RustStr) -> CzOutcome
     CzUnixSocketConfiguration(UnixSocketConfiguration(source: source, destination: destination))
   }
 }
+
+extension CzOutcome {
+  func unixSocketConfiguration() -> CzUnixSocketConfiguration { taken() }
+}

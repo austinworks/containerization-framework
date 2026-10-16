@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 // `VZVirtualMachineManager`, `VZVirtualMachineInstance` and `VsockListener`,
-// from Containerization, and the `LinuxContainer` inits that take a manager.
+// from Containerization.
 //===----------------------------------------------------------------------===//
 
 import Containerization
@@ -196,45 +196,8 @@ final class CzVsockListener: @unchecked Sendable {
   }
 }
 
-// MARK: LinuxContainer
-
-extension CzLinuxContainer {
-  /// What `withVirtualMachineInstance` hands its closure, for Rust's closure
-  /// to use.
-  func virtualMachineInstance() -> CzOutcome {
-    let container = container
-
-    return CzOutcome {
-      CzVirtualMachineInstance(try blocking { try await container.withVirtualMachineInstance { $0 } })
-    }
-  }
-}
-
-/// `writableLayer` stands for `nil` when `hasWritableLayer` is false.
-func linuxContainer(
-  id: RustStr,
-  rootfs: RustMount,
-  hasWritableLayer: Bool,
-  writableLayer: RustMount,
-  vmm: CzVirtualMachineManager,
-  vmCpus: UInt32,
-  vmMemoryInBytes: UInt64,
-  configuration: RustLinuxContainerConfiguration
-) -> CzOutcome {
-  let id = id.toString()
-  let rootfs = Containerization.Mount(rootfs)
-  let writableLayer = hasWritableLayer ? Containerization.Mount(writableLayer) : nil
-
-  return CzOutcome {
-    CzLinuxContainer(
-      try LinuxContainer(
-        id,
-        rootfs: rootfs,
-        writableLayer: writableLayer,
-        vmm: vmm.manager,
-        vm: VMResources(cpus: Int(vmCpus), memoryInBytes: vmMemoryInBytes),
-        configuration: try LinuxContainer.Configuration(configuration)
-      )
-    )
-  }
+extension CzOutcome {
+  func virtualMachineManager() -> CzVirtualMachineManager { taken() }
+  func virtualMachineInstance() -> CzVirtualMachineInstance { taken() }
+  func vsockListener() -> CzVsockListener { taken() }
 }

@@ -723,69 +723,61 @@ pub(crate) mod ffi {
     fn unified_value_at(self: &RustPodContainerConfiguration, index: usize) -> &str;
   }
 
+  // One `extern "Swift"` block per Swift file, in the order below, each
+  // headed by the file's name. A type's getters on `CzOutcome` are in the
+  // block of the file that binds the type.
+
   extern "Swift" {
+    // Bridged.swift
+    //
     // What a throwing call returned, or why it failed. Rust asks `error`
-    // first, then takes the one value the call makes, once.
+    // first, then takes the one value the call makes, once. These getters
+    // read a shape rather than a type.
     type CzOutcome;
     fn error(self: &CzOutcome) -> Option<String>;
     #[swift_bridge(swift_name = "errorCode")]
     fn error_code(self: &CzOutcome) -> Option<String>;
-    #[swift_bridge(swift_name = "localContentStore")]
-    fn local_content_store(self: &CzOutcome) -> CzLocalContentStore;
-    fn content(self: &CzOutcome) -> CzContent;
-    #[swift_bridge(swift_name = "imageStore")]
-    fn image_store(self: &CzOutcome) -> CzImageStore;
-    fn image(self: &CzOutcome) -> CzImage;
-    fn images(self: &CzOutcome) -> CzImages;
-    #[swift_bridge(swift_name = "initImage")]
-    fn init_image(self: &CzOutcome) -> CzInitImage;
-    #[swift_bridge(swift_name = "containerManager")]
-    fn container_manager(self: &CzOutcome) -> CzContainerManager;
-    #[swift_bridge(swift_name = "linuxContainer")]
-    fn linux_container(self: &CzOutcome) -> CzLinuxContainer;
-    #[swift_bridge(swift_name = "vmnetNetwork")]
-    fn vmnet_network(self: &CzOutcome) -> CzVmnetNetwork;
-    #[swift_bridge(swift_name = "vmnetInterface")]
-    fn vmnet_interface(self: &CzOutcome) -> CzVmnetInterface;
-    #[swift_bridge(swift_name = "unixSocketConfiguration")]
-    fn unix_socket_configuration(self: &CzOutcome) -> CzUnixSocketConfiguration;
-    #[swift_bridge(swift_name = "linuxProcess")]
-    fn linux_process(self: &CzOutcome) -> CzLinuxProcess;
-    #[swift_bridge(swift_name = "virtualMachineManager")]
-    fn virtual_machine_manager(self: &CzOutcome) -> CzVirtualMachineManager;
-    #[swift_bridge(swift_name = "virtualMachineInstance")]
-    fn virtual_machine_instance(self: &CzOutcome) -> CzVirtualMachineInstance;
-    fn vminitd(self: &CzOutcome) -> CzVminitd;
-    #[swift_bridge(swift_name = "vsockListener")]
-    fn vsock_listener(self: &CzOutcome) -> CzVsockListener;
-    #[swift_bridge(swift_name = "linuxPod")]
-    fn linux_pod(self: &CzOutcome) -> CzLinuxPod;
-    #[swift_bridge(swift_name = "contentWriter")]
-    fn content_writer(self: &CzOutcome) -> CzContentWriter;
-    #[swift_bridge(swift_name = "writtenSize")]
-    fn written_size(self: &CzOutcome) -> i64;
-    #[swift_bridge(swift_name = "writtenDigest")]
-    fn written_digest(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "ext4Reader")]
-    fn ext4_reader(self: &CzOutcome) -> CzExt4Reader;
-    #[swift_bridge(swift_name = "archiveWriter")]
-    fn archive_writer(self: &CzOutcome) -> CzArchiveWriter;
-    #[swift_bridge(swift_name = "archiveReader")]
-    fn archive_reader(self: &CzOutcome) -> CzArchiveReader;
-    // A `WriteEntry`, alone or with the data or reader an iterator returned
-    // it with.
-    #[swift_bridge(swift_name = "writeEntry")]
-    fn write_entry(self: &CzOutcome) -> CzWriteEntry;
-    #[swift_bridge(swift_name = "entryData")]
-    fn entry_data(self: &CzOutcome) -> Vec<u8>;
-    #[swift_bridge(swift_name = "archiveEntryReader")]
-    fn archive_entry_reader(self: &CzOutcome) -> CzArchiveEntryReader;
-    // A held `[String: Data]`'s keys, and the value of one.
-    #[swift_bridge(swift_name = "dataMapKeys")]
-    fn data_map_keys(self: &CzOutcome) -> Vec<String>;
-    #[swift_bridge(swift_name = "dataMapValue")]
-    fn data_map_value(self: &CzOutcome, key: &str) -> Vec<u8>;
+    // A failed outcome's thrown `FileDescriptorOps.Error`, or `Absent`.
+    #[swift_bridge(swift_name = "thrownFdOpsError")]
+    fn thrown_fd_ops_error_outcome(self: &CzOutcome) -> CzOutcome;
+    // Whether an optional result is there.
+    #[swift_bridge(swift_name = "isSome")]
+    fn is_some(self: &CzOutcome) -> bool;
+    // A held list's length and elements, and a held `[String: String]`'s keys
+    // and values in the same order.
+    fn len(self: &CzOutcome) -> usize;
+    fn at(self: &CzOutcome, index: usize) -> CzOutcome;
+    #[swift_bridge(swift_name = "mapKeys")]
+    fn map_keys(self: &CzOutcome) -> Vec<String>;
+    #[swift_bridge(swift_name = "mapValues")]
+    fn map_values(self: &CzOutcome) -> Vec<String>;
+    // A held `[String: T]`'s keys, sorted, and an outcome holding its values
+    // in the same order.
+    #[swift_bridge(swift_name = "entryKeys")]
+    fn entry_keys(self: &CzOutcome) -> Vec<String>;
+    #[swift_bridge(swift_name = "entryValues")]
+    fn entry_values(self: &CzOutcome) -> CzOutcome;
+    fn boolean(self: &CzOutcome) -> bool;
+    fn int32(self: &CzOutcome) -> i32;
+    fn integer(self: &CzOutcome) -> i64;
+    fn number(self: &CzOutcome) -> u64;
+    // A `UInt128`, in two halves.
+    #[swift_bridge(swift_name = "wideHigh")]
+    fn wide_high(self: &CzOutcome) -> u64;
+    #[swift_bridge(swift_name = "wideLow")]
+    fn wide_low(self: &CzOutcome) -> u64;
+    fn text(self: &CzOutcome) -> String;
+    fn strings(self: &CzOutcome) -> Vec<String>;
+    #[swift_bridge(swift_name = "hasBytes")]
+    fn has_bytes(self: &CzOutcome) -> bool;
+    fn bytes(self: &CzOutcome) -> Vec<u8>;
+  }
 
+  extern "Swift" {
+    // Model/ImageModel.swift
+    //
+    // A `Platform`, and the OCI image types, field by field. A list, a map, a
+    // nested value or an optional one of those is an outcome of its own.
     #[swift_bridge(swift_name = "platformArchitecture")]
     fn platform_architecture(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "platformOs")]
@@ -799,17 +791,6 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "platformVariant")]
     fn platform_variant(self: &CzOutcome) -> Option<String>;
 
-    // A held list's length and elements, and a held `[String: String]`'s keys
-    // and values in the same order.
-    fn len(self: &CzOutcome) -> usize;
-    fn at(self: &CzOutcome, index: usize) -> CzOutcome;
-    #[swift_bridge(swift_name = "mapKeys")]
-    fn map_keys(self: &CzOutcome) -> Vec<String>;
-    #[swift_bridge(swift_name = "mapValues")]
-    fn map_values(self: &CzOutcome) -> Vec<String>;
-
-    // The OCI image types, field by field. A list, a map, a nested value or
-    // an optional one of those is an outcome of its own.
     #[swift_bridge(swift_name = "descriptorMediaType")]
     fn descriptor_media_type(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "descriptorDigest")]
@@ -905,13 +886,28 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "ociImageHistory")]
     fn oci_image_history(self: &CzOutcome) -> CzOutcome;
 
-    // A held `[String: T]`'s keys, sorted, and an outcome holding its values
-    // in the same order.
-    #[swift_bridge(swift_name = "entryKeys")]
-    fn entry_keys(self: &CzOutcome) -> Vec<String>;
-    #[swift_bridge(swift_name = "entryValues")]
-    fn entry_values(self: &CzOutcome) -> CzOutcome;
+    // Swift's `MediaTypes` and `AnnotationKeys`, in the order of Rust's
+    // `ALL`, for a test that compares Rust's copies with them.
+    #[swift_bridge(swift_name = "mediaTypes")]
+    fn cz_media_types() -> Vec<String>;
+    #[swift_bridge(swift_name = "annotationKeys")]
+    fn cz_annotation_keys() -> Vec<String>;
 
+    #[swift_bridge(swift_name = "currentPlatform")]
+    fn cz_platform_current() -> CzOutcome;
+    #[swift_bridge(swift_name = "parsePlatform")]
+    fn cz_platform_parse(platform: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "platformDescription")]
+    fn cz_platform_description(platform: RustPlatform) -> CzOutcome;
+    #[swift_bridge(swift_name = "platformEquals")]
+    fn cz_platform_equals(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome;
+    #[swift_bridge(swift_name = "platformMatches")]
+    fn cz_platform_matches(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome;
+  }
+
+  extern "Swift" {
+    // Model/SpecModel.swift
+    //
     // The OCI runtime spec, field by field. An enum is its `rawValue`.
     #[swift_bridge(swift_name = "specVersion")]
     fn spec_version(self: &CzOutcome) -> String;
@@ -932,6 +928,23 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "specLinux")]
     fn spec_linux(self: &CzOutcome) -> CzOutcome;
 
+    #[swift_bridge(swift_name = "rootPath")]
+    fn root_path(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "rootReadonly")]
+    fn root_readonly(self: &CzOutcome) -> bool;
+
+    #[swift_bridge(swift_name = "runtimeSpecVersionMajor")]
+    fn runtime_spec_version_major(self: &CzOutcome) -> isize;
+    #[swift_bridge(swift_name = "runtimeSpecVersionMinor")]
+    fn runtime_spec_version_minor(self: &CzOutcome) -> isize;
+    #[swift_bridge(swift_name = "runtimeSpecVersionPatch")]
+    fn runtime_spec_version_patch(self: &CzOutcome) -> isize;
+    #[swift_bridge(swift_name = "runtimeSpecVersionDev")]
+    fn runtime_spec_version_dev(self: &CzOutcome) -> String;
+  }
+
+  extern "Swift" {
+    // Model/Spec/Process.swift
     #[swift_bridge(swift_name = "processCwd")]
     fn process_cwd(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "processEnv")]
@@ -979,11 +992,16 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "capabilitiesSet")]
     fn capabilities_set(self: &CzOutcome, set: CapabilitySet) -> CzOutcome;
 
-    #[swift_bridge(swift_name = "rootPath")]
-    fn root_path(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "rootReadonly")]
-    fn root_readonly(self: &CzOutcome) -> bool;
+    #[swift_bridge(swift_name = "rlimitType")]
+    fn rlimit_type(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "rlimitHard")]
+    fn rlimit_hard(self: &CzOutcome) -> u64;
+    #[swift_bridge(swift_name = "rlimitSoft")]
+    fn rlimit_soft(self: &CzOutcome) -> u64;
+  }
 
+  extern "Swift" {
+    // Model/Spec/Mount.swift
     #[swift_bridge(swift_name = "ociMountType")]
     fn oci_mount_type(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "ociMountSource")]
@@ -996,7 +1014,10 @@ pub(crate) mod ffi {
     fn oci_mount_uid_mappings(self: &CzOutcome) -> CzOutcome;
     #[swift_bridge(swift_name = "ociMountGidMappings")]
     fn oci_mount_gid_mappings(self: &CzOutcome) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // Model/Spec/Hooks.swift
     #[swift_bridge(swift_name = "hookPath")]
     fn hook_path(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "hookArgs")]
@@ -1007,7 +1028,10 @@ pub(crate) mod ffi {
     fn hook_timeout(self: &CzOutcome) -> Option<isize>;
     #[swift_bridge(swift_name = "hooksOf")]
     fn hooks_of(self: &CzOutcome, kind: HookKind) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // Model/Spec/Linux.swift
     #[swift_bridge(swift_name = "linuxUidMappings")]
     fn linux_uid_mappings(self: &CzOutcome) -> CzOutcome;
     #[swift_bridge(swift_name = "linuxGidMappings")]
@@ -1047,13 +1071,29 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "idMappingSize")]
     fn id_mapping_size(self: &CzOutcome) -> u32;
 
-    #[swift_bridge(swift_name = "rlimitType")]
-    fn rlimit_type(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "rlimitHard")]
-    fn rlimit_hard(self: &CzOutcome) -> u64;
-    #[swift_bridge(swift_name = "rlimitSoft")]
-    fn rlimit_soft(self: &CzOutcome) -> u64;
+    #[swift_bridge(swift_name = "devicePath")]
+    fn device_path(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "deviceType")]
+    fn device_type(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "deviceMajor")]
+    fn device_major(self: &CzOutcome) -> i64;
+    #[swift_bridge(swift_name = "deviceMinor")]
+    fn device_minor(self: &CzOutcome) -> i64;
+    #[swift_bridge(swift_name = "deviceFileMode")]
+    fn device_file_mode(self: &CzOutcome) -> Option<u32>;
+    #[swift_bridge(swift_name = "deviceUid")]
+    fn device_uid(self: &CzOutcome) -> Option<u32>;
+    #[swift_bridge(swift_name = "deviceGid")]
+    fn device_gid(self: &CzOutcome) -> Option<u32>;
 
+    #[swift_bridge(swift_name = "personalityDomain")]
+    fn personality_domain(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "personalityFlags")]
+    fn personality_flags(self: &CzOutcome) -> Vec<String>;
+  }
+
+  extern "Swift" {
+    // Model/Spec/Resources.swift
     #[swift_bridge(swift_name = "resourcesDevices")]
     fn resources_devices(self: &CzOutcome) -> CzOutcome;
     #[swift_bridge(swift_name = "resourcesMemory")]
@@ -1156,21 +1196,6 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "rdmaHcaObjects")]
     fn rdma_hca_objects(self: &CzOutcome) -> Option<u32>;
 
-    #[swift_bridge(swift_name = "devicePath")]
-    fn device_path(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "deviceType")]
-    fn device_type(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "deviceMajor")]
-    fn device_major(self: &CzOutcome) -> i64;
-    #[swift_bridge(swift_name = "deviceMinor")]
-    fn device_minor(self: &CzOutcome) -> i64;
-    #[swift_bridge(swift_name = "deviceFileMode")]
-    fn device_file_mode(self: &CzOutcome) -> Option<u32>;
-    #[swift_bridge(swift_name = "deviceUid")]
-    fn device_uid(self: &CzOutcome) -> Option<u32>;
-    #[swift_bridge(swift_name = "deviceGid")]
-    fn device_gid(self: &CzOutcome) -> Option<u32>;
-
     #[swift_bridge(swift_name = "deviceCgroupAllow")]
     fn device_cgroup_allow(self: &CzOutcome) -> bool;
     #[swift_bridge(swift_name = "deviceCgroupType")]
@@ -1181,12 +1206,10 @@ pub(crate) mod ffi {
     fn device_cgroup_minor(self: &CzOutcome) -> Option<i64>;
     #[swift_bridge(swift_name = "deviceCgroupAccess")]
     fn device_cgroup_access(self: &CzOutcome) -> Option<String>;
+  }
 
-    #[swift_bridge(swift_name = "personalityDomain")]
-    fn personality_domain(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "personalityFlags")]
-    fn personality_flags(self: &CzOutcome) -> Vec<String>;
-
+  extern "Swift" {
+    // Model/Spec/Seccomp.swift
     #[swift_bridge(swift_name = "seccompDefaultAction")]
     fn seccomp_default_action(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "seccompDefaultErrnoRet")]
@@ -1218,16 +1241,10 @@ pub(crate) mod ffi {
     fn seccomp_arg_value_two(self: &CzOutcome) -> u64;
     #[swift_bridge(swift_name = "seccompArgOp")]
     fn seccomp_arg_op(self: &CzOutcome) -> String;
+  }
 
-    #[swift_bridge(swift_name = "runtimeSpecVersionMajor")]
-    fn runtime_spec_version_major(self: &CzOutcome) -> isize;
-    #[swift_bridge(swift_name = "runtimeSpecVersionMinor")]
-    fn runtime_spec_version_minor(self: &CzOutcome) -> isize;
-    #[swift_bridge(swift_name = "runtimeSpecVersionPatch")]
-    fn runtime_spec_version_patch(self: &CzOutcome) -> isize;
-    #[swift_bridge(swift_name = "runtimeSpecVersionDev")]
-    fn runtime_spec_version_dev(self: &CzOutcome) -> String;
-
+  extern "Swift" {
+    // Spec.swift
     #[swift_bridge(swift_name = "processFromImageConfig")]
     fn cz_process_from_image_config(config: RustImageConfig) -> CzOutcome;
     #[swift_bridge(swift_name = "processDescription")]
@@ -1282,14 +1299,10 @@ pub(crate) mod ffi {
     fn cz_seccomp_fd_name() -> String;
     #[swift_bridge(swift_name = "defaultValue")]
     fn cz_default(name: &str) -> CzOutcome;
+  }
 
-    // Swift's `MediaTypes` and `AnnotationKeys`, in the order of Rust's
-    // `ALL`, for a test that compares Rust's copies with them.
-    #[swift_bridge(swift_name = "mediaTypes")]
-    fn cz_media_types() -> Vec<String>;
-    #[swift_bridge(swift_name = "annotationKeys")]
-    fn cz_annotation_keys() -> Vec<String>;
-
+  extern "Swift" {
+    // Reference.swift
     type CzReference;
     #[swift_bridge(swift_name = "newReference")]
     fn cz_reference_new(path: &str, domain: Option<String>, tag: Option<String>, digest: Option<String>) -> CzOutcome;
@@ -1330,18 +1343,11 @@ pub(crate) mod ffi {
     // For a test that compares Rust's copy with it.
     #[swift_bridge(swift_name = "digestAlgorithm")]
     fn cz_parsed_digest_algorithm() -> String;
+  }
 
-    #[swift_bridge(swift_name = "currentPlatform")]
-    fn cz_platform_current() -> CzOutcome;
-    #[swift_bridge(swift_name = "parsePlatform")]
-    fn cz_platform_parse(platform: &str) -> CzOutcome;
-    #[swift_bridge(swift_name = "platformDescription")]
-    fn cz_platform_description(platform: RustPlatform) -> CzOutcome;
-    #[swift_bridge(swift_name = "platformEquals")]
-    fn cz_platform_equals(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome;
-    #[swift_bridge(swift_name = "platformMatches")]
-    fn cz_platform_matches(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome;
-
+  extern "Swift" {
+    // Extras.swift
+    //
     // `ProgressEvent.event`, of the case and value Rust holds.
     #[swift_bridge(swift_name = "progressEventEvent")]
     fn cz_progress_event_event(kind: ProgressKind, value: i64) -> CzOutcome;
@@ -1357,14 +1363,14 @@ pub(crate) mod ffi {
       #[swift_bridge(label = "envKeys")] env_keys: Vec<String>,
       #[swift_bridge(label = "envValues")] env_values: Vec<String>,
     ) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // Model/AddressModel.swift
+    //
     // Addresses cross field by field, and Rust builds its own. The address
     // getters also read the address inside a held `IPAddress`, CIDR block or
     // `CIDR`, and `prefixLength` reads the prefix of a CIDR block or `CIDR`.
-    fn boolean(self: &CzOutcome) -> bool;
-    // Whether an optional result is there.
-    #[swift_bridge(swift_name = "isSome")]
-    fn is_some(self: &CzOutcome) -> bool;
     #[swift_bridge(swift_name = "isIPv6")]
     fn is_ipv6(self: &CzOutcome) -> bool;
     #[swift_bridge(swift_name = "ipv4Value")]
@@ -1379,12 +1385,11 @@ pub(crate) mod ffi {
     fn prefix_length(self: &CzOutcome) -> u8;
     #[swift_bridge(swift_name = "macValue")]
     fn mac_value(self: &CzOutcome) -> u64;
-    // A `UInt128`, in two halves.
-    #[swift_bridge(swift_name = "wideHigh")]
-    fn wide_high(self: &CzOutcome) -> u64;
-    #[swift_bridge(swift_name = "wideLow")]
-    fn wide_low(self: &CzOutcome) -> u64;
+  }
 
+  extern "Swift" {
+    // Addresses.swift
+    //
     // `IPv4Address`, as its value.
     #[swift_bridge(swift_name = "ipv4AddressFromBytes")]
     fn cz_ipv4_address_from_bytes(bytes: Vec<u8>) -> CzOutcome;
@@ -1548,12 +1553,18 @@ pub(crate) mod ffi {
     fn cz_mac_address_ipv6_address(value: u64, network: RustIPv6Address) -> CzOutcome;
     #[swift_bridge(swift_name = "macAddressLessThan")]
     fn cz_mac_address_less_than(lhs: u64, rhs: u64) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // Ext4.swift
+    //
     // ContainerizationEXT4. A `SuperBlock` or an `Inode` crosses as its bytes,
     // and an archive's format and filter as their `rawValue`s.
     type CzExt4Reader;
     #[swift_bridge(swift_name = "openExt4Reader")]
     fn cz_ext4_reader_new(#[swift_bridge(label = "blockDevice")] block_device: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "ext4Reader")]
+    fn ext4_reader(self: &CzOutcome) -> CzExt4Reader;
     #[swift_bridge(swift_name = "superBlock")]
     fn super_block(self: &CzExt4Reader) -> Vec<u8>;
     fn exists(self: &CzExt4Reader, path: &str, #[swift_bridge(label = "followSymlinks")] follow_symlinks: bool)
@@ -1672,6 +1683,21 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "fileTimestampsAccess")]
     fn cz_file_timestamps_access(seconds: f64) -> Vec<u32>;
 
+    // `EXT4Unpacker.unpack(_:for:at:progress:)`, with the image as a
+    // `duplicate()`.
+    #[swift_bridge(swift_name = "unpackExt4")]
+    fn cz_ext4_unpack(
+      unpacker: RustExt4Unpacker,
+      image: CzImage,
+      platform: RustPlatform,
+      at: &str,
+      progress: RustProgressHandler,
+    ) -> CzOutcome;
+  }
+
+  extern "Swift" {
+    // IO.swift
+    //
     // ContainerizationIO. `next`'s outcome holds the next chunk, or `Absent`.
     type CzReadStream;
     #[swift_bridge(swift_name = "newReadStream")]
@@ -1690,7 +1716,11 @@ pub(crate) mod ffi {
     // For a unit test: `ReadStream.bufferSize`.
     #[swift_bridge(swift_name = "readStreamBufferSize")]
     fn cz_read_stream_buffer_size() -> isize;
+  }
 
+  extern "Swift" {
+    // Archive.swift
+    //
     // `EXT4Unpacker.unpack(archive:compression:at:)`, with the filter as its
     // `rawValue`.
     #[swift_bridge(swift_name = "unpackExt4Archive")]
@@ -1777,9 +1807,25 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "setXattrs")]
     fn set_xattrs(self: &CzWriteEntry, names: Vec<String>, lengths: Vec<u64>, values: Vec<u8>);
 
+    // A `WriteEntry`, alone or with the data or reader an iterator returned
+    // it with.
+    #[swift_bridge(swift_name = "writeEntry")]
+    fn write_entry(self: &CzOutcome) -> CzWriteEntry;
+    #[swift_bridge(swift_name = "entryData")]
+    fn entry_data(self: &CzOutcome) -> Vec<u8>;
+    #[swift_bridge(swift_name = "archiveEntryReader")]
+    fn archive_entry_reader(self: &CzOutcome) -> CzArchiveEntryReader;
+    // A held `[String: Data]`'s keys, and the value of one.
+    #[swift_bridge(swift_name = "dataMapKeys")]
+    fn data_map_keys(self: &CzOutcome) -> Vec<String>;
+    #[swift_bridge(swift_name = "dataMapValue")]
+    fn data_map_value(self: &CzOutcome, key: &str) -> Vec<u8>;
+
     type CzArchiveWriter;
     #[swift_bridge(swift_name = "newArchiveWriter")]
     fn cz_archive_writer_new(configuration: RustArchiveWriterConfiguration) -> CzOutcome;
+    #[swift_bridge(swift_name = "archiveWriter")]
+    fn archive_writer(self: &CzOutcome) -> CzArchiveWriter;
     // `ArchiveWriter(format:filter:options:locales:file:)`, with its
     // arguments in a configuration.
     #[swift_bridge(swift_name = "archiveWriterWithFile")]
@@ -1819,6 +1865,8 @@ pub(crate) mod ffi {
     type CzArchiveReader;
     #[swift_bridge(swift_name = "openArchiveReader")]
     fn cz_archive_reader_new(file: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "archiveReader")]
+    fn archive_reader(self: &CzOutcome) -> CzArchiveReader;
     #[swift_bridge(swift_name = "archiveReaderWithFormat")]
     fn cz_archive_reader_with_format(format: &str, filter: &str, file: &str) -> CzOutcome;
     // The reader owns the descriptor, and closes it.
@@ -1858,7 +1906,11 @@ pub(crate) mod ffi {
     // Swift's call returns `-1`.
     type CzArchiveEntryReader;
     fn read(self: &CzArchiveEntryReader, #[swift_bridge(label = "maxLength")] max_length: usize) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // OS.swift
+    //
     // ContainerizationOS. `CapabilityName` and `CapabilitySet` cross as their
     // `description`s. For unit tests: `CapabilityName.allCases`' descriptions
     // and `capValue`s, and each `CapabilitySet`'s description in the order of
@@ -1961,7 +2013,6 @@ pub(crate) mod ffi {
     // `Sysctl.byName(_:)`, whose outcome holds an `Int64`.
     #[swift_bridge(swift_name = "sysctlByName")]
     fn cz_sysctl_by_name(name: &str) -> CzOutcome;
-    fn integer(self: &CzOutcome) -> i64;
 
     // `File.info(_:)`, and the `FileInfo` it returns. Swift's `Int`s cross as
     // `Int64`s.
@@ -1992,6 +2043,24 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "isChar")]
     fn is_char(self: &CzFileInfo) -> bool;
 
+    // A held `Stat`: its unsigned fields in Swift's order (`dev` to `rdev`),
+    // then its signed ones (`size`, `blksize`, `blocks`, and each `TimeSpec`'s
+    // seconds and nanoseconds).
+    #[swift_bridge(swift_name = "statUnsigned")]
+    fn stat_unsigned(self: &CzOutcome) -> Vec<u64>;
+    #[swift_bridge(swift_name = "statSigned")]
+    fn stat_signed(self: &CzOutcome) -> Vec<i64>;
+    // For a unit test: `Binfmt.path`, and `Binfmt.Entry.amd64()`'s fields in
+    // Swift's order.
+    #[swift_bridge(swift_name = "binfmtPath")]
+    fn cz_binfmt_path() -> String;
+    #[swift_bridge(swift_name = "binfmtEntryAmd64")]
+    fn cz_binfmt_entry_amd64() -> Vec<String>;
+  }
+
+  extern "Swift" {
+    // FileDescriptorOps.swift
+    //
     // `FileDescriptorOps`. Each takes the caller's descriptor as its number,
     // and Swift doesn't close it. A descriptor Swift opens crosses back as an
     // `Int32` the caller owns. A `FilePermissions?` crosses as a flag and a
@@ -2073,10 +2142,7 @@ pub(crate) mod ffi {
     fn held_status_modification_seconds(self: &CzOutcome) -> i64;
     #[swift_bridge(swift_name = "heldStatusModificationNanoseconds")]
     fn held_status_modification_nanoseconds(self: &CzOutcome) -> i64;
-    // A failed outcome's thrown `FileDescriptorOps.Error`, or `Absent`, and
-    // that error's kind and what its case carries.
-    #[swift_bridge(swift_name = "thrownFdOpsError")]
-    fn thrown_fd_ops_error_outcome(self: &CzOutcome) -> CzOutcome;
+    // A held `FileDescriptorOps.Error`'s kind, and what its case carries.
     #[swift_bridge(swift_name = "heldFdOpsErrorKind")]
     fn held_fd_ops_error_kind(self: &CzOutcome) -> FdOpsErrorKind;
     #[swift_bridge(swift_name = "heldFdOpsErrorEntryType")]
@@ -2085,31 +2151,13 @@ pub(crate) mod ffi {
     fn held_fd_ops_error_operation(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "heldFdOpsErrorNumber")]
     fn held_fd_ops_error_number(self: &CzOutcome) -> i32;
+  }
 
-    // A held `Stat`: its unsigned fields in Swift's order (`dev` to `rdev`),
-    // then its signed ones (`size`, `blksize`, `blocks`, and each `TimeSpec`'s
-    // seconds and nanoseconds).
-    #[swift_bridge(swift_name = "statUnsigned")]
-    fn stat_unsigned(self: &CzOutcome) -> Vec<u64>;
-    #[swift_bridge(swift_name = "statSigned")]
-    fn stat_signed(self: &CzOutcome) -> Vec<i64>;
-    // For a unit test: `Binfmt.path`, and `Binfmt.Entry.amd64()`'s fields in
-    // Swift's order.
-    #[swift_bridge(swift_name = "binfmtPath")]
-    fn cz_binfmt_path() -> String;
-    #[swift_bridge(swift_name = "binfmtEntryAmd64")]
-    fn cz_binfmt_entry_amd64() -> Vec<String>;
-
-    // `EXT4Unpacker.unpack(_:for:at:progress:)`, with the image as a
-    // `duplicate()`.
-    #[swift_bridge(swift_name = "unpackExt4")]
-    fn cz_ext4_unpack(
-      unpacker: RustExt4Unpacker,
-      image: CzImage,
-      platform: RustPlatform,
-      at: &str,
-      progress: RustProgressHandler,
-    ) -> CzOutcome;
+  extern "Swift" {
+    // Model/ContainerModel.swift
+    //
+    // A `Mount` and an `ExitStatus` cross field by field, and Rust builds its
+    // own.
     #[swift_bridge(swift_name = "mountType")]
     fn mount_type(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "mountSource")]
@@ -2122,6 +2170,15 @@ pub(crate) mod ffi {
     fn mount_runtime_kind(self: &CzOutcome) -> RuntimeKind;
     #[swift_bridge(swift_name = "mountRuntimeOptions")]
     fn mount_runtime_options(self: &CzOutcome) -> Vec<String>;
+    #[swift_bridge(swift_name = "exitCode")]
+    fn exit_code(self: &CzOutcome) -> i32;
+    #[swift_bridge(swift_name = "exitedAt")]
+    fn exited_at(self: &CzOutcome) -> f64;
+  }
+
+  extern "Swift" {
+    // Model/VMModel.swift
+    //
     // An `AttachedFilesystem` crosses field by field, and Rust builds its own.
     #[swift_bridge(swift_name = "attachedFilesystemType")]
     fn attached_filesystem_type(self: &CzOutcome) -> String;
@@ -2131,18 +2188,11 @@ pub(crate) mod ffi {
     fn attached_filesystem_destination(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "attachedFilesystemOptions")]
     fn attached_filesystem_options(self: &CzOutcome) -> Vec<String>;
-    #[swift_bridge(swift_name = "exitCode")]
-    fn exit_code(self: &CzOutcome) -> i32;
-    #[swift_bridge(swift_name = "exitedAt")]
-    fn exited_at(self: &CzOutcome) -> f64;
-    fn number(self: &CzOutcome) -> u64;
-    fn text(self: &CzOutcome) -> String;
-    fn strings(self: &CzOutcome) -> Vec<String>;
-    #[swift_bridge(swift_name = "hasBytes")]
-    fn has_bytes(self: &CzOutcome) -> bool;
-    fn bytes(self: &CzOutcome) -> Vec<u8>;
-    fn int32(self: &CzOutcome) -> i32;
+  }
 
+  extern "Swift" {
+    // Values.swift
+    //
     // Containerization's value types. Each crosses whole, and Swift does the
     // work: the outcomes hold what Swift returns.
     //
@@ -2245,30 +2295,15 @@ pub(crate) mod ffi {
     fn cz_signal_darwin_values() -> Vec<i32>;
     #[swift_bridge(swift_name = "systemPlatformRawValues")]
     fn cz_system_platform_raw_values() -> Vec<String>;
-    // For unit tests: `LinuxContainer.defaultMounts()` and
-    // `defaultOCIMounts()`, as a list of the two, and `defaultCopyChunkSize`.
-    #[swift_bridge(swift_name = "linuxContainerDefaultMounts")]
-    fn cz_linux_container_default_mounts() -> CzOutcome;
-    #[swift_bridge(swift_name = "linuxContainerDefaultCopyChunkSize")]
-    fn cz_linux_container_default_copy_chunk_size() -> usize;
+  }
 
-    // `ContainerStatistics`, which `LinuxContainer.statistics` returns: the
-    // `id`, `interface` or `mountPoint` of the statistics held, their `UInt64`
-    // fields in Swift's order, and the part a `StatCategory` reports, or
-    // `Absent`. Block I/O's part is its `devices`. `protocols` is held as its
-    // `tcp`, `udp`, `icmp` and `ip` counters, in that order, or `Absent`.
-    #[swift_bridge(swift_name = "statisticsName")]
-    fn statistics_name(self: &CzOutcome) -> String;
-    #[swift_bridge(swift_name = "statisticsNumbers")]
-    fn statistics_numbers(self: &CzOutcome) -> Vec<u64>;
-    #[swift_bridge(swift_name = "statisticsCategory")]
-    fn statistics_category(self: &CzOutcome, category: i64) -> CzOutcome;
-    #[swift_bridge(swift_name = "statisticsProtocols")]
-    fn statistics_protocols(self: &CzOutcome) -> CzOutcome;
-
+  extern "Swift" {
+    // LocalContentStore.swift
     type CzLocalContentStore;
     #[swift_bridge(swift_name = "openLocalContentStore")]
     fn cz_local_content_store_new(path: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "localContentStore")]
+    fn local_content_store(self: &CzOutcome) -> CzLocalContentStore;
     fn get(self: &CzLocalContentStore, digest: &str) -> CzOutcome;
     #[swift_bridge(swift_name = "deleteDigests")]
     fn delete_digests(self: &CzLocalContentStore, digests: Vec<String>) -> CzOutcome;
@@ -2277,11 +2312,6 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "totalAllocatedSize")]
     fn total_allocated_size(self: &CzLocalContentStore) -> CzOutcome;
     fn duplicate(self: &CzLocalContentStore) -> CzLocalContentStore;
-    // `ImageStore(path:contentStore:)` and `Image(description:contentStore:)`,
-    // as methods on the content store they take.
-    #[swift_bridge(swift_name = "imageStore")]
-    fn image_store(self: &CzLocalContentStore, path: &str) -> CzOutcome;
-    fn image(self: &CzLocalContentStore, description: RustImageDescription) -> CzImage;
     // `body` gets the ingest directory, and returns whether it succeeded.
     fn ingest(self: &CzLocalContentStore, body: Box<dyn FnOnce(String) -> bool>) -> CzOutcome;
     #[swift_bridge(swift_name = "newIngestSession")]
@@ -2296,14 +2326,6 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "ingestSessionDirectory")]
     fn ingest_session_directory(self: &CzOutcome) -> String;
 
-    type CzContentWriter;
-    #[swift_bridge(swift_name = "openContentWriter")]
-    fn cz_content_writer_new(base: &str) -> CzOutcome;
-    fn write(self: &CzContentWriter, data: Vec<u8>) -> CzOutcome;
-    fn create(self: &CzContentWriter, from: &str) -> CzOutcome;
-    #[swift_bridge(swift_name = "copyContent")]
-    fn cz_content_writer_copy(from: &str, destination: &str) -> CzOutcome;
-
     // `LocalContent(path:)`, held as a `Content`.
     #[swift_bridge(swift_name = "openLocalContent")]
     fn cz_local_content_open(path: &str) -> CzOutcome;
@@ -2313,6 +2335,7 @@ pub(crate) mod ffi {
 
     // A `Content?`: Rust asks `is_some` before anything else.
     type CzContent;
+    fn content(self: &CzOutcome) -> CzContent;
     #[swift_bridge(swift_name = "isSome")]
     fn is_some(self: &CzContent) -> bool;
     fn path(self: &CzContent) -> String;
@@ -2321,7 +2344,29 @@ pub(crate) mod ffi {
     fn data(self: &CzContent) -> CzOutcome;
     #[swift_bridge(swift_name = "dataRange")]
     fn data_range(self: &CzContent, offset: u64, length: usize) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // ContentWriter.swift
+    type CzContentWriter;
+    #[swift_bridge(swift_name = "openContentWriter")]
+    fn cz_content_writer_new(base: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "contentWriter")]
+    fn content_writer(self: &CzOutcome) -> CzContentWriter;
+    fn write(self: &CzContentWriter, data: Vec<u8>) -> CzOutcome;
+    fn create(self: &CzContentWriter, from: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "copyContent")]
+    fn cz_content_writer_copy(from: &str, destination: &str) -> CzOutcome;
+    // What a `ContentWriter` wrote.
+    #[swift_bridge(swift_name = "writtenSize")]
+    fn written_size(self: &CzOutcome) -> i64;
+    #[swift_bridge(swift_name = "writtenDigest")]
+    fn written_digest(self: &CzOutcome) -> String;
+  }
+
+  extern "Swift" {
+    // Authentication.swift
+    //
     // An `Authentication?`.
     type CzAuthentication;
     #[swift_bridge(swift_name = "basicAuthentication")]
@@ -2367,7 +2412,11 @@ pub(crate) mod ffi {
     fn registry_info_modified_date(self: &CzOutcome) -> f64;
     #[swift_bridge(swift_name = "registryInfoCreatedDate")]
     fn registry_info_created_date(self: &CzOutcome) -> f64;
+  }
 
+  extern "Swift" {
+    // RegistryClient.swift
+    //
     // `RegistryClient`'s inits. `retry_options` stands for `nil` when
     // `has_retry_options` is false.
     type CzRegistryClient;
@@ -2407,12 +2456,22 @@ pub(crate) mod ffi {
       digest: &str,
       #[swift_bridge(label = "artifactType")] artifact_type: Option<String>,
     ) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // ImageStore.swift
     type CzImageStore;
     #[swift_bridge(swift_name = "openImageStore")]
     fn cz_image_store_new(path: &str) -> CzOutcome;
     #[swift_bridge(swift_name = "defaultImageStore")]
     fn cz_image_store_default() -> CzOutcome;
+    #[swift_bridge(swift_name = "imageStore")]
+    fn image_store(self: &CzOutcome) -> CzImageStore;
+    // `ImageStore(path:contentStore:)` and `Image(description:contentStore:)`,
+    // as methods on the content store they take.
+    #[swift_bridge(swift_name = "imageStore")]
+    fn image_store(self: &CzLocalContentStore, path: &str) -> CzOutcome;
+    fn image(self: &CzLocalContentStore, description: RustImageDescription) -> CzImage;
     fn path(self: &CzImageStore) -> String;
     fn get(self: &CzImageStore, reference: &str, pull: bool) -> CzOutcome;
     fn list(self: &CzImageStore) -> CzOutcome;
@@ -2495,32 +2554,14 @@ pub(crate) mod ffi {
       #[swift_bridge(label = "labelValues")] label_values: Vec<String>,
       #[swift_bridge(label = "contentStore")] content_store: CzLocalContentStore,
     ) -> CzOutcome;
-    // `ContainerManager`'s inits that take an image store are methods on that
-    // store, because swift-bridge can't pass a `&` Swift type as an argument.
-    #[swift_bridge(swift_name = "containerManager")]
-    fn container_manager(
-      self: &CzImageStore,
-      kernel: RustKernel,
-      initfs: RustMount,
-      network: CzNetwork,
-      rosetta: bool,
-      #[swift_bridge(label = "nestedVirtualization")] nested_virtualization: bool,
-    ) -> CzOutcome;
-    #[swift_bridge(swift_name = "containerManager")]
-    fn container_manager_with_initfs_reference(
-      self: &CzImageStore,
-      kernel: RustKernel,
-      #[swift_bridge(label = "initfsReference")] initfs_reference: &str,
-      network: CzNetwork,
-      rosetta: bool,
-      #[swift_bridge(label = "nestedVirtualization")] nested_virtualization: bool,
-    ) -> CzOutcome;
 
     type CzImages;
+    fn images(self: &CzOutcome) -> CzImages;
     fn len(self: &CzImages) -> usize;
     fn at(self: &CzImages, index: usize) -> CzImage;
 
     type CzImage;
+    fn image(self: &CzOutcome) -> CzImage;
     fn duplicate(self: &CzImage) -> CzImage;
     fn reference(self: &CzImage) -> String;
     fn digest(self: &CzImage) -> String;
@@ -2563,15 +2604,43 @@ pub(crate) mod ffi {
     fn kernel_init_args(self: &CzOutcome) -> Vec<String>;
 
     type CzInitImage;
+    #[swift_bridge(swift_name = "initImage")]
+    fn init_image(self: &CzOutcome) -> CzInitImage;
     fn name(self: &CzInitImage) -> String;
     #[swift_bridge(swift_name = "initBlock")]
     fn init_block(self: &CzInitImage, at: &str, platform: RustSystemPlatform) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // ContainerManager.swift
+    //
     // `create` and `createWithRootfs` take the image as a `duplicate()`, since
     // swift-bridge can't pass a `&` Swift type. Each create method takes a
     // `seed`, which Swift fills with the configuration the manager seeds
     // before Rust's `configuration` changes it.
     type CzContainerManager;
+    #[swift_bridge(swift_name = "containerManager")]
+    fn container_manager(self: &CzOutcome) -> CzContainerManager;
+    // `ContainerManager`'s inits that take an image store are methods on that
+    // store, because swift-bridge can't pass a `&` Swift type as an argument.
+    #[swift_bridge(swift_name = "containerManager")]
+    fn container_manager(
+      self: &CzImageStore,
+      kernel: RustKernel,
+      initfs: RustMount,
+      network: CzNetwork,
+      rosetta: bool,
+      #[swift_bridge(label = "nestedVirtualization")] nested_virtualization: bool,
+    ) -> CzOutcome;
+    #[swift_bridge(swift_name = "containerManager")]
+    fn container_manager_with_initfs_reference(
+      self: &CzImageStore,
+      kernel: RustKernel,
+      #[swift_bridge(label = "initfsReference")] initfs_reference: &str,
+      network: CzNetwork,
+      rosetta: bool,
+      #[swift_bridge(label = "nestedVirtualization")] nested_virtualization: bool,
+    ) -> CzOutcome;
     #[swift_bridge(swift_name = "containerManagerAtRoot")]
     fn cz_container_manager_at_root(
       kernel: RustKernel,
@@ -2626,7 +2695,11 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "releaseNetwork")]
     fn release_network(self: &CzContainerManager, id: &str) -> CzOutcome;
     fn delete(self: &CzContainerManager, id: &str) -> CzOutcome;
+  }
 
+  extern "Swift" {
+    // VirtualMachine.swift
+    //
     // A `VZVirtualMachineManager`. Its users take it as a `duplicate()`.
     type CzVirtualMachineManager;
     #[swift_bridge(swift_name = "virtualMachineManager")]
@@ -2636,12 +2709,16 @@ pub(crate) mod ffi {
       rosetta: bool,
       #[swift_bridge(label = "nestedVirtualization")] nested_virtualization: bool,
     ) -> CzOutcome;
+    #[swift_bridge(swift_name = "virtualMachineManager")]
+    fn virtual_machine_manager(self: &CzOutcome) -> CzVirtualMachineManager;
     fn duplicate(self: &CzVirtualMachineManager) -> CzVirtualMachineManager;
     fn create(self: &CzVirtualMachineManager, config: RustVmConfiguration) -> CzOutcome;
 
     // `mounts`' outcome holds the `[String: [AttachedFilesystem]]`, and
     // `dial`'s the connection's descriptor, which Rust then owns.
     type CzVirtualMachineInstance;
+    #[swift_bridge(swift_name = "virtualMachineInstance")]
+    fn virtual_machine_instance(self: &CzOutcome) -> CzVirtualMachineInstance;
     fn state(self: &CzVirtualMachineInstance) -> InstanceState;
     fn mounts(self: &CzVirtualMachineInstance) -> CzOutcome;
     #[swift_bridge(swift_name = "virtiofsLayout")]
@@ -2668,6 +2745,20 @@ pub(crate) mod ffi {
     fn release_virtio_fs(self: &CzVirtualMachineInstance, id: &str) -> CzOutcome;
     #[swift_bridge(swift_name = "installRosetta")]
     fn cz_install_rosetta() -> CzOutcome;
+
+    // `next` blocks for a connection, and its outcome holds the descriptor,
+    // which Rust then owns, or `Absent` once the listener is finished.
+    type CzVsockListener;
+    #[swift_bridge(swift_name = "vsockListener")]
+    fn vsock_listener(self: &CzOutcome) -> CzVsockListener;
+    fn port(self: &CzVsockListener) -> u32;
+    fn next(self: &CzVsockListener) -> CzOutcome;
+    fn finish(self: &CzVsockListener) -> CzOutcome;
+  }
+
+  extern "Swift" {
+    // Vminitd.swift
+    //
     // The outcome holds the `Vminitd`.
     #[swift_bridge(swift_name = "dialAgent")]
     fn dial_agent(self: &CzVirtualMachineInstance) -> CzOutcome;
@@ -2679,6 +2770,7 @@ pub(crate) mod ffi {
     // `String`, `waitProcess`'s an `ExitStatus`, `containerStatistics`' a
     // `[ContainerStatistics]` and `stat`'s a `Stat`.
     type CzVminitd;
+    fn vminitd(self: &CzOutcome) -> CzVminitd;
     #[swift_bridge(swift_name = "standardSetup")]
     fn standard_setup(self: &CzVminitd) -> CzOutcome;
     fn close(self: &CzVminitd) -> CzOutcome;
@@ -2784,14 +2876,11 @@ pub(crate) mod ffi {
     fn relay_socket(self: &CzVminitd, port: u32, configuration: CzUnixSocketConfiguration) -> CzOutcome;
     #[swift_bridge(swift_name = "stopSocketRelay")]
     fn stop_socket_relay(self: &CzVminitd, configuration: CzUnixSocketConfiguration) -> CzOutcome;
+  }
 
-    // `next` blocks for a connection, and its outcome holds the descriptor,
-    // which Rust then owns, or `Absent` once the listener is finished.
-    type CzVsockListener;
-    fn port(self: &CzVsockListener) -> u32;
-    fn next(self: &CzVsockListener) -> CzOutcome;
-    fn finish(self: &CzVsockListener) -> CzOutcome;
-
+  extern "Swift" {
+    // VmnetNetwork.swift
+    //
     // A `Network?`, for the manager's inits: swift-bridge 0.1.59 can't pass
     // an `Option` of a Swift type.
     type CzNetwork;
@@ -2801,6 +2890,8 @@ pub(crate) mod ffi {
     // The getters' outcomes hold an address, or `Absent` for `nil`. The
     // `create` methods' hold a `CzVmnetInterface` or `Absent`.
     type CzVmnetNetwork;
+    #[swift_bridge(swift_name = "vmnetNetwork")]
+    fn vmnet_network(self: &CzOutcome) -> CzVmnetNetwork;
     #[swift_bridge(swift_name = "asNetwork")]
     fn as_network(self: &CzVmnetNetwork) -> CzNetwork;
     #[swift_bridge(swift_name = "vmnetNetwork")]
@@ -2831,6 +2922,8 @@ pub(crate) mod ffi {
     // A `VmnetNetwork.Interface`. Its getters' outcomes hold an address, or
     // `Absent` for `nil`.
     type CzVmnetInterface;
+    #[swift_bridge(swift_name = "vmnetInterface")]
+    fn vmnet_interface(self: &CzOutcome) -> CzVmnetInterface;
     fn duplicate(self: &CzVmnetInterface) -> CzVmnetInterface;
     #[swift_bridge(swift_name = "ipv4Address")]
     fn ipv4_address(self: &CzVmnetInterface) -> CzOutcome;
@@ -2843,13 +2936,19 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "macAddress")]
     fn mac_address(self: &CzVmnetInterface) -> CzOutcome;
     fn mtu(self: &CzVmnetInterface) -> u32;
+  }
 
+  extern "Swift" {
+    // UnixSocketConfiguration.swift
+    //
     // A `UnixSocketConfiguration`, which crosses whole so that its private
     // `id` survives. The init's outcome holds one. Permissions cross as a
     // `CModeT`.
     type CzUnixSocketConfiguration;
     #[swift_bridge(swift_name = "unixSocketConfiguration")]
     fn cz_unix_socket_configuration_new(source: &str, destination: &str) -> CzOutcome;
+    #[swift_bridge(swift_name = "unixSocketConfiguration")]
+    fn unix_socket_configuration(self: &CzOutcome) -> CzUnixSocketConfiguration;
     fn duplicate(self: &CzUnixSocketConfiguration) -> CzUnixSocketConfiguration;
     fn id(self: &CzUnixSocketConfiguration) -> String;
     fn source(self: &CzUnixSocketConfiguration) -> String;
@@ -2864,12 +2963,18 @@ pub(crate) mod ffi {
     fn set_permissions(self: &CzUnixSocketConfiguration, permissions: Option<u16>);
     #[swift_bridge(swift_name = "setDirection")]
     fn set_direction(self: &CzUnixSocketConfiguration, direction: SocketDirection);
+  }
 
+  extern "Swift" {
+    // LinuxContainer.swift
+    //
     // The getters' outcomes hold a `Mount` or `Absent`. `config` fills `seed`
     // with the container's configuration and hands it to `receive`, and
     // `execWith` takes a `seed` for `configuration` to change, as the
     // manager's `create` does.
     type CzLinuxContainer;
+    #[swift_bridge(swift_name = "linuxContainer")]
+    fn linux_container(self: &CzOutcome) -> CzLinuxContainer;
     // `writable_layer` stands for `nil` when `has_writable_layer` is false.
     #[swift_bridge(swift_name = "linuxContainer")]
     fn cz_linux_container_new(
@@ -2938,12 +3043,57 @@ pub(crate) mod ffi {
       #[swift_bridge(label = "chunkSize")] chunk_size: usize,
     ) -> CzOutcome;
 
+    // For unit tests: `LinuxContainer.defaultMounts()` and
+    // `defaultOCIMounts()`, as a list of the two, and `defaultCopyChunkSize`.
+    #[swift_bridge(swift_name = "linuxContainerDefaultMounts")]
+    fn cz_linux_container_default_mounts() -> CzOutcome;
+    #[swift_bridge(swift_name = "linuxContainerDefaultCopyChunkSize")]
+    fn cz_linux_container_default_copy_chunk_size() -> usize;
+
+    // `ContainerStatistics`, which `LinuxContainer.statistics` returns: the
+    // `id`, `interface` or `mountPoint` of the statistics held, their `UInt64`
+    // fields in Swift's order, and the part a `StatCategory` reports, or
+    // `Absent`. Block I/O's part is its `devices`. `protocols` is held as its
+    // `tcp`, `udp`, `icmp` and `ip` counters, in that order, or `Absent`.
+    #[swift_bridge(swift_name = "statisticsName")]
+    fn statistics_name(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "statisticsNumbers")]
+    fn statistics_numbers(self: &CzOutcome) -> Vec<u64>;
+    #[swift_bridge(swift_name = "statisticsCategory")]
+    fn statistics_category(self: &CzOutcome, category: i64) -> CzOutcome;
+    #[swift_bridge(swift_name = "statisticsProtocols")]
+    fn statistics_protocols(self: &CzOutcome) -> CzOutcome;
+
+    type CzLinuxProcess;
+    #[swift_bridge(swift_name = "linuxProcess")]
+    fn linux_process(self: &CzOutcome) -> CzLinuxProcess;
+    fn id(self: &CzLinuxProcess) -> String;
+    #[swift_bridge(swift_name = "owningContainer")]
+    fn owning_container(self: &CzLinuxProcess) -> Option<String>;
+    fn pid(self: &CzLinuxProcess) -> i32;
+    fn start(self: &CzLinuxProcess) -> CzOutcome;
+    fn kill(self: &CzLinuxProcess, signal: i32) -> CzOutcome;
+    fn resize(self: &CzLinuxProcess, width: u16, height: u16) -> CzOutcome;
+    #[swift_bridge(swift_name = "closeStdin")]
+    fn close_stdin(self: &CzLinuxProcess) -> CzOutcome;
+    fn wait(
+      self: &CzLinuxProcess,
+      #[swift_bridge(label = "timeoutInSeconds")] timeout_in_seconds: Option<i64>,
+    ) -> CzOutcome;
+    fn delete(self: &CzLinuxProcess) -> CzOutcome;
+  }
+
+  extern "Swift" {
+    // LinuxPod.swift
+    //
     // `addContainer` and `execInContainer` take a `seed` as the manager's
     // `create` does. `config` fills `seed` and hands it to `receive`, as a
     // container's does.
     // `statistics` takes `container_ids` for `nil` when `has_container_ids` is
     // false, and its outcome holds a `[ContainerStatistics]`.
     type CzLinuxPod;
+    #[swift_bridge(swift_name = "linuxPod")]
+    fn linux_pod(self: &CzOutcome) -> CzLinuxPod;
     #[swift_bridge(swift_name = "linuxPod")]
     fn cz_linux_pod_new(
       id: &str,
@@ -3008,21 +3158,5 @@ pub(crate) mod ffi {
     fn close_container_stdin(self: &CzLinuxPod, id: &str) -> CzOutcome;
     #[swift_bridge(swift_name = "relayUnixSocket")]
     fn relay_unix_socket(self: &CzLinuxPod, id: &str, socket: CzUnixSocketConfiguration) -> CzOutcome;
-
-    type CzLinuxProcess;
-    fn id(self: &CzLinuxProcess) -> String;
-    #[swift_bridge(swift_name = "owningContainer")]
-    fn owning_container(self: &CzLinuxProcess) -> Option<String>;
-    fn pid(self: &CzLinuxProcess) -> i32;
-    fn start(self: &CzLinuxProcess) -> CzOutcome;
-    fn kill(self: &CzLinuxProcess, signal: i32) -> CzOutcome;
-    fn resize(self: &CzLinuxProcess, width: u16, height: u16) -> CzOutcome;
-    #[swift_bridge(swift_name = "closeStdin")]
-    fn close_stdin(self: &CzLinuxProcess) -> CzOutcome;
-    fn wait(
-      self: &CzLinuxProcess,
-      #[swift_bridge(label = "timeoutInSeconds")] timeout_in_seconds: Option<i64>,
-    ) -> CzOutcome;
-    fn delete(self: &CzLinuxProcess) -> CzOutcome;
   }
 }

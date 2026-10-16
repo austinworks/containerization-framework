@@ -38,6 +38,20 @@ extension Descriptor {
   }
 }
 
+extension ImageConfig {
+  init(_ config: RustImageConfigRef) {
+    self.init(
+      user: config.user()?.toString(),
+      env: config.hasEnv() ? strings(config.envLen(), config.envAt) : nil,
+      entrypoint: config.hasEntrypoint() ? strings(config.entrypointLen(), config.entrypointAt) : nil,
+      cmd: config.hasCmd() ? strings(config.cmdLen(), config.cmdAt) : nil,
+      workingDir: config.workingDir()?.toString(),
+      labels: config.hasLabels() ? dictionary(config.labelsLen(), config.labelKeyAt, config.labelValueAt) : nil,
+      stopSignal: config.stopSignal()?.toString()
+    )
+  }
+}
+
 extension Containerization.Image.Description {
   init(_ description: RustImageDescription) {
     self.init(reference: description.reference().toString(), descriptor: Descriptor(description.descriptor()))
@@ -67,48 +81,38 @@ extension EXT4.JournalConfig.JournalMode {
   }
 }
 
-/// Rust's `ProgressHandler?`. Swift may call it from several threads at once,
-/// and Rust's is `Sync`. Swift's handler is `async`, so Rust's can run off the
-/// cooperative pool, where it may call back into Swift.
-func progressHandler(_ handler: RustProgressHandler) -> ProgressHandler? {
-  guard handler.isSome() else {
-    return nil
-  }
-  nonisolated(unsafe) let handler = handler
-
-  return { events in
-    await offPool { call(handler, with: events) }
-  }
-}
-
-private func call(_ handler: RustProgressHandler, with events: [ProgressEvent]) {
-  let kinds = RustVec<ProgressKind>()
-  let values = RustVec<Int64>()
-  for event in events {
-    switch event {
-    case .addItems(let value):
-      kinds.push(value: .Items)
-      values.push(value: Int64(value))
-    case .addTotalItems(let value):
-      kinds.push(value: .TotalItems)
-      values.push(value: Int64(value))
-    case .addSize(let value):
-      kinds.push(value: .Size)
-      values.push(value: value)
-    case .addTotalSize(let value):
-      kinds.push(value: .TotalSize)
-      values.push(value: value)
-    }
-  }
-  handler.call(kinds, values)
-}
-
 // MARK: Swift to Rust
 
 // The OCI image types, field by field: Rust builds its own. A field holding a
 // list, a map, another of these types or an optional one of those comes back
 // as an outcome of its own, holding `Absent` for `nil`.
 extension CzOutcome {
+  // `Platform`.
+
+  func platformArchitecture() -> String {
+    (taken() as Platform).architecture
+  }
+
+  func platformOs() -> String {
+    (taken() as Platform).os
+  }
+
+  func platformOsVersion() -> String? {
+    (taken() as Platform).osVersion
+  }
+
+  func platformHasOsFeatures() -> Bool {
+    (taken() as Platform).osFeatures != nil
+  }
+
+  func platformOsFeatures() -> RustVec<RustString> {
+    rustStrings((taken() as Platform).osFeatures ?? [])
+  }
+
+  func platformVariant() -> String? {
+    (taken() as Platform).variant
+  }
+
   // `Descriptor`.
 
   func descriptorMediaType() -> String {

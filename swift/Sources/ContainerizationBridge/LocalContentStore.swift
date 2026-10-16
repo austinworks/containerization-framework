@@ -98,6 +98,9 @@ final class CzLocalContentStore: Sendable {
 }
 
 extension CzOutcome {
+  func localContentStore() -> CzLocalContentStore { taken() }
+  func content() -> CzContent { taken() }
+
   // What `newIngestSession` returned.
 
   func ingestSessionId() -> String {
