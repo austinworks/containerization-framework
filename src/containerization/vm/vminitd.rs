@@ -1,6 +1,7 @@
 use crate::containerization::container;
 use crate::containerization::network;
 use crate::containerization::process;
+use crate::containerization::strings;
 use crate::containerization_extras;
 use crate::containerization_oci::runtime;
 use crate::containerization_os;
@@ -267,10 +268,9 @@ impl Vminitd {
     categories: container::StatCategory,
   ) -> Result<Vec<container::ContainerStatistics>, Error> {
     platform::outcome(
-      self.handle.container_statistics(
-        container_ids.iter().map(|id| id.to_string()).collect(),
-        categories.raw_value,
-      ),
+      self
+        .handle
+        .container_statistics(strings(container_ids), categories.raw_value),
       "read container statistics in the guest",
     )
     .map(|outcome| outcome.container_statistics_list())

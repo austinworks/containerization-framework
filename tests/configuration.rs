@@ -250,8 +250,8 @@ fn drops_the_standard_guards_when_told() {
     "no masked paths should mask nothing"
   );
 
-  // Still refused — the default capabilities lack CAP_SYS_ADMIN — but for want
-  // of the capability, not because the path is read-only.
+  // The write is still refused, because the default capabilities lack
+  // CAP_SYS_ADMIN, but not because the path is read-only.
   let refused = container.sh("unprotected", &write_error("/proc/sys/kernel/hostname"));
   assert!(
     !refused.contains("Read-only file system"),
@@ -336,8 +336,9 @@ fn reads_back_the_boot_log_descriptor_it_was_given() {
   );
 }
 
-/// Only an M3 or later can: elsewhere the container fails, which is the
-/// behavior asked for, and there is nothing further to check.
+/// Only an M3 or later has nested virtualization. On other hosts the container
+/// fails to start, which is the expected behavior, and there is nothing more to
+/// check.
 #[test]
 fn boots_with_nested_virtualization_where_the_host_has_it() {
   let booted = Container::try_boot_with("cfw-test-config-nested", |configuration| {
@@ -381,7 +382,7 @@ fn carries_a_seccomp_profile_of_its_own() {
     .expect("the default profile"),
   );
 
-  // Never created, so the rootfs needn't exist.
+  // This container is never created, so its rootfs needn't exist.
   let carried = cfw::containerization::container::LinuxContainer::new(
     "cfw-test-config-seccomp-profile-carried",
     cfw::containerization::container::Mount::block("ext4", "/rootfs.ext4", "/", &[], &[]),
@@ -406,8 +407,8 @@ fn carries_a_seccomp_profile_of_its_own() {
   assert!(error.to_string().contains("failed to start process"), "{error}");
 }
 
-/// The stock init image carries no `runc`. That one runs when present is
-/// beyond what this suite's store can show.
+/// The stock init image carries no `runc`, so this suite can't show that a
+/// runtime the image does carry runs.
 #[test]
 fn refuses_an_oci_runtime_the_init_image_lacks() {
   let refused = Container::try_boot_with("cfw-test-config-oci-runtime", |configuration| {

@@ -257,11 +257,7 @@ extension CzOutcome {
       case let other: cast(other)
       }
 
-    let vec = RustVec<UInt64>()
-    for number in numbers {
-      vec.push(value: number)
-    }
-    return vec
+    return rustVec(numbers)
   }
 
   /// The part of the held `ContainerStatistics` that `category` reports.

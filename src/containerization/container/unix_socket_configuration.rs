@@ -17,8 +17,8 @@ pub enum Direction {
 
 /// `UnixSocketConfiguration`.
 ///
-/// It holds the Swift value, because Swift gives each configuration a private
-/// `id` when it is made, and a relay is stopped by that `id`.
+/// It holds the Swift value, because Swift gives each configuration a
+/// read-only `id` when it is made, and a relay is stopped by that `id`.
 pub struct UnixSocketConfiguration {
   pub(crate) handle: ffi::CzUnixSocketConfiguration,
 }

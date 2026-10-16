@@ -13,6 +13,7 @@ use crate::containerization::vm::kernel;
 use crate::containerization_extras;
 use crate::containerization_oci;
 use crate::platform;
+use std::collections::BTreeMap;
 
 impl platform::Progress {
   pub(crate) fn is_some(&self) -> bool {
@@ -215,10 +216,7 @@ impl containerization_oci::image::Descriptor {
   }
 
   pub(crate) fn annotations_len(&self) -> usize {
-    self
-      .annotations
-      .as_ref()
-      .map_or(0, |annotations| annotations.len())
+    self.annotations.as_ref().map_or(0, BTreeMap::len)
   }
 
   pub(crate) fn annotation_key_at(&self, index: usize) -> &str {

@@ -69,7 +69,8 @@ fn boots_a_virtual_machine_of_its_own() {
   std::thread::scope(|scope| {
     let waiting = scope.spawn(|| (&listener).next());
 
-    // Long enough for the other thread to be waiting, which finishing ends.
+    // Give the other thread time to start waiting, so finishing ends a wait
+    // already in progress.
     std::thread::sleep(std::time::Duration::from_millis(100));
     listener.finish().expect("the listener should finish");
 

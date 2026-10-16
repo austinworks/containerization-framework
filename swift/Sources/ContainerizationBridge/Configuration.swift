@@ -228,11 +228,7 @@ func darwinSignalValues() -> RustVec<Int32> {
 }
 
 private func rawValues(_ signals: [Signal]) -> RustVec<Int32> {
-  let vec = RustVec<Int32>()
-  for signal in signals {
-    vec.push(value: signal.rawValue)
-  }
-  return vec
+  rustVec(signals.map(\.rawValue))
 }
 
 func systemPlatformRawValues() -> RustVec<RustString> {

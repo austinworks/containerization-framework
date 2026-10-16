@@ -62,7 +62,7 @@ extension CIDR {
 // MARK: IPv4Address
 
 func ipv4AddressFromBytes(bytes: RustVec<UInt8>) -> CzOutcome {
-  let bytes = bytes.map { $0 }
+  let bytes = [UInt8](bytes)
 
   return CzOutcome { try IPv4Address(bytes) }
 }
@@ -114,7 +114,7 @@ func parseIPv6Address(address: RustStr) -> CzOutcome {
 }
 
 func ipv6AddressFromBytes(bytes: RustVec<UInt8>, zone: RustString?) -> CzOutcome {
-  let bytes = bytes.map { $0 }
+  let bytes = [UInt8](bytes)
   let zone = zone?.toString()
 
   return CzOutcome { try IPv6Address(bytes, zone: zone) }
@@ -413,7 +413,7 @@ func macAddress(value: UInt64) -> CzOutcome {
 }
 
 func macAddressFromBytes(bytes: RustVec<UInt8>) -> CzOutcome {
-  let bytes = bytes.map { $0 }
+  let bytes = [UInt8](bytes)
 
   return CzOutcome { try MACAddress(bytes) }
 }

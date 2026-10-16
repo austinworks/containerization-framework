@@ -169,7 +169,7 @@ pub(crate) fn cz_no_network() -> CzNetwork {
   CzNetwork
 }
 
-/// Always a failure, so nothing is taken from it.
+/// An outcome that is always a failure, so nothing is ever taken from it.
 pub(crate) struct CzOutcome;
 
 impl CzOutcome {

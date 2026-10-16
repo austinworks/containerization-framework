@@ -29,7 +29,7 @@ impl ReadStream {
 
   /// `ReadStream()`, which reads nothing.
   pub fn new() -> Result<Self, Error> {
-    Self::opened(ffi::cz_read_stream_new(), "make an empty read stream".to_string())
+    Self::opened(ffi::cz_read_stream_new(), "make an empty read stream")
   }
 
   /// `ReadStream(url:bufferSize:)`. Swift's `bufferSize` defaults to
@@ -46,11 +46,11 @@ impl ReadStream {
   pub fn with_data(data: &[u8], buffer_size: usize) -> Result<Self, Error> {
     Self::opened(
       ffi::cz_read_stream_with_data(data.to_vec(), buffer_size),
-      "read bytes as a stream".to_string(),
+      "read bytes as a stream",
     )
   }
 
-  fn opened(outcome: ffi::CzOutcome, action: String) -> Result<Self, Error> {
+  fn opened(outcome: ffi::CzOutcome, action: impl Into<String>) -> Result<Self, Error> {
     platform::outcome(outcome, action).map(|outcome| Self {
       handle: outcome.read_stream(),
     })

@@ -363,29 +363,21 @@ extension CzOutcome {
   /// A `Stat`'s unsigned fields, in Swift's order.
   func statUnsigned() -> RustVec<UInt64> {
     let stat: ContainerizationOS.Stat = taken()
-    let vec = RustVec<UInt64>()
-    for value in [
+    return rustVec([
       stat.dev, stat.ino, UInt64(stat.mode), stat.nlink, UInt64(stat.uid), UInt64(stat.gid), stat.rdev,
-    ] {
-      vec.push(value: value)
-    }
-    return vec
+    ])
   }
 
   /// A `Stat`'s signed fields, in Swift's order, with each `TimeSpec` as its
   /// seconds and nanoseconds.
   func statSigned() -> RustVec<Int64> {
     let stat: ContainerizationOS.Stat = taken()
-    let vec = RustVec<Int64>()
-    for value in [
+    return rustVec([
       stat.size, stat.blksize, stat.blocks,
       stat.atime.seconds, Int64(stat.atime.nanoseconds),
       stat.mtime.seconds, Int64(stat.mtime.nanoseconds),
       stat.ctime.seconds, Int64(stat.ctime.nanoseconds),
-    ] {
-      vec.push(value: value)
-    }
-    return vec
+    ])
   }
 }
 

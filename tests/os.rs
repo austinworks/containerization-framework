@@ -139,7 +139,7 @@ fn writes_to_a_pty() {
   let (parent, child) = cfw::containerization_os::Terminal::create(None).expect("a pty");
 
   parent.write(b"hello\n").expect("a write to the parent");
-  // Borrowed: the terminal closes it.
+  // The terminal owns the descriptor and closes it, so the file must not.
   let mut reader = ManuallyDrop::new(unsafe { std::fs::File::from_raw_fd(child.handle()) });
   let mut line = [0; 6];
   reader.read_exact(&mut line).expect("the line on the child");

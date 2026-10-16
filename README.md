@@ -129,7 +129,7 @@ rustflags = ["-C", "link-arg=-Wl,-rpath,/usr/lib/swift"]
   root, `InterfaceAddress`, `LinkRoute`, `DefaultRoute`, `ProgressEvent` and
   `ProgressHandler`; and `proxy_utils`.
 - `containerization_io`: `ReadStream`.
-- `containerization_os`: `Terminal`, `sysctl`, `file`,
+- `containerization_os`: `Terminal`, `sysctl`, `file`, `file_descriptor_ops`,
   `keychain::KeychainQuery`, and in `linux`, `CapabilityName`, `CapabilitySet`
   and `binfmt`.
 

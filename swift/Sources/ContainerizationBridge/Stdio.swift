@@ -35,8 +35,8 @@ final class FileReader: ReaderStream, @unchecked Sendable {
 
   /// Reading stops when the stream ends, at end of file or when
   /// Containerization cancels its relay on closing stdin or deleting the
-  /// process. Otherwise
-  /// the handler would go on taking the caller's input until Swift frees it.
+  /// process. Otherwise the handler would go on taking the caller's input
+  /// until Swift frees it.
   func stream() -> AsyncStream<Data> {
     .init { continuation in
       continuation.onTermination = { [weak self] _ in

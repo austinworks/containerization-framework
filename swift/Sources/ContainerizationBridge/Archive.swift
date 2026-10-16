@@ -27,12 +27,7 @@ func unpackExt4Archive(unpacker: RustExt4Unpacker, archive: RustStr, compression
 func xattrFormatDescription(format: RustStr) -> CzOutcome {
   let format = format.toString()
 
-  return CzOutcome {
-    guard let format = Options.XattrFormat(rawValue: format) else {
-      throw BridgeError.malformed("extended attribute format", format)
-    }
-    return format.description
-  }
+  return CzOutcome { try xattrFormat(format).description }
 }
 
 /// For a unit test: the raw values of the enum `name`, in the order of Rust's
@@ -82,6 +77,13 @@ func archiveFilter(_ rawValue: String) throws -> Filter {
   return filter
 }
 
+private func xattrFormat(_ rawValue: String) throws -> Options.XattrFormat {
+  guard let format = Options.XattrFormat(rawValue: rawValue) else {
+    throw BridgeError.malformed("extended attribute format", rawValue)
+  }
+  return format
+}
+
 extension ArchiveWriterConfiguration {
   init(_ configuration: RustArchiveWriterConfiguration) throws {
     let options = try list(configuration.optionsLen()) { index -> Options in
@@ -93,11 +95,7 @@ extension ArchiveWriterConfiguration {
       case .CompressionDeflate:
         return .compression(.deflate)
       case .Xattrformat:
-        let rawValue = configuration.optionXattrFormatAt(index).toString()
-        guard let format = Options.XattrFormat(rawValue: rawValue) else {
-          throw BridgeError.malformed("extended attribute format", rawValue)
-        }
-        return .xattrformat(format)
+        return .xattrformat(try xattrFormat(configuration.optionXattrFormatAt(index).toString()))
       }
     }
 

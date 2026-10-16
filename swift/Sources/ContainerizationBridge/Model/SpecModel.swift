@@ -333,15 +333,6 @@ extension ImageConfig {
 
 // MARK: Swift to Rust
 
-/// Rust's `Vec` of numbers.
-func rustVec<T: Vectorizable>(_ values: some Sequence<T>) -> RustVec<T> {
-  let vec = RustVec<T>()
-  for value in values {
-    vec.push(value: value)
-  }
-  return vec
-}
-
 // The OCI runtime spec, field by field, as the image types are.
 extension CzOutcome {
   /// A held `[String: T]`'s keys, sorted.

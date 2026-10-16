@@ -6,6 +6,10 @@
 //! caller owns. A name is one path component, and a relative path must not be
 //! absolute or contain `..`.
 //!
+//! Rust has no overloading, so where Swift overloads a name, the Rust name
+//! adds a suffix for the argument label that tells the overloads apart, as in
+//! [`status_of`] and [`status_relative_path`].
+//!
 //! A function that throws a `FileDescriptorOps.Error` in Swift fails with
 //! [`error::Error::FileDescriptorOps`], which carries it as an [`Error`].
 
@@ -186,8 +190,7 @@ pub fn unlink(fd: BorrowedFd<'_>, name: &OsStr) -> Result<(), error::Error> {
   .map(drop)
 }
 
-/// `FileDescriptorOps.status(of:)`. Rust has no overloading, so the suffix
-/// names the argument label that tells it apart from [`status`].
+/// `FileDescriptorOps.status(of:)`.
 pub fn status_of(fd: BorrowedFd<'_>) -> Result<FileStatus, error::Error> {
   platform::outcome(
     ffi::cz_fd_ops_status_of(fd.as_raw_fd()),
@@ -205,9 +208,7 @@ pub fn status(fd: BorrowedFd<'_>, name: &OsStr) -> Result<Option<FileStatus>, er
   .map(|outcome| outcome.optional_fd_ops_file_status())
 }
 
-/// `FileDescriptorOps.status(_:relativePath:symlinks:)`. Rust has no
-/// overloading, so the suffix names the argument label that tells it apart
-/// from [`status`].
+/// `FileDescriptorOps.status(_:relativePath:symlinks:)`.
 pub fn status_relative_path(
   fd: BorrowedFd<'_>,
   relative_path: &Path,
@@ -228,9 +229,7 @@ pub fn open_file(fd: BorrowedFd<'_>, name: &OsStr) -> Result<OwnedFd, error::Err
   )
 }
 
-/// `FileDescriptorOps.openFile(_:relativePath:symlinks:)`. Rust has no
-/// overloading, so the suffix names the argument label that tells it apart
-/// from [`open_file`].
+/// `FileDescriptorOps.openFile(_:relativePath:symlinks:)`.
 pub fn open_file_relative_path(
   fd: BorrowedFd<'_>,
   relative_path: &Path,

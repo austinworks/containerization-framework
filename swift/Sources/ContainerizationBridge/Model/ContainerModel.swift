@@ -391,17 +391,12 @@ func runtimeKind(_ options: Containerization.Mount.RuntimeOptions) -> (RuntimeKi
 /// `process` into Rust's, all but stdio: Swift's streams don't cross back.
 func fill(_ built: RustLinuxProcessConfigurationRefMut, from process: LinuxProcessConfiguration) {
   let user = process.user
-  let gids = RustVec<UInt32>()
-  for gid in user.additionalGids {
-    gids.push(value: gid)
-  }
-
   let capabilities = process.capabilities
 
   built.setArguments(rustStrings(process.arguments))
   built.setEnvironmentVariables(rustStrings(process.environmentVariables))
   built.setWorkingDirectory(rust(process.workingDirectory))
-  built.setUser(user.uid, user.gid, user.umask, gids, rust(user.username))
+  built.setUser(user.uid, user.gid, user.umask, rustVec(user.additionalGids), rust(user.username))
   built.setNoNewPrivileges(process.noNewPrivileges)
   built.setCapabilities(
     rustStrings(capabilities.bounding.map(\.description)),

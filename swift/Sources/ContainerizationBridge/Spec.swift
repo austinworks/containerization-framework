@@ -29,7 +29,7 @@ func hookDescription(hook: RustHook) -> CzOutcome {
 }
 
 func decodeLinuxSeccomp(data: RustVec<UInt8>) -> CzOutcome {
-  let data = Data(data.map { $0 })
+  let data = Data(data)
 
   return CzOutcome { try LinuxSeccomp.decode(from: data) }
 }
@@ -95,7 +95,7 @@ func createBundle(path: RustStr, spec: RustSpec) -> CzOutcome {
 
 func createBundleFromData(path: RustStr, spec: RustVec<UInt8>) -> CzOutcome {
   let path = URL(filePath: path.toString())
-  let spec = Data(spec.map { $0 })
+  let spec = Data(spec)
 
   return CzOutcome { try ContainerizationOCI.Bundle.create(path: path, spec: spec).bridgedPath }
 }

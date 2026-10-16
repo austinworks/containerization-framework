@@ -397,8 +397,7 @@ impl linux_container::Configuration {
     seccomp_mode(&self.seccomp_profile)
   }
 
-  /// The custom profile. Swift asks only when [`Self::seccomp_mode`] is
-  /// `Profile`.
+  /// Swift calls this only when [`Self::seccomp_mode`] is `Profile`.
   pub(crate) fn seccomp_profile(&self) -> &runtime::LinuxSeccomp {
     custom_seccomp(&self.seccomp_profile)
   }

@@ -46,10 +46,10 @@ mod ffi {
     fn call(self: &RustConfigureProcess, process: &mut RustLinuxProcessConfiguration) -> bool;
 
     // A `(inout LinuxPod.Configuration) throws -> Void`, which Swift calls
-    // with the configuration it filled, and a `(inout
-    // LinuxPod.ContainerConfiguration) throws -> Void`, which Swift calls once
-    // on Rust's default configuration. Swift doesn't fill that one, because
-    // Rust's default matches Swift's.
+    // with the configuration it filled, and a
+    // `(inout LinuxPod.ContainerConfiguration) throws -> Void`, which Swift
+    // calls once on Rust's default configuration. Swift doesn't fill that
+    // one, because Rust's default matches Swift's.
     type RustConfigurePod;
     fn call(self: &RustConfigurePod, configuration: &mut RustPodConfiguration) -> bool;
     type RustConfigurePodContainer;
@@ -61,8 +61,8 @@ mod ffi {
     fn is_some(self: &RustProgressHandler) -> bool;
     fn call(self: &RustProgressHandler, kinds: Vec<ProgressKind>, values: Vec<i64>);
 
-    // A `(FileDescriptor) throws -> Void`, which
-    // `FileDescriptorOps.mkdir` calls once with the directory it opened.
+    // A `(FileDescriptor) throws -> Void`, which `FileDescriptorOps.mkdir`
+    // calls once with the directory it opened.
     type RustWithDescriptor;
     fn call(self: &RustWithDescriptor, descriptor: i32) -> bool;
 

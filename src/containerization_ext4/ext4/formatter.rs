@@ -128,8 +128,6 @@ impl Formatter {
 
   /// `EXT4.Formatter.create(path:link:mode:ts:buf:uid:gid:xattrs:recursion:)`.
   pub fn create(&self, path: &Path, mode: u16, options: CreateOptions<'_>) -> Result<(), Error> {
-    let ts = options.ts;
-    let has_xattrs = options.xattrs.is_some();
     let (xattr_names, xattr_lengths, xattr_values) = options
       .xattrs
       .as_ref()
@@ -146,15 +144,15 @@ impl Formatter {
           .transpose()?
           .map(str::to_string),
         mode,
-        platform::seconds(ts.access),
-        platform::seconds(ts.modification),
-        platform::seconds(ts.creation),
-        platform::seconds(ts.now),
+        platform::seconds(options.ts.access),
+        platform::seconds(options.ts.modification),
+        platform::seconds(options.ts.creation),
+        platform::seconds(options.ts.now),
         options.buf.is_some(),
         options.buf.unwrap_or_default().to_vec(),
         options.uid,
         options.gid,
-        has_xattrs,
+        options.xattrs.is_some(),
         xattr_names,
         xattr_lengths,
         xattr_values,

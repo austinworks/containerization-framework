@@ -113,7 +113,7 @@ public final class CzOutcome: @unchecked Sendable {
   }
 
   func entryData() -> RustVec<UInt8> {
-    rustBytes((taken() as (WriteEntry, Data)).1)
+    rustVec((taken() as (WriteEntry, Data)).1)
   }
 
   func archiveEntryReader() -> CzArchiveEntryReader {
@@ -126,7 +126,7 @@ public final class CzOutcome: @unchecked Sendable {
   }
 
   func dataMapValue(key: RustStr) -> RustVec<UInt8> {
-    rustBytes((taken() as [String: Data])[key.toString()] ?? Data())
+    rustVec((taken() as [String: Data])[key.toString()] ?? Data())
   }
 
   func writtenSize() -> Int64 {
@@ -330,15 +330,18 @@ public final class CzOutcome: @unchecked Sendable {
 
   /// A `Data?`, or a `[UInt8]`.
   func bytes() -> RustVec<UInt8> {
-    rustBytes((value as? [UInt8]).map { Data($0) } ?? (taken() as Data?) ?? Data())
+    if let bytes = value as? [UInt8] {
+      return rustVec(bytes)
+    }
+    return rustVec((taken() as Data?) ?? Data())
   }
 }
 
-/// Bytes as Rust's `Vec<u8>`.
-func rustBytes(_ bytes: Data) -> RustVec<UInt8> {
-  let vec = RustVec<UInt8>()
-  for byte in bytes {
-    vec.push(value: byte)
+/// Bytes or numbers as Rust's `Vec`.
+func rustVec<T: Vectorizable>(_ values: some Sequence<T>) -> RustVec<T> {
+  let vec = RustVec<T>()
+  for value in values {
+    vec.push(value: value)
   }
   return vec
 }

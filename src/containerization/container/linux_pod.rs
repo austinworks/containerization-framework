@@ -12,6 +12,7 @@ use super::linux_container;
 use crate::containerization::GIB;
 use crate::containerization::network;
 use crate::containerization::process;
+use crate::containerization::strings;
 use crate::containerization::vm;
 use crate::containerization_os::terminal;
 use crate::error::Error;
@@ -54,10 +55,8 @@ pub struct ContainerConfiguration {
   /// `None` uses the pod's profile.
   pub seccomp_profile: Option<linux_container::SeccompProfile>,
   pub use_init: bool,
-  /// cgroup v2 files to write in the container's cgroup, as OCI's
-  /// `linux.resources.unified`. Each key is a file name and each value what
-  /// to write to it, for example `memory.oom.group` and `1`. The guest writes
-  /// them after the limits above, so a key here overrides them, as in runc.
+  /// The cgroup v2 files to write, as in
+  /// [`linux_container::Configuration::unified`].
   pub unified: BTreeMap<String, String>,
 }
 
@@ -319,12 +318,10 @@ impl LinuxPod {
     container_ids: Option<&[&str]>,
     categories: StatCategory,
   ) -> Result<Vec<ContainerStatistics>, Error> {
-    let ids = container_ids.unwrap_or_default();
-
     platform::outcome(
       self.handle.statistics(
         container_ids.is_some(),
-        ids.iter().map(|id| id.to_string()).collect(),
+        strings(container_ids.unwrap_or_default()),
         categories.raw_value,
       ),
       format!("read pod {}'s statistics", self.id()),

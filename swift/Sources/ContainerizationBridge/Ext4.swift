@@ -28,7 +28,7 @@ final class CzExt4Reader: @unchecked Sendable {
   }
 
   func superBlock() -> RustVec<UInt8> {
-    rustBytes(memoryBytes(of: reader.superBlock))
+    rustVec(memoryBytes(of: reader.superBlock))
   }
 
   func exists(path: RustStr, followSymlinks: Bool) -> Bool {
@@ -250,7 +250,7 @@ extension CzOutcome {
   /// An inode, alone or with its number.
   func inodeBytes() -> RustVec<UInt8> {
     let inode = held((EXT4.InodeNumber, EXT4.Inode).self)?.1 ?? taken()
-    return rustBytes(memoryBytes(of: inode))
+    return rustVec(memoryBytes(of: inode))
   }
 
   func compressedNameId() -> UInt8 {
@@ -301,19 +301,11 @@ func ext4FileModeFlags() -> RustVec<UInt16> {
     .S_IXOTH, .S_IWOTH, .S_IROTH, .S_IXGRP, .S_IWGRP, .S_IRGRP, .S_IXUSR, .S_IWUSR, .S_IRUSR, .S_ISVTX,
     .S_ISGID, .S_ISUID, .S_IFIFO, .S_IFCHR, .S_IFDIR, .S_IFBLK, .S_IFREG, .S_IFLNK, .S_IFSOCK, .TypeMask,
   ]
-  let vec = RustVec<UInt16>()
-  for flag in flags {
-    vec.push(value: EXT4.Inode.Mode(flag, 0))
-  }
-  return vec
+  return rustVec(flags.map { EXT4.Inode.Mode($0, 0) })
 }
 
 func ext4PrefixMapKeys() -> RustVec<Int> {
-  let vec = RustVec<Int>()
-  for key in EXT4.ExtendedAttribute.prefixMap.keys.sorted() {
-    vec.push(value: key)
-  }
-  return vec
+  rustVec(EXT4.ExtendedAttribute.prefixMap.keys.sorted())
 }
 
 func ext4PrefixMapValues() -> RustVec<RustString> {
@@ -337,19 +329,12 @@ func ext4Layout() -> RustVec<UInt64> {
     + [MemoryLayout<EXT4.Inode>.size]
     + inode.map { MemoryLayout<EXT4.Inode>.offset(of: $0) ?? -1 }
 
-  let vec = RustVec<UInt64>()
-  for value in layout {
-    vec.push(value: UInt64(bitPattern: Int64(value)))
-  }
-  return vec
+  return rustVec(layout.map { UInt64(bitPattern: Int64($0)) })
 }
 
 /// A `FileTimestamps`' `accessLo` and `accessHi`, for a date as seconds since
 /// 1970.
 func fileTimestampsAccess(seconds: Double) -> RustVec<UInt32> {
   let timestamps = FileTimestamps(access: Date(timeIntervalSince1970: seconds), modification: nil, creation: nil)
-  let vec = RustVec<UInt32>()
-  vec.push(value: timestamps.accessLo)
-  vec.push(value: timestamps.accessHi)
-  return vec
+  return rustVec([timestamps.accessLo, timestamps.accessHi])
 }

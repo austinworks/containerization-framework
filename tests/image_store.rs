@@ -246,11 +246,7 @@ fn write_sparse_image(
 #[test]
 fn creates_an_image_from_ingested_blobs() {
   let directory = tempfile::tempdir().expect("a temporary directory");
-  let content_store = cfw::containerization_oci::content::LocalContentStore::new(&directory.path().join("content"))
-    .expect("a new content store should open");
-  let store =
-    cfw::containerization::image::ImageStore::with_content_store(&directory.path().join("images"), &content_store)
-      .expect("a new image store should open");
+  let (store, content_store) = new_stores(directory.path());
   let (written, writer_saw) = std::sync::mpsc::channel();
   let reference = "containerization-framework/test-created:latest";
 

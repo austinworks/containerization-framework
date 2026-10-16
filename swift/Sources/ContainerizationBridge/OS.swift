@@ -15,11 +15,7 @@ func capabilityNameDescriptions() -> RustVec<RustString> {
 
 /// For a unit test: `CapabilityName.allCases`' `capValue`s.
 func capabilityNameCapValues() -> RustVec<UInt32> {
-  let vec = RustVec<UInt32>()
-  for name in CapabilityName.allCases {
-    vec.push(value: name.capValue)
-  }
-  return vec
+  rustVec(CapabilityName.allCases.map(\.capValue))
 }
 
 /// For a unit test: each `CapabilitySet`'s description, in the order of Rust's

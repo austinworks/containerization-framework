@@ -22,7 +22,7 @@ pub fn gateway_dns() -> cfw::containerization::network::DNS {
 /// Nothing hands out leases, so the caller allocates. Hashed from the name:
 /// stable per container, distinct between concurrent ones.
 pub fn interface(name: &str) -> cfw::containerization::network::NATInterface {
-  // FNV-1a: short and well spread.
+  // FNV-1a is short to write and spreads names well.
   let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
 
   for byte in name.as_bytes() {

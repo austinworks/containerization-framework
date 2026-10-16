@@ -45,7 +45,7 @@ impl Container {
     let image = store::image(&image_store);
     let mut manager = store::manager(&image_store);
 
-    // Left by a run that died before dropping its container.
+    // A run that died before dropping its container may have left it behind.
     let _ = manager.delete(name);
 
     let options = cfw::containerization::container::container_manager::CreateOptions {
@@ -72,7 +72,7 @@ impl Container {
       },
     );
 
-    // Left by a run that died before dropping its container.
+    // A run that died before dropping its container may have left it behind.
     let _ = manager.delete(name);
 
     let options = cfw::containerization::container::container_manager::CreateOptions {
@@ -98,7 +98,7 @@ impl Container {
     let image = store::image(&image_store);
     let mut manager = store::manager(&image_store);
 
-    // Left by a run that died before dropping its container.
+    // A run that died before dropping its container may have left it behind.
     let _ = manager.delete(name);
 
     let options = cfw::containerization::container::container_manager::CreateWithRootfsOptions {

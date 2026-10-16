@@ -15,6 +15,7 @@
 //! through the setters there. They aren't shared structs because swift-bridge
 //! can't put a `String`-holding struct in a `Vec` (declined upstream,
 //! swift-bridge#305).
+//!
 //! Comments inside a bridge module are plain `//`, since swift-bridge can't
 //! parse doc comments there.
 //!
@@ -1357,9 +1358,9 @@ pub(crate) mod ffi {
       #[swift_bridge(label = "envValues")] env_values: Vec<String>,
     ) -> CzOutcome;
 
-    // Addresses cross field by field, and Rust builds its own. Each address getter
-    // also reads the address in an `IPAddress`, a CIDR block or a `CIDR`, and
-    // `prefixLength` the prefix of a CIDR block or a `CIDR`.
+    // Addresses cross field by field, and Rust builds its own. The address
+    // getters also read the address inside a held `IPAddress`, CIDR block or
+    // `CIDR`, and `prefixLength` reads the prefix of a CIDR block or `CIDR`.
     fn boolean(self: &CzOutcome) -> bool;
     // Whether an optional result is there.
     #[swift_bridge(swift_name = "isSome")]

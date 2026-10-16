@@ -10,13 +10,35 @@ use std::path::Path;
 use std::time::Duration;
 use std::time::SystemTime;
 
-/// A directory holding two files, one in a subdirectory, and a symlink to the
-/// first.
+/// A directory at `root` holding two files, one in a subdirectory, and a
+/// symlink to the first.
 fn tree(root: &Path) {
+  std::fs::create_dir_all(root.join("sub")).expect("the archived directory");
   std::fs::write(root.join("a.txt"), b"alpha").expect("a file");
-  std::fs::create_dir(root.join("sub")).expect("a subdirectory");
   std::fs::write(root.join("sub").join("b.txt"), b"bravo").expect("a file in the subdirectory");
   std::os::unix::fs::symlink("a.txt", root.join("link")).expect("a symlink");
+}
+
+/// A [`tree`] in `directory`, archived into the file `name` beside it.
+fn archive_tree(
+  directory: &Path,
+  name: &str,
+  format: cfw::containerization_archive::Format,
+  filter: cfw::containerization_archive::Filter,
+  options: cfw::containerization_archive::archive_writer::ArchiveWriterOptions,
+) -> std::path::PathBuf {
+  let root = directory.join("root");
+  let archive = directory.join(name);
+  tree(&root);
+
+  let mut writer =
+    cfw::containerization_archive::ArchiveWriter::with_file(format, filter, options, &archive).expect("a writer");
+  writer
+    .archive_directory(&root)
+    .expect("the directory should archive");
+  writer.finish_encoding().expect("the archive should finish");
+
+  archive
 }
 
 /// Each regular file's path and data, read with the reader's iterator.
@@ -42,22 +64,13 @@ fn entry(
 #[test]
 fn archives_a_directory_and_reads_it_back() {
   let directory = tempfile::tempdir().expect("a temporary directory");
-  let root = directory.path().join("root");
-  let archive = directory.path().join("root.tar.gz");
-  std::fs::create_dir(&root).expect("the archived directory");
-  tree(&root);
-
-  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let archive = archive_tree(
+    directory.path(),
+    "root.tar.gz",
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::Gzip,
     Default::default(),
-    &archive,
-  )
-  .expect("a writer");
-  writer
-    .archive_directory(&root)
-    .expect("the directory should archive");
-  writer.finish_encoding().expect("the archive should finish");
+  );
 
   let reader = cfw::containerization_archive::ArchiveReader::new(&archive).expect("the archive should open");
   let mut entries = BTreeMap::new();
@@ -100,7 +113,6 @@ fn archives_paths_under_a_base() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let root = directory.path().join("root");
   let archive = directory.path().join("some.tar");
-  std::fs::create_dir(&root).expect("the base directory");
   tree(&root);
 
   let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
@@ -259,21 +271,13 @@ fn reads_and_writes_an_entrys_properties() {
 #[test]
 fn streams_each_entrys_data() {
   let directory = tempfile::tempdir().expect("a temporary directory");
-  let root = directory.path().join("root");
-  let archive = directory.path().join("root.tar");
-  std::fs::create_dir(&root).expect("the archived directory");
-  tree(&root);
-  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let archive = archive_tree(
+    directory.path(),
+    "root.tar",
     cfw::containerization_archive::Format::Pax,
     cfw::containerization_archive::Filter::None,
     Default::default(),
-    &archive,
-  )
-  .expect("a writer");
-  writer
-    .archive_directory(&root)
-    .expect("the directory should archive");
-  writer.finish_encoding().expect("the archive should finish");
+  );
 
   let reader = cfw::containerization_archive::ArchiveReader::new(&archive).expect("the archive should open");
   let mut streamed = BTreeMap::new();
@@ -356,7 +360,6 @@ fn reads_from_a_file_handle_it_owns() {
   let directory = tempfile::tempdir().expect("a temporary directory");
   let root = directory.path().join("root");
   let archive = directory.path().join("root.tar");
-  std::fs::create_dir(&root).expect("the archived directory");
   tree(&root);
   let file = std::fs::File::create(&archive).expect("the archive's file");
   let mut writer =
@@ -387,11 +390,9 @@ fn reads_from_a_file_handle_it_owns() {
 #[test]
 fn reads_a_bundled_zip() {
   let directory = tempfile::tempdir().expect("a temporary directory");
-  let root = directory.path().join("root");
-  let archive = directory.path().join("root.zip");
-  std::fs::create_dir(&root).expect("the archived directory");
-  tree(&root);
-  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let archive = archive_tree(
+    directory.path(),
+    "root.zip",
     cfw::containerization_archive::Format::Zip,
     cfw::containerization_archive::Filter::None,
     cfw::containerization_archive::archive_writer::ArchiveWriterOptions {
@@ -403,13 +404,7 @@ fn reads_a_bundled_zip() {
       ],
       ..Default::default()
     },
-    &archive,
-  )
-  .expect("a writer");
-  writer
-    .archive_directory(&root)
-    .expect("the directory should archive");
-  writer.finish_encoding().expect("the archive should finish");
+  );
 
   let bundle = std::fs::read(&archive).expect("the zip's bytes");
   let reader = cfw::containerization_archive::ArchiveReader::with_bundle("root.zip", &bundle, Some("archive-test"))
@@ -526,23 +521,15 @@ fn says_which_file_is_not_in_an_archive() {
 #[test]
 fn unpacks_an_archive_into_a_filesystem() {
   let directory = tempfile::tempdir().expect("a temporary directory");
-  let root = directory.path().join("root");
-  let archive = directory.path().join("root.tar.gz");
-  let at = directory.path().join("root.ext4");
-  let exported = directory.path().join("exported.tar");
-  std::fs::create_dir(&root).expect("the archived directory");
-  tree(&root);
-  let mut writer = cfw::containerization_archive::ArchiveWriter::with_file(
+  let archive = archive_tree(
+    directory.path(),
+    "root.tar.gz",
     cfw::containerization_archive::Format::PaxRestricted,
     cfw::containerization_archive::Filter::Gzip,
     Default::default(),
-    &archive,
-  )
-  .expect("a writer");
-  writer
-    .archive_directory(&root)
-    .expect("the directory should archive");
-  writer.finish_encoding().expect("the archive should finish");
+  );
+  let at = directory.path().join("root.ext4");
+  let exported = directory.path().join("exported.tar");
 
   cfw::containerization::image::EXT4Unpacker::new(64 * 1024 * 1024, None)
     .unpack_archive(&archive, cfw::containerization_archive::Filter::Gzip, &at)

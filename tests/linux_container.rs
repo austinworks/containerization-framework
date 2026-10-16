@@ -136,7 +136,7 @@ fn lets_go_of_the_callers_descriptors_once_a_process_is_deleted() {
     .write_all(b"still ours")
     .expect("the pipe should take input");
   drop(input);
-  // Time for a duplicate still reading to take the input first.
+  // Give a duplicate that is still reading stdin time to take the input first.
   std::thread::sleep(std::time::Duration::from_secs(1));
   assert_eq!(
     support::container::read_to_end(&mut stdin),

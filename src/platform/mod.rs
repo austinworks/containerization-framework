@@ -1,6 +1,6 @@
-//! The bridge on macOS, its stand-in elsewhere, and how either one's failure
-//! reads. Every wrapper calls through here, so each is written once for every
-//! platform.
+//! This module provides the Swift bridge on macOS and a stand-in for it on
+//! every other platform, and it reads either one's failures as `Error`s. Every
+//! wrapper calls through here, so each is written once for every platform.
 
 // The bridge's functions take Swift's arguments, however many there are.
 #[cfg(not(target_os = "macos"))]
@@ -97,16 +97,14 @@ type Configuring<T> = Box<dyn FnOnce(&mut T) -> Result<(), Error> + Send>;
 /// panics.
 pub(crate) struct Configure<T> {
   configure: Mutex<Option<Configuring<T>>>,
-  thrown: Arc<Mutex<Option<Error>>>,
-  panic: Panic,
+  thrown: Thrown,
 }
 
 impl<T> Configure<T> {
   pub(crate) fn new(configure: impl FnOnce(&mut T) -> Result<(), Error> + Send + 'static) -> Self {
     Self {
       configure: Mutex::new(Some(Box::new(configure))),
-      thrown: Arc::default(),
-      panic: Panic::default(),
+      thrown: Thrown::default(),
     }
   }
 
@@ -119,14 +117,7 @@ impl<T> Configure<T> {
       .unwrap_or_else(PoisonError::into_inner)
       .take();
 
-    match configure.map(|configure| self.panic.catch(|| configure(value))) {
-      Some(Some(Err(error))) => {
-        *self.thrown.lock().unwrap_or_else(PoisonError::into_inner) = Some(error);
-        true
-      }
-      Some(None) => true,
-      _ => false,
-    }
+    configure.is_some_and(|configure| self.thrown.threw(|| configure(value)))
   }
 }
 
@@ -143,25 +134,18 @@ pub(crate) type ConfigurePod = Configure<container::linux_pod::Configuration>;
 pub(crate) type ConfigurePodContainer = Configure<container::linux_pod::ContainerConfiguration>;
 
 /// What a throwing Swift call returned, when `call` hands it `configure` as
-/// its closure, or what it threw as a failure of `action`. If the closure
-/// threw, its own error is returned, as Swift rethrows it. If it panicked, the
-/// panic is resumed here.
+/// its closure, or what it threw as a failure of `action`, as
+/// `Thrown::outcome` reads it.
 pub(crate) fn configured<T>(
   configure: impl FnOnce(&mut T) -> Result<(), Error> + Send + 'static,
   call: impl FnOnce(Configure<T>) -> ffi::CzOutcome,
   action: impl Into<String>,
 ) -> Result<ffi::CzOutcome, Error> {
   let configure = Configure::new(configure);
-  let thrown = Arc::clone(&configure.thrown);
-  let panic = configure.panic.clone();
+  let thrown = configure.thrown.clone();
   let returned = call(configure);
 
-  panic.resume();
-  if let Some(error) = thrown.lock().unwrap_or_else(PoisonError::into_inner).take() {
-    return Err(error);
-  }
-
-  outcome(returned, action)
+  thrown.outcome(returned, action)
 }
 
 /// Runs `call` with a closure that keeps the value Swift hands it, and
@@ -175,9 +159,8 @@ pub(crate) fn filled<T: Default + Send + 'static, R>(call: impl FnOnce(Configure
   });
 
   let returned = call(receive);
-  let value = filled.lock().unwrap_or_else(PoisonError::into_inner).take();
 
-  (returned, value)
+  (returned, filled.lock().unwrap_or_else(PoisonError::into_inner).take())
 }
 
 /// The process configuration that the throwing Swift call in `call` filled
@@ -340,7 +323,7 @@ pub(crate) fn path(path: &Path) -> Result<&str, Error> {
   })
 }
 
-/// `ExitStatus`, its `exitedAt` crossing as seconds since 1970.
+/// `ExitStatus`, whose `exitedAt` crosses as seconds since 1970.
 pub(crate) fn exit_status(outcome: &ffi::CzOutcome) -> Result<process::ExitStatus, Error> {
   Ok(process::ExitStatus {
     exit_code: outcome.exit_code(),
@@ -348,8 +331,9 @@ pub(crate) fn exit_status(outcome: &ffi::CzOutcome) -> Result<process::ExitStatu
   })
 }
 
-/// A Swift `Date`, crossing as seconds since 1970, which are negative before
-/// it. A `Date` can hold dates that `SystemTime` can't, and those fail.
+/// The `SystemTime` of a Swift `Date`, which crosses as seconds since 1970
+/// and is negative before it. A `Date` can hold dates that `SystemTime` can't,
+/// and those fail.
 pub(crate) fn system_time(seconds: f64) -> Result<SystemTime, Error> {
   let duration = |seconds: f64| Duration::try_from_secs_f64(seconds).ok();
   let time = if seconds < 0.0 {

@@ -115,7 +115,7 @@ fn reaches_its_store_and_creates_from_a_reference() {
 
   assert_eq!(manager.image_store().path(), store.path());
 
-  // Left by a run that died before deleting its container.
+  // A run that died before deleting its container may have left it behind.
   let _ = manager.delete(name);
 
   let events = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));

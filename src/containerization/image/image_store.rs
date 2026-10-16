@@ -4,6 +4,7 @@
 use super::Description;
 use super::Image;
 use super::InitImage;
+use crate::containerization::strings;
 use crate::containerization_extras;
 use crate::containerization_oci;
 use crate::containerization_oci::client::authentication;
@@ -235,10 +236,7 @@ impl ImageStore {
     let auth = authentication::crossing(options.auth.as_ref())?;
     let outcome = platform::progressing(options.progress, |progress| {
       self.handle.push_all(
-        references
-          .iter()
-          .map(|reference| reference.to_string())
-          .collect(),
+        strings(references),
         has_platform,
         platform,
         options.insecure,
@@ -281,15 +279,9 @@ impl ImageStore {
     let (has_platform, platform) = containerization_oci::image::platform::crossing(platform);
 
     platform::outcome(
-      self.handle.save(
-        references
-          .iter()
-          .map(|reference| reference.to_string())
-          .collect(),
-        platform::path(out)?,
-        has_platform,
-        platform,
-      ),
+      self
+        .handle
+        .save(strings(references), platform::path(out)?, has_platform, platform),
       format!("save {} to {}", references.join(", "), out.display()),
     )
     .map(drop)

@@ -232,8 +232,8 @@ fn parses_a_digest() {
 #[test]
 fn finds_a_digests_path_in_a_directory() {
   let directory = tempfile::tempdir().expect("a temporary directory");
-  // Not canonicalized: Swift's `resolvingSymlinksInPath` drops macOS's
-  // `/private` prefix, which `canonicalize` adds.
+  // The path is not canonicalized, because Swift's `resolvingSymlinksInPath`
+  // drops macOS's `/private` prefix, which `canonicalize` adds.
   let root = directory.path();
   let encoded = "f".repeat(64);
   let digest = oci::content::ParsedDigest::parse_path_component(&encoded).expect("a valid digest");
