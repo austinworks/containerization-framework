@@ -16,7 +16,7 @@ argv = ["cargo", "audit"]
 argv = ["cargo", "check", "--all-targets"]
 
 [host.commands.clippy]
-argv = ["cargo", "clippy", "--", "-D", "warnings"]
+argv = ["cargo", "clippy", "--all-targets", "--", "-D", "warnings"]
 
 [host.commands.doctest]
 argv = ["cargo", "test", "--workspace", "--doc"]
