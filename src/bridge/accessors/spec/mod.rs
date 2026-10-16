@@ -6,7 +6,6 @@
 //! An enum crosses as its `rawValue`.
 
 mod hooks;
-mod image;
 mod linux;
 mod mount;
 mod process;

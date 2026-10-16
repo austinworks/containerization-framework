@@ -19,6 +19,6 @@ pub use self::archive_writer::ArchiveWriterTransaction;
 pub use self::archive_writer_configuration::ArchiveWriterConfiguration;
 pub use self::archive_writer_configuration::Filter;
 pub use self::archive_writer_configuration::Format;
-pub use self::archive_writer_configuration::Options;
+pub use self::options::Options;
 pub use self::write_entry::URLFileResourceType;
 pub use self::write_entry::WriteEntry;

@@ -1,47 +1,16 @@
 //! Getters and setters for the values images, content and unpacking take: the
-//! OCI `Platform` and `Descriptor`, `Image.Description`, `EXT4Unpacker`, the
-//! rootfs `create`'s options, and a `ProgressHandler`.
+//! OCI `Platform`, `Descriptor` and `ImageConfig`, `Image.Description` and
+//! `EXT4Unpacker`.
 
 use super::entry_at;
 use super::ext4;
 use super::present;
 use crate::bridge::ffi;
 use crate::containerization;
-use crate::containerization::container::container_manager;
 use crate::containerization::image;
 use crate::containerization::vm::kernel;
-use crate::containerization_extras;
 use crate::containerization_oci;
-use crate::platform;
 use std::collections::BTreeMap;
-
-impl platform::Progress {
-  pub(crate) fn is_some(&self) -> bool {
-    self.handler.is_some()
-  }
-
-  /// One batch of events, as a kind and a value each.
-  pub(crate) fn call(&self, kinds: Vec<ffi::ProgressKind>, values: Vec<i64>) {
-    let Some(handler) = &self.handler else {
-      return;
-    };
-    if self.panic.caught() {
-      return;
-    }
-    let events: Vec<containerization_extras::ProgressEvent> = kinds
-      .into_iter()
-      .zip(values)
-      .map(|(kind, value)| match kind {
-        ffi::ProgressKind::Items => containerization_extras::ProgressEvent::AddItems(value as isize),
-        ffi::ProgressKind::TotalItems => containerization_extras::ProgressEvent::AddTotalItems(value as isize),
-        ffi::ProgressKind::Size => containerization_extras::ProgressEvent::AddSize(value),
-        ffi::ProgressKind::TotalSize => containerization_extras::ProgressEvent::AddTotalSize(value),
-      })
-      .collect();
-
-    self.panic.catch(|| handler(&events));
-  }
-}
 
 impl containerization_oci::image::Platform {
   pub(crate) fn architecture(&self) -> &str {
@@ -240,6 +209,72 @@ impl containerization_oci::image::Descriptor {
   }
 }
 
+impl containerization_oci::image::ImageConfig {
+  pub(crate) fn user(&self) -> Option<&str> {
+    self.user.as_deref()
+  }
+
+  pub(crate) fn has_env(&self) -> bool {
+    self.env.is_some()
+  }
+
+  pub(crate) fn env_len(&self) -> usize {
+    self.env.as_ref().map_or(0, Vec::len)
+  }
+
+  pub(crate) fn env_at(&self, index: usize) -> &str {
+    &present(&self.env)[index]
+  }
+
+  pub(crate) fn has_entrypoint(&self) -> bool {
+    self.entrypoint.is_some()
+  }
+
+  pub(crate) fn entrypoint_len(&self) -> usize {
+    self.entrypoint.as_ref().map_or(0, Vec::len)
+  }
+
+  pub(crate) fn entrypoint_at(&self, index: usize) -> &str {
+    &present(&self.entrypoint)[index]
+  }
+
+  pub(crate) fn has_cmd(&self) -> bool {
+    self.cmd.is_some()
+  }
+
+  pub(crate) fn cmd_len(&self) -> usize {
+    self.cmd.as_ref().map_or(0, Vec::len)
+  }
+
+  pub(crate) fn cmd_at(&self, index: usize) -> &str {
+    &present(&self.cmd)[index]
+  }
+
+  pub(crate) fn working_dir(&self) -> Option<&str> {
+    self.working_dir.as_deref()
+  }
+
+  pub(crate) fn has_labels(&self) -> bool {
+    self.labels.is_some()
+  }
+
+  pub(crate) fn labels_len(&self) -> usize {
+    self.labels.as_ref().map_or(0, BTreeMap::len)
+  }
+
+  pub(crate) fn label_key_at(&self, index: usize) -> &str {
+    entry_at(present(&self.labels), index).0
+  }
+
+  pub(crate) fn label_value_at(&self, index: usize) -> &str {
+    entry_at(present(&self.labels), index).1
+  }
+
+  pub(crate) fn stop_signal(&self) -> Option<&str> {
+    self.stop_signal.as_deref()
+  }
+}
+
 impl image::Description {
   pub(crate) fn reference(&self) -> &str {
     &self.reference
@@ -269,28 +304,6 @@ impl image::EXT4Unpacker {
 
   pub(crate) fn journal_mode(&self) -> ffi::JournalModeKind {
     ext4::journal_mode(self.journal)
-  }
-}
-
-impl container_manager::CreateWithRootfsOptions {
-  pub(crate) fn has_writable_layer(&self) -> bool {
-    self.writable_layer.is_some()
-  }
-
-  pub(crate) fn writable_layer(&self) -> &containerization::container::Mount {
-    present(&self.writable_layer)
-  }
-
-  pub(crate) fn networking(&self) -> bool {
-    self.networking
-  }
-
-  pub(crate) fn vm_cpus(&self) -> u32 {
-    self.vm.cpus
-  }
-
-  pub(crate) fn vm_memory_in_bytes(&self) -> u64 {
-    self.vm.memory_in_bytes
   }
 }
 

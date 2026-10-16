@@ -74,6 +74,34 @@ pub(crate) struct Progress {
   pub(crate) panic: Panic,
 }
 
+impl Progress {
+  pub(crate) fn is_some(&self) -> bool {
+    self.handler.is_some()
+  }
+
+  /// One batch of events, as a kind and a value each.
+  pub(crate) fn call(&self, kinds: Vec<ffi::ProgressKind>, values: Vec<i64>) {
+    let Some(handler) = &self.handler else {
+      return;
+    };
+    if self.panic.caught() {
+      return;
+    }
+    let events: Vec<containerization_extras::ProgressEvent> = kinds
+      .into_iter()
+      .zip(values)
+      .map(|(kind, value)| match kind {
+        ffi::ProgressKind::Items => containerization_extras::ProgressEvent::AddItems(value as isize),
+        ffi::ProgressKind::TotalItems => containerization_extras::ProgressEvent::AddTotalItems(value as isize),
+        ffi::ProgressKind::Size => containerization_extras::ProgressEvent::AddSize(value),
+        ffi::ProgressKind::TotalSize => containerization_extras::ProgressEvent::AddTotalSize(value),
+      })
+      .collect();
+
+    self.panic.catch(|| handler(&events));
+  }
+}
+
 /// What `call` returns when it hands Swift `handler`. A panic in the handler
 /// is resumed once Swift has returned.
 pub(crate) fn progressing<R>(
@@ -320,14 +348,6 @@ pub(crate) fn path(path: &Path) -> Result<&str, Error> {
       format!("pass the path {} to Swift", path.display()),
       "the path isn't UTF-8, which Swift's String requires",
     )
-  })
-}
-
-/// `ExitStatus`, whose `exitedAt` crosses as seconds since 1970.
-pub(crate) fn exit_status(outcome: &ffi::CzOutcome) -> Result<process::ExitStatus, Error> {
-  Ok(process::ExitStatus {
-    exit_code: outcome.exit_code(),
-    exited_at: system_time(outcome.exited_at())?,
   })
 }
 

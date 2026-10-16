@@ -61,8 +61,8 @@ impl ffi::CzOutcome {
 #[cfg(test)]
 mod tests {
   use crate::bridge::ffi;
+  use crate::containerization_ext4::FileTimestamps;
   use crate::containerization_ext4::ext4;
-  use crate::containerization_ext4::file_timestamps;
   use crate::containerization_io;
   use std::mem::offset_of;
   use std::mem::size_of;
@@ -138,7 +138,7 @@ mod tests {
     ];
 
     for date in dates {
-      let fs = file_timestamps::fs(date);
+      let fs = FileTimestamps::fs(date);
 
       assert_eq!(
         ffi::cz_file_timestamps_access(crate::platform::seconds(date)),

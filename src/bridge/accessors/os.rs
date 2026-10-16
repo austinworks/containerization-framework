@@ -1,5 +1,5 @@
-//! Readers for what ContainerizationOS returns, and getters for the
-//! `Binfmt.Entry` Swift reads.
+//! Readers for what ContainerizationOS returns, including the keychain's
+//! registry entries, and getters for the `Binfmt.Entry` Swift reads.
 
 use crate::bridge::ffi;
 use crate::containerization_os;
@@ -86,6 +86,22 @@ impl ffi::CzOutcome {
       modified_date: platform::system_time(self.keychain_query_result_modified_date())?,
       created_date: platform::system_time(self.keychain_query_result_created_date())?,
     })
+  }
+
+  /// The `[RegistryInfo]` an outcome holds, its dates crossing as seconds
+  /// since 1970.
+  pub(crate) fn registry_infos(&self) -> Result<Vec<keychain::RegistryInfo>, Error> {
+    self
+      .list(|info| {
+        Ok(keychain::RegistryInfo {
+          hostname: info.registry_info_hostname(),
+          username: info.registry_info_username(),
+          modified_date: platform::system_time(info.registry_info_modified_date())?,
+          created_date: platform::system_time(info.registry_info_created_date())?,
+        })
+      })
+      .into_iter()
+      .collect()
   }
 
   /// The `EntryType?` an outcome holds.

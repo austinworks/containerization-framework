@@ -18,22 +18,26 @@ use std::process::Command;
 /// swift-bridge's generated header directory; `bridging-header.h` imports it.
 const BRIDGE: &str = "containerization-bridge";
 const PACKAGE: &str = "ContainerizationBridge";
-/// The files holding the `#[swift_bridge::bridge]` modules.
+/// The files holding the `#[swift_bridge::bridge]` modules: every `.rs` file
+/// directly in `src/bridge`.
 ///
 /// Their glue is concatenated in this order, and the C header must declare an
 /// enum before a function uses it, so `mod.rs`, which declares every shared
-/// enum, comes first.
-const BRIDGE_MODULES: [&str; 9] = [
-  "src/bridge/mod.rs",
-  "src/bridge/addresses.rs",
-  "src/bridge/callbacks.rs",
-  "src/bridge/containers.rs",
-  "src/bridge/ext4_archive.rs",
-  "src/bridge/images.rs",
-  "src/bridge/network.rs",
-  "src/bridge/spec.rs",
-  "src/bridge/vm.rs",
-];
+/// enum, comes first. The rest are sorted.
+///
+/// A new module needs a `mod` line in `mod.rs`, which reruns this script, so
+/// the directory itself isn't watched.
+fn bridge_modules() -> Vec<PathBuf> {
+  let bridge = manifest_dir().join("src").join("bridge");
+  let mut modules: Vec<PathBuf> = std::fs::read_dir(&bridge)
+    .expect("src/bridge should be readable")
+    .map(|entry| entry.expect("a readable directory entry").path())
+    .filter(|path| path.is_file() && path.extension().is_some_and(|extension| extension == "rs"))
+    .collect();
+
+  modules.sort_by_key(|path| (!path.ends_with("mod.rs"), path.clone()));
+  modules
+}
 
 /// Never copied into the staged package: SwiftPM's build directory, and glue
 /// this script regenerates.
@@ -250,8 +254,10 @@ fn pinned_containerization() -> String {
 fn main() {
   println!("cargo:rerun-if-changed=build.rs");
 
-  for module in BRIDGE_MODULES {
-    println!("cargo:rerun-if-changed={module}");
+  let modules = bridge_modules();
+
+  for module in &modules {
+    println!("cargo:rerun-if-changed={}", module.display());
   }
 
   println!(
@@ -294,8 +300,6 @@ fn main() {
 
   // `OUT_DIR` survives between builds, so glue from the last run is cleared.
   let _ = std::fs::remove_dir_all(&glue);
-
-  let modules = BRIDGE_MODULES.map(|module| manifest_dir().join(module));
 
   swift_bridge_build::parse_bridges(modules).write_all_concatenated(&glue, BRIDGE);
   publish_bridge_shims(&glue);

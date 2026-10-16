@@ -1,4 +1,6 @@
-//! The OCI runtime spec's process, its user, capabilities and rlimits.
+//! The OCI runtime spec's process, its user, capabilities and rlimits. The
+//! getters Swift reads a `User` through are in `container/process.rs`, beside
+//! the `LinuxProcessConfiguration` that holds one.
 
 use crate::bridge::accessors::present;
 use crate::bridge::ffi;

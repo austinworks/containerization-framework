@@ -62,21 +62,23 @@ impl Platform {
   }
 }
 
-/// A `Platform?`, as it crosses to Swift: whether there is one, and it, or an
-/// empty one that Swift doesn't read. (swift-bridge can't pass an `Option` of
-/// a Rust type.)
-pub(crate) fn crossing(platform: Option<&Platform>) -> (bool, Platform) {
-  match platform {
-    Some(platform) => (true, platform.clone()),
-    None => (
-      false,
-      Platform {
-        architecture: String::new(),
-        os: String::new(),
-        os_version: None,
-        os_features: None,
-        variant: None,
-      },
-    ),
+impl Platform {
+  /// A `Platform?`, as it crosses to Swift: whether there is one, and it, or
+  /// an empty one that Swift doesn't read. (swift-bridge can't pass an
+  /// `Option` of a Rust type.)
+  pub(crate) fn crossing(platform: Option<&Self>) -> (bool, Self) {
+    match platform {
+      Some(platform) => (true, platform.clone()),
+      None => (
+        false,
+        Self {
+          architecture: String::new(),
+          os: String::new(),
+          os_version: None,
+          os_features: None,
+          variant: None,
+        },
+      ),
+    }
   }
 }

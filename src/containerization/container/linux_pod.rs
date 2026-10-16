@@ -260,7 +260,7 @@ impl LinuxPod {
       self.handle.wait_container(container_id, timeout_in_seconds),
       format!("wait for {container_id} in pod {}", self.id()),
     )
-    .and_then(|outcome| platform::exit_status(&outcome))
+    .and_then(|outcome| process::ExitStatus::from_outcome(&outcome))
   }
 
   /// `LinuxPod.resizeContainer(_:to:)`.

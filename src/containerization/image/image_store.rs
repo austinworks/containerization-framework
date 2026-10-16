@@ -7,7 +7,6 @@ use super::InitImage;
 use crate::containerization::strings;
 use crate::containerization_extras;
 use crate::containerization_oci;
-use crate::containerization_oci::client::authentication;
 use crate::error::Error;
 use crate::platform;
 use crate::platform::ffi;
@@ -195,8 +194,8 @@ impl ImageStore {
   /// `ImageStore.pull(reference:platform:insecure:auth:progress:maxConcurrentDownloads:)`.
   pub fn pull(&self, reference: &str, options: PullOptions) -> Result<Image, Error> {
     let action = format!("pull {reference}");
-    let (has_platform, platform) = containerization_oci::image::platform::crossing(options.platform.as_ref());
-    let auth = authentication::crossing(options.auth.as_ref())?;
+    let (has_platform, platform) = containerization_oci::image::Platform::crossing(options.platform.as_ref());
+    let auth = containerization_oci::client::Authentication::crossing(options.auth.as_ref())?;
     let outcome = platform::progressing(options.progress, |progress| {
       self.handle.pull(
         reference,
@@ -217,8 +216,8 @@ impl ImageStore {
   /// `ImageStore.push(reference:platform:insecure:auth:progress:)`.
   pub fn push(&self, reference: &str, options: PushOptions) -> Result<(), Error> {
     let action = format!("push {reference}");
-    let (has_platform, platform) = containerization_oci::image::platform::crossing(options.platform.as_ref());
-    let auth = authentication::crossing(options.auth.as_ref())?;
+    let (has_platform, platform) = containerization_oci::image::Platform::crossing(options.platform.as_ref());
+    let auth = containerization_oci::client::Authentication::crossing(options.auth.as_ref())?;
     let outcome = platform::progressing(options.progress, |progress| {
       self
         .handle
@@ -232,8 +231,8 @@ impl ImageStore {
   /// Rust has no overloading, and the suffix tells it apart from
   /// [`Self::push`].
   pub fn push_all(&self, references: &[&str], options: PushAllOptions) -> Result<(), Error> {
-    let (has_platform, platform) = containerization_oci::image::platform::crossing(options.platform.as_ref());
-    let auth = authentication::crossing(options.auth.as_ref())?;
+    let (has_platform, platform) = containerization_oci::image::Platform::crossing(options.platform.as_ref());
+    let auth = containerization_oci::client::Authentication::crossing(options.auth.as_ref())?;
     let outcome = platform::progressing(options.progress, |progress| {
       self.handle.push_all(
         strings(references),
@@ -256,7 +255,7 @@ impl ImageStore {
     auth: Option<&containerization_oci::client::Authentication>,
     progress: Option<containerization_extras::ProgressHandler>,
   ) -> Result<InitImage, Error> {
-    let auth = authentication::crossing(auth)?;
+    let auth = containerization_oci::client::Authentication::crossing(auth)?;
 
     platform::outcome(
       platform::progressing(progress, |progress| {
@@ -276,7 +275,7 @@ impl ImageStore {
     out: &Path,
     platform: Option<&containerization_oci::image::Platform>,
   ) -> Result<(), Error> {
-    let (has_platform, platform) = containerization_oci::image::platform::crossing(platform);
+    let (has_platform, platform) = containerization_oci::image::Platform::crossing(platform);
 
     platform::outcome(
       self

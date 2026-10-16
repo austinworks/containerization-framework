@@ -263,7 +263,7 @@ impl LinuxContainer {
   /// `LinuxContainer.wait(timeoutInSeconds:)`.
   pub fn wait(&self, timeout_in_seconds: Option<i64>) -> Result<process::ExitStatus, Error> {
     platform::outcome(self.handle.wait(timeout_in_seconds), format!("wait for {}", self.id()))
-      .and_then(|outcome| platform::exit_status(&outcome))
+      .and_then(|outcome| process::ExitStatus::from_outcome(&outcome))
   }
 
   /// `LinuxContainer.resize(to:)`.

@@ -23,7 +23,6 @@ mod ext4;
 mod images;
 mod os;
 mod pod;
-mod registry;
 mod spec;
 
 use crate::bridge::ffi;

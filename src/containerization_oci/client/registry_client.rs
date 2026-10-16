@@ -5,7 +5,6 @@
 //! swift-nio and swift-log types.
 
 use super::Authentication;
-use super::authentication;
 use crate::containerization_extras;
 use crate::containerization_oci::image;
 use crate::error::Error;
@@ -81,7 +80,7 @@ impl RegistryClient {
   /// fails or that a server error answers.
   pub fn new(reference: &str, insecure: bool, auth: Option<&Authentication>) -> Result<Self, Error> {
     platform::outcome(
-      ffi::cz_registry_client_new(reference, insecure, authentication::crossing(auth)?),
+      ffi::cz_registry_client_new(reference, insecure, Authentication::crossing(auth)?),
       format!("make a registry client for {reference}"),
     )
     .map(|outcome| Self {
@@ -98,7 +97,7 @@ impl RegistryClient {
         host,
         options.scheme,
         options.port,
-        authentication::crossing(options.authentication.as_ref())?,
+        Authentication::crossing(options.authentication.as_ref())?,
         options.client_id,
         options.retry_options.is_some(),
         options

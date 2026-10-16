@@ -4,6 +4,6 @@
 //! [`ext4`].
 
 pub mod ext4;
-pub(crate) mod file_timestamps;
+mod file_timestamps;
 
 pub use self::file_timestamps::FileTimestamps;

@@ -65,7 +65,7 @@ impl LinuxProcess {
   /// `LinuxProcess.wait(timeoutInSeconds:)`.
   pub fn wait(&self, timeout_in_seconds: Option<i64>) -> Result<ExitStatus, Error> {
     platform::outcome(self.handle.wait(timeout_in_seconds), format!("wait for {}", self.id()))
-      .and_then(|outcome| platform::exit_status(&outcome))
+      .and_then(|outcome| ExitStatus::from_outcome(&outcome))
   }
 
   /// `LinuxProcess.delete()`.

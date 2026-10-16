@@ -8,7 +8,7 @@ mod image_config;
 mod index;
 mod manifest;
 mod media_types;
-pub(crate) mod platform;
+mod platform;
 pub mod reference;
 
 pub use self::annotation_keys::AnnotationKeys;

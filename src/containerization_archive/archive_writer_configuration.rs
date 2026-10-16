@@ -1,4 +1,4 @@
-use super::options;
+use super::Options;
 
 raw_values!(
   /// `Format`.
@@ -40,14 +40,6 @@ raw_values!(
     Zstd = "zstd",
   }
 );
-
-/// `Options`.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum Options {
-  CompressionLevel(u32),
-  Compression(options::Compression),
-  Xattrformat(options::XattrFormat),
-}
 
 /// `ArchiveWriterConfiguration`.
 #[derive(Clone, Debug, Eq, PartialEq)]

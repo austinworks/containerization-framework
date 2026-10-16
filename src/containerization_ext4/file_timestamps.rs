@@ -71,45 +71,47 @@ impl Default for FileTimestamps {
   }
 }
 
+impl FileTimestamps {
+  /// Swift's internal `Date.fs()`, which the getters above read: the low 32
+  /// bits of the seconds since 1970, two bits counting how often they
+  /// wrapped, and 30 bits of nanoseconds.
+  ///
+  /// The date is read as a Swift `Date` holds it, as seconds since 2001 in a
+  /// `Double`. Swift's `timeIntervalSince1970` adds the years before 2001
+  /// back, which can change a fraction's low bits, so this does the same.
+  pub(crate) fn fs(time: SystemTime) -> u64 {
+    const SECONDS_FROM_1970_TO_2001: f64 = 978_307_200.0;
+    // `Date.distantPast`, the first instant of year 1 in Foundation's calendar.
+    const DISTANT_PAST: f64 = -63_114_076_800.0;
+
+    let since_2001 = platform::seconds(time) - SECONDS_FROM_1970_TO_2001;
+    if since_2001 == DISTANT_PAST {
+      return 0;
+    }
+
+    let seconds = since_2001 + SECONDS_FROM_1970_TO_2001;
+    if seconds < -(0x8000_0000_i64 as f64) {
+      return 0x8000_0000;
+    }
+    if seconds > 0x3_7fff_ffff_i64 as f64 {
+      return 0x3_7fff_ffff;
+    }
+
+    let whole = seconds.floor() as i64;
+    let base = whole as i32;
+    let epoch = (whole - base as i64) as u64;
+    let nanoseconds = (((seconds - seconds.floor()) * 1_000_000_000.0) as u32).min(999_999_999);
+
+    base as u32 as u64 | epoch | ((nanoseconds as u64) << 34)
+  }
+}
+
 fn lo(time: SystemTime) -> u32 {
-  fs(time) as u32
+  FileTimestamps::fs(time) as u32
 }
 
 fn hi(time: SystemTime) -> u32 {
-  (fs(time) >> 32) as u32
-}
-
-/// Swift's internal `Date.fs()`, which the getters above read: the low 32 bits
-/// of the seconds since 1970, two bits counting how often they wrapped, and 30
-/// bits of nanoseconds.
-///
-/// The date is read as a Swift `Date` holds it, as seconds since 2001 in a
-/// `Double`. Swift's `timeIntervalSince1970` adds the years before 2001 back,
-/// which can change a fraction's low bits, so this does the same.
-pub(crate) fn fs(time: SystemTime) -> u64 {
-  const SECONDS_FROM_1970_TO_2001: f64 = 978_307_200.0;
-  // `Date.distantPast`, the first instant of year 1 in Foundation's calendar.
-  const DISTANT_PAST: f64 = -63_114_076_800.0;
-
-  let since_2001 = platform::seconds(time) - SECONDS_FROM_1970_TO_2001;
-  if since_2001 == DISTANT_PAST {
-    return 0;
-  }
-
-  let seconds = since_2001 + SECONDS_FROM_1970_TO_2001;
-  if seconds < -(0x8000_0000_i64 as f64) {
-    return 0x8000_0000;
-  }
-  if seconds > 0x3_7fff_ffff_i64 as f64 {
-    return 0x3_7fff_ffff;
-  }
-
-  let whole = seconds.floor() as i64;
-  let base = whole as i32;
-  let epoch = (whole - base as i64) as u64;
-  let nanoseconds = (((seconds - seconds.floor()) * 1_000_000_000.0) as u32).min(999_999_999);
-
-  base as u32 as u64 | epoch | ((nanoseconds as u64) << 34)
+  (FileTimestamps::fs(time) >> 32) as u32
 }
 
 #[cfg(test)]

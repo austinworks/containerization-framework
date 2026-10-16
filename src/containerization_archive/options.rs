@@ -1,8 +1,16 @@
-//! `Options`' nested types.
+//! `Options`, and its nested types.
 
 use crate::error::Error;
 use crate::platform;
 use crate::platform::ffi;
+
+/// `Options`.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum Options {
+  CompressionLevel(u32),
+  Compression(Compression),
+  Xattrformat(XattrFormat),
+}
 
 /// `Options.Compression`.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

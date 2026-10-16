@@ -50,12 +50,14 @@ impl fmt::Debug for Authentication {
   }
 }
 
-/// An `Authentication?`, as it crosses to Swift.
-pub(crate) fn crossing(auth: Option<&Authentication>) -> Result<ffi::CzAuthentication, Error> {
-  match auth {
-    Some(auth) => Ok(auth.handle.duplicate()),
-    None => {
-      platform::outcome(ffi::cz_no_authentication(), "pass no authentication").map(|outcome| outcome.authentication())
+impl Authentication {
+  /// An `Authentication?`, as it crosses to Swift.
+  pub(crate) fn crossing(auth: Option<&Self>) -> Result<ffi::CzAuthentication, Error> {
+    match auth {
+      Some(auth) => Ok(auth.handle.duplicate()),
+      None => {
+        platform::outcome(ffi::cz_no_authentication(), "pass no authentication").map(|outcome| outcome.authentication())
+      }
     }
   }
 }
