@@ -20,6 +20,20 @@ pub enum LogLevel {
   Critical,
 }
 
+impl From<LogLevel> for ffi::LogLevel {
+  fn from(level: LogLevel) -> Self {
+    match level {
+      LogLevel::Trace => Self::Trace,
+      LogLevel::Debug => Self::Debug,
+      LogLevel::Info => Self::Info,
+      LogLevel::Notice => Self::Notice,
+      LogLevel::Warning => Self::Warning,
+      LogLevel::Error => Self::Error,
+      LogLevel::Critical => Self::Critical,
+    }
+  }
+}
+
 /// `Kernel.CommandLine`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CommandLine {

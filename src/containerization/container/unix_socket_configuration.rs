@@ -15,6 +15,24 @@ pub enum Direction {
   OutOf,
 }
 
+impl From<Direction> for ffi::SocketDirection {
+  fn from(direction: Direction) -> Self {
+    match direction {
+      Direction::Into => Self::Into,
+      Direction::OutOf => Self::OutOf,
+    }
+  }
+}
+
+impl From<ffi::SocketDirection> for Direction {
+  fn from(direction: ffi::SocketDirection) -> Self {
+    match direction {
+      ffi::SocketDirection::Into => Self::Into,
+      ffi::SocketDirection::OutOf => Self::OutOf,
+    }
+  }
+}
+
 /// `UnixSocketConfiguration`.
 ///
 /// It holds the Swift value, because Swift gives each configuration a

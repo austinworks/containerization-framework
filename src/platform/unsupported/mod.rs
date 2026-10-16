@@ -5,10 +5,6 @@
 //! Nothing can make a Swift object here: every constructor's outcome is a
 //! failure, and every handle is uninhabited, so its methods never run.
 
-use crate::containerization::container;
-use crate::containerization::network;
-use crate::containerization::vm;
-
 const MACOS_ONLY: &str = "Containerization.framework is macOS only";
 
 /// `ProgressEvent`, less its value.
@@ -28,20 +24,6 @@ pub(crate) enum LogLevel {
   Warning,
   Error,
   Critical,
-}
-
-impl From<vm::kernel::LogLevel> for LogLevel {
-  fn from(level: vm::kernel::LogLevel) -> Self {
-    match level {
-      vm::kernel::LogLevel::Trace => Self::Trace,
-      vm::kernel::LogLevel::Debug => Self::Debug,
-      vm::kernel::LogLevel::Info => Self::Info,
-      vm::kernel::LogLevel::Notice => Self::Notice,
-      vm::kernel::LogLevel::Warning => Self::Warning,
-      vm::kernel::LogLevel::Error => Self::Error,
-      vm::kernel::LogLevel::Critical => Self::Critical,
-    }
-  }
 }
 
 /// `Hosts.Entry`'s static constructors.
@@ -75,16 +57,6 @@ pub(crate) enum FilesystemOperationKind {
   Trim,
 }
 
-impl From<container::FilesystemOperation> for FilesystemOperationKind {
-  fn from(operation: container::FilesystemOperation) -> Self {
-    match operation {
-      container::FilesystemOperation::Freeze => Self::Freeze,
-      container::FilesystemOperation::Thaw => Self::Thaw,
-      container::FilesystemOperation::Trim => Self::Trim,
-    }
-  }
-}
-
 /// vmnet's `operating_modes_t`.
 pub(crate) enum VmnetMode {
   Shared,
@@ -92,38 +64,10 @@ pub(crate) enum VmnetMode {
   Bridged,
 }
 
-impl From<network::vmnet_network::Mode> for VmnetMode {
-  fn from(mode: network::vmnet_network::Mode) -> Self {
-    match mode {
-      network::vmnet_network::Mode::Shared => Self::Shared,
-      network::vmnet_network::Mode::Host => Self::Host,
-      network::vmnet_network::Mode::Bridged => Self::Bridged,
-    }
-  }
-}
-
 /// `UnixSocketConfiguration.Direction`.
 pub(crate) enum SocketDirection {
   Into,
   OutOf,
-}
-
-impl From<container::unix_socket_configuration::Direction> for SocketDirection {
-  fn from(direction: container::unix_socket_configuration::Direction) -> Self {
-    match direction {
-      container::unix_socket_configuration::Direction::Into => Self::Into,
-      container::unix_socket_configuration::Direction::OutOf => Self::OutOf,
-    }
-  }
-}
-
-impl From<SocketDirection> for container::unix_socket_configuration::Direction {
-  fn from(direction: SocketDirection) -> Self {
-    match direction {
-      SocketDirection::Into => Self::Into,
-      SocketDirection::OutOf => Self::OutOf,
-    }
-  }
 }
 
 /// `VirtualMachineInstanceState`.
@@ -135,31 +79,10 @@ pub(crate) enum InstanceState {
   Unknown,
 }
 
-impl From<InstanceState> for vm::VirtualMachineInstanceState {
-  fn from(state: InstanceState) -> Self {
-    match state {
-      InstanceState::Starting => Self::Starting,
-      InstanceState::Running => Self::Running,
-      InstanceState::Stopped => Self::Stopped,
-      InstanceState::Stopping => Self::Stopping,
-      InstanceState::Unknown => Self::Unknown,
-    }
-  }
-}
-
 /// `VirtiofsLayout`.
 pub(crate) enum VirtiofsLayoutKind {
   Unified,
   PerTag,
-}
-
-impl From<VirtiofsLayoutKind> for vm::VirtiofsLayout {
-  fn from(layout: VirtiofsLayoutKind) -> Self {
-    match layout {
-      VirtiofsLayoutKind::Unified => Self::Unified,
-      VirtiofsLayoutKind::PerTag => Self::PerTag,
-    }
-  }
 }
 
 /// A `Network?`, which is only ever `nil` here.

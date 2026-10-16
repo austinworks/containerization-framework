@@ -19,6 +19,16 @@ pub enum Mode {
   Bridged,
 }
 
+impl From<Mode> for ffi::VmnetMode {
+  fn from(mode: Mode) -> Self {
+    match mode {
+      Mode::Shared => Self::Shared,
+      Mode::Host => Self::Host,
+      Mode::Bridged => Self::Bridged,
+    }
+  }
+}
+
 /// `VmnetNetwork.Interface`, attached to the network that made it.
 pub struct Interface {
   pub(crate) handle: ffi::CzVmnetInterface,

@@ -25,16 +25,6 @@ impl ffi::CzOutcome {
   }
 }
 
-impl From<vmnet_network::Mode> for ffi::VmnetMode {
-  fn from(mode: vmnet_network::Mode) -> Self {
-    match mode {
-      vmnet_network::Mode::Shared => Self::Shared,
-      vmnet_network::Mode::Host => Self::Host,
-      vmnet_network::Mode::Bridged => Self::Bridged,
-    }
-  }
-}
-
 impl network::NATInterface {
   pub(crate) fn ipv4_address_value(&self) -> u32 {
     self.ipv4_address.address.value

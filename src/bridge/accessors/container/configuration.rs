@@ -18,7 +18,6 @@ use crate::bridge::ffi;
 use crate::containerization::container;
 use crate::containerization::container::linux_container;
 use crate::containerization::container::mount;
-use crate::containerization::container::unix_socket_configuration;
 use crate::containerization::network;
 use crate::containerization::process;
 use crate::containerization::vm;
@@ -96,24 +95,6 @@ impl container::Mount {
       | mount::RuntimeOptions::Virtiofs(options)
       | mount::RuntimeOptions::Any(options) => options,
       mount::RuntimeOptions::Shared => &[],
-    }
-  }
-}
-
-impl From<unix_socket_configuration::Direction> for ffi::SocketDirection {
-  fn from(direction: unix_socket_configuration::Direction) -> Self {
-    match direction {
-      unix_socket_configuration::Direction::Into => Self::Into,
-      unix_socket_configuration::Direction::OutOf => Self::OutOf,
-    }
-  }
-}
-
-impl From<ffi::SocketDirection> for unix_socket_configuration::Direction {
-  fn from(direction: ffi::SocketDirection) -> Self {
-    match direction {
-      ffi::SocketDirection::Into => Self::Into,
-      ffi::SocketDirection::OutOf => Self::OutOf,
     }
   }
 }

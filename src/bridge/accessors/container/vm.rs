@@ -9,7 +9,6 @@ use crate::bridge::ffi;
 use crate::containerization::container;
 use crate::containerization::network;
 use crate::containerization::vm;
-use crate::containerization::vm::kernel;
 use crate::containerization::vm::system_platform;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -28,41 +27,6 @@ impl ffi::CzOutcome {
   /// A held `[String: [AttachedFilesystem]]`.
   pub(crate) fn attached_filesystems_by_id(&self) -> BTreeMap<String, Vec<vm::AttachedFilesystem>> {
     self.map_of(|filesystems| filesystems.list(Self::attached_filesystem))
-  }
-}
-
-impl From<ffi::InstanceState> for vm::VirtualMachineInstanceState {
-  fn from(state: ffi::InstanceState) -> Self {
-    match state {
-      ffi::InstanceState::Starting => Self::Starting,
-      ffi::InstanceState::Running => Self::Running,
-      ffi::InstanceState::Stopped => Self::Stopped,
-      ffi::InstanceState::Stopping => Self::Stopping,
-      ffi::InstanceState::Unknown => Self::Unknown,
-    }
-  }
-}
-
-impl From<ffi::VirtiofsLayoutKind> for vm::VirtiofsLayout {
-  fn from(layout: ffi::VirtiofsLayoutKind) -> Self {
-    match layout {
-      ffi::VirtiofsLayoutKind::Unified => Self::Unified,
-      ffi::VirtiofsLayoutKind::PerTag => Self::PerTag,
-    }
-  }
-}
-
-impl From<kernel::LogLevel> for ffi::LogLevel {
-  fn from(level: kernel::LogLevel) -> Self {
-    match level {
-      kernel::LogLevel::Trace => Self::Trace,
-      kernel::LogLevel::Debug => Self::Debug,
-      kernel::LogLevel::Info => Self::Info,
-      kernel::LogLevel::Notice => Self::Notice,
-      kernel::LogLevel::Warning => Self::Warning,
-      kernel::LogLevel::Error => Self::Error,
-      kernel::LogLevel::Critical => Self::Critical,
-    }
   }
 }
 

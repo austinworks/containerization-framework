@@ -1,18 +1,7 @@
 //! Getters for what a container manager is asked to create, and the
 //! filesystem operations it performs.
 
-use crate::bridge::ffi;
 use crate::containerization::container;
-
-impl From<container::FilesystemOperation> for ffi::FilesystemOperationKind {
-  fn from(operation: container::FilesystemOperation) -> Self {
-    match operation {
-      container::FilesystemOperation::Freeze => Self::Freeze,
-      container::FilesystemOperation::Thaw => Self::Thaw,
-      container::FilesystemOperation::Trim => Self::Trim,
-    }
-  }
-}
 
 impl container::container_manager::CreateOptions {
   pub(crate) fn rootfs_size_in_bytes(&self) -> u64 {
