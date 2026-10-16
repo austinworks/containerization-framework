@@ -10,7 +10,10 @@
 //! `containerization::image` and `LinuxContainer` is in
 //! `containerization::container`. A Swift type nested in another, like
 //! `LinuxContainer.Configuration`, is in a module named after its parent, in
-//! the parent's group: `container::linux_container::Configuration`.
+//! the parent's group: `container::linux_container::Configuration`. When the
+//! parent has the same name as its group, the parent and its nested types are
+//! in the group's module, as `Image` and `Image.Description` are in
+//! `containerization::image`.
 //!
 //! Swift's `async` methods block until they finish, and errors they throw are
 //! returned as [`Error`].
@@ -70,8 +73,27 @@
 #![warn(missing_debug_implementations)]
 
 /// A Swift enum backed by strings: Rust's cases, each with its `rawValue`.
+/// `CaseIterable` before the name adds `ALL_CASES`, for an enum Swift
+/// declares `CaseIterable`.
 macro_rules! raw_values {
+  ($(#[$meta:meta])* CaseIterable $name:ident { $($case:ident = $raw:literal),* $(,)? }) => {
+    raw_values!(@enum $(#[$meta])* $name { $($case = $raw),* });
+
+    impl $name {
+      /// `allCases`.
+      pub const ALL_CASES: &[Self] = &[$(Self::$case),*];
+    }
+  };
   ($(#[$meta:meta])* $name:ident { $($case:ident = $raw:literal),* $(,)? }) => {
+    raw_values!(@enum $(#[$meta])* $name { $($case = $raw),* });
+
+    impl $name {
+      /// Every case, in the order the bridge lists Swift's raw values.
+      #[cfg(all(test, target_os = "macos"))]
+      pub(crate) const ALL: &[Self] = &[$(Self::$case),*];
+    }
+  };
+  (@enum $(#[$meta:meta])* $name:ident { $($case:ident = $raw:literal),* $(,)? }) => {
     $(#[$meta])*
     #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub enum $name {
@@ -79,10 +101,6 @@ macro_rules! raw_values {
     }
 
     impl $name {
-      /// Every case, in the order the bridge lists Swift's raw values.
-      #[cfg(all(test, target_os = "macos"))]
-      pub(crate) const ALL: &[Self] = &[$(Self::$case),*];
-
       /// `rawValue`.
       pub fn raw_value(self) -> &'static str {
         match self {
@@ -104,6 +122,28 @@ macro_rules! raw_values {
       pub(crate) fn from_swift(raw_value: &str) -> Self {
         Self::from_raw_value(raw_value)
           .unwrap_or_else(|| panic!("Swift's {} has a case Rust lacks: {raw_value:?}", stringify!($name)))
+      }
+    }
+
+    /// The `rawValue`, as [`Self::raw_value`] returns it.
+    impl AsRef<str> for $name {
+      fn as_ref(&self) -> &str {
+        self.raw_value()
+      }
+    }
+
+    /// `init?(rawValue:)`, as [`Self::from_raw_value`] is, failing for a raw
+    /// value Swift lacks.
+    impl std::str::FromStr for $name {
+      type Err = $crate::Error;
+
+      fn from_str(raw_value: &str) -> Result<Self, Self::Err> {
+        Self::from_raw_value(raw_value).ok_or_else(|| {
+          $crate::Error::failed(
+            concat!("parse a raw value of ", stringify!($name)),
+            format!("{raw_value:?} is not one of Swift's cases"),
+          )
+        })
       }
     }
   };

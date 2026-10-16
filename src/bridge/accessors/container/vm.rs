@@ -246,10 +246,12 @@ mod tests {
 
   #[test]
   fn copies_swifts_system_platform_raw_values() {
-    let os = system_platform::OS::ALL_CASES.iter().map(|os| os.as_str());
+    let os = system_platform::OS::ALL_CASES
+      .iter()
+      .map(|os| os.raw_value());
     let architectures = system_platform::Architecture::ALL_CASES
       .iter()
-      .map(|architecture| architecture.as_str());
+      .map(|architecture| architecture.raw_value());
 
     assert_eq!(
       ffi::cz_system_platform_raw_values(),

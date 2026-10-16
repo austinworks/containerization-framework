@@ -112,7 +112,7 @@ impl ArchiveWriter {
   /// let transaction = writer.make_transaction_writer();
   /// writer.finish_encoding()?;
   /// transaction.finish()?;
-  /// # Ok::<(), cfw::error::Error>(())
+  /// # Ok::<(), cfw::Error>(())
   /// ```
   ///
   /// ```compile_fail
@@ -125,7 +125,7 @@ impl ArchiveWriter {
   /// let entry = cfw::containerization_archive::WriteEntry::with_archive(&writer);
   /// writer.finish_encoding()?;
   /// entry.path();
-  /// # Ok::<(), cfw::error::Error>(())
+  /// # Ok::<(), cfw::Error>(())
   /// ```
   pub fn finish_encoding(&mut self) -> Result<(), Error> {
     platform::outcome(self.handle.finish_encoding(), "finish an archive").map(drop)
@@ -193,7 +193,7 @@ impl ArchiveWriter {
 /// std::thread::scope(|scope| {
 ///   scope.spawn(move || transaction.finish());
 /// });
-/// # Ok::<(), cfw::error::Error>(())
+/// # Ok::<(), cfw::Error>(())
 /// ```
 pub struct ArchiveWriterTransaction<'a> {
   handle: ffi::CzArchiveWriterTransaction,

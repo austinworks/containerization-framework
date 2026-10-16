@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `SystemPlatform`'s `OS::as_str` and `Architecture::as_str` are renamed to
+  `raw_value`, to match every other enum backed by Swift raw values.
+- Every enum backed by Swift raw values implements `AsRef<str>`, which
+  returns its raw value, and `FromStr`, which parses one and fails with
+  `Error::Failed` for a raw value Swift lacks.
+
 ## v0.9.0
 
 - Add the `versions` module, which names the releases a caller downloads to

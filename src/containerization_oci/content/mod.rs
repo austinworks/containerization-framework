@@ -29,7 +29,7 @@ use std::path::PathBuf;
 /// std::thread::scope(|scope| {
 ///   scope.spawn(|| content.size());
 /// });
-/// # Ok::<(), cfw::error::Error>(())
+/// # Ok::<(), cfw::Error>(())
 /// ```
 pub struct Content {
   pub(crate) handle: ffi::CzContent,

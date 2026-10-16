@@ -36,7 +36,7 @@ raw_values!(
 /// # use containerization_framework as cfw;
 /// let entry = cfw::containerization_archive::WriteEntry::new()?;
 /// std::thread::spawn(move || entry.path());
-/// # Ok::<(), cfw::error::Error>(())
+/// # Ok::<(), cfw::Error>(())
 /// ```
 pub struct WriteEntry<'a> {
   pub(crate) handle: ffi::CzWriteEntry,

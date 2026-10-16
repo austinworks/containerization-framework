@@ -370,8 +370,8 @@ fn converts_host_signals_to_linuxs() {
 fn renders_system_platforms_as_swift_does() {
   let platform = cfw::containerization::vm::SystemPlatform::LINUX_AMD;
 
-  assert_eq!(platform.os.as_str(), "linux");
-  assert_eq!(platform.architecture.as_str(), "amd64");
+  assert_eq!(platform.os.raw_value(), "linux");
+  assert_eq!(platform.architecture.raw_value(), "amd64");
   assert_eq!(
     platform.oci_platform().expect("a platform"),
     cfw::containerization_oci::image::Platform::parse("linux/amd64").expect("a platform")

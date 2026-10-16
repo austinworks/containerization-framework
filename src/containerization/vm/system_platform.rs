@@ -6,41 +6,14 @@ use crate::error::Error;
 use crate::platform;
 use crate::platform::ffi;
 
-macro_rules! raw_values {
-  ($(#[$doc:meta])* $name:ident { $($case:ident = $raw_value:literal),* $(,)? }) => {
-    $(#[$doc])*
-    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-    pub enum $name {
-      $($case),*
-    }
-
-    impl $name {
-      /// `allCases`.
-      pub const ALL_CASES: &[Self] = &[$(Self::$case),*];
-
-      /// `init(rawValue:)`, which is `None` for a raw value Swift lacks.
-      pub fn from_raw_value(raw_value: &str) -> Option<Self> {
-        Self::ALL_CASES.iter().copied().find(|case| case.as_str() == raw_value)
-      }
-
-      /// `rawValue`.
-      pub fn as_str(self) -> &'static str {
-        match self {
-          $(Self::$case => $raw_value),*
-        }
-      }
-    }
-  };
-}
-
 raw_values!(
   /// `SystemPlatform.OS`.
-  OS { Linux = "linux", Darwin = "darwin" }
+  CaseIterable OS { Linux = "linux", Darwin = "darwin" }
 );
 
 raw_values!(
   /// `SystemPlatform.Architecture`.
-  Architecture { Arm64 = "arm64", Amd64 = "amd64" }
+  CaseIterable Architecture { Arm64 = "arm64", Amd64 = "amd64" }
 );
 
 /// `SystemPlatform`.
@@ -80,11 +53,23 @@ mod tests {
   #[test]
   fn reads_back_every_raw_value_it_writes() {
     for os in OS::ALL_CASES {
-      assert_eq!(OS::from_raw_value(os.as_str()), Some(*os));
+      assert_eq!(OS::from_raw_value(os.raw_value()), Some(*os));
     }
     for architecture in Architecture::ALL_CASES {
-      assert_eq!(Architecture::from_raw_value(architecture.as_str()), Some(*architecture));
+      assert_eq!(
+        Architecture::from_raw_value(architecture.raw_value()),
+        Some(*architecture)
+      );
     }
     assert_eq!(OS::from_raw_value("Linux"), None, "raw values are case sensitive");
+  }
+
+  #[test]
+  fn parses_and_lends_its_raw_value_through_std_traits() {
+    assert_eq!("arm64".parse::<Architecture>(), Ok(Architecture::Arm64));
+    assert_eq!(OS::Darwin.as_ref(), "darwin");
+
+    let error = "windows".parse::<OS>().unwrap_err();
+    assert_eq!(error.action(), "parse a raw value of OS");
   }
 }
