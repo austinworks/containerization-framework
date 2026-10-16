@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.9.0
+
 - Add the `versions` module, which names the releases a caller downloads to
   run this crate. `INIT_IMAGE` is the init image Apple publishes for the
   Containerization release this crate builds against. `KERNEL_ARCHIVE_URL`
