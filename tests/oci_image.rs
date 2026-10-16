@@ -1,8 +1,7 @@
 #![cfg(feature = "integration")]
 
-//! `ContainerizationOCI`'s value types, each asked of Swift.
-
-mod support;
+//! `ContainerizationOCI`'s image values and references, each asked of Swift.
+//! None needs a store, so the suite reaches no registry.
 
 use cfw::containerization_oci as oci;
 use containerization_framework as cfw;
@@ -81,70 +80,6 @@ fn matches_platforms_as_swift_does() {
 }
 
 #[test]
-fn reads_a_pulled_images_index_manifest_and_config() {
-  let store = support::store::image_store();
-  let image = support::store::image(&store);
-  let platform = platform("linux/arm64");
-
-  let descriptor = image.descriptor();
-  assert_eq!(descriptor.digest, image.digest());
-  assert_eq!(image.description().descriptor, descriptor);
-
-  let index = image.index().expect("the image's index");
-  assert_eq!(index.schema_version, 2);
-  let listed = index
-    .manifests
-    .iter()
-    .find(|manifest| manifest.platform.as_ref() == Some(&platform))
-    .expect("an arm64 manifest in the index");
-  assert_eq!(
-    &image
-      .descriptor_for(&platform)
-      .expect("the arm64 descriptor"),
-    listed
-  );
-
-  let manifest = image.manifest(&platform).expect("the arm64 manifest");
-  assert!(!manifest.layers.is_empty());
-  let content_store = support::store::content_store();
-  for layer in &manifest.layers {
-    assert!(
-      content_store
-        .get(&layer.digest)
-        .expect("a lookup")
-        .is_some(),
-      "{} should be in the content store",
-      layer.digest
-    );
-  }
-
-  let config = image.config(&platform).expect("the arm64 config");
-  assert_eq!(config.architecture, "arm64");
-  assert_eq!(config.os, "linux");
-  assert_eq!(config.rootfs.r#type, "layers");
-  assert_eq!(config.rootfs.diff_ids.len(), manifest.layers.len());
-  let image_config = config.config.expect("alpine's config");
-  assert!(
-    image_config
-      .env
-      .expect("alpine's environment")
-      .iter()
-      .any(|variable| variable.starts_with("PATH="))
-  );
-}
-
-#[test]
-fn fails_for_a_platform_the_image_lacks() {
-  let store = support::store::image_store();
-  let image = support::store::image(&store);
-
-  let error = image
-    .descriptor_for(&platform("windows/amd64"))
-    .expect_err("no Windows manifest");
-  assert!(error.is_code(cfw::containerization_error::Code::InvalidArgument));
-}
-
-#[test]
 fn parses_and_normalizes_a_reference() {
   let mut reference = oci::image::Reference::parse("docker.io/alpine").expect("a valid reference");
 
@@ -202,43 +137,6 @@ fn rejects_a_malformed_reference() {
       .with_tag("")
       .is_err()
   );
-}
-
-#[test]
-fn parses_a_digest() {
-  let encoded = "0123456789abcdef".repeat(4);
-  let digest = oci::content::ParsedDigest::parse(&format!("sha256:{encoded}")).expect("a valid digest");
-
-  assert_eq!(digest.encoded(), encoded);
-  assert_eq!(
-    digest.description().expect("a description"),
-    format!("sha256:{encoded}")
-  );
-  assert_eq!(
-    oci::content::ParsedDigest::parse_path_component(&encoded).expect("the hex digits alone"),
-    digest
-  );
-  assert!(
-    oci::content::ParsedDigest::parse(&encoded).is_err(),
-    "parse needs the prefix"
-  );
-  assert!(oci::content::ParsedDigest::is_valid(&encoded).expect("an answer"));
-  assert!(
-    !oci::content::ParsedDigest::is_valid(&encoded.to_uppercase()).expect("an answer"),
-    "uppercase hex is rejected"
-  );
-}
-
-#[test]
-fn finds_a_digests_path_in_a_directory() {
-  let directory = tempfile::tempdir().expect("a temporary directory");
-  // The path is not canonicalized, because Swift's `resolvingSymlinksInPath`
-  // drops macOS's `/private` prefix, which `canonicalize` adds.
-  let root = directory.path();
-  let encoded = "f".repeat(64);
-  let digest = oci::content::ParsedDigest::parse_path_component(&encoded).expect("a valid digest");
-
-  assert_eq!(digest.path(&root).expect("a path"), root.join(&encoded));
 }
 
 #[test]

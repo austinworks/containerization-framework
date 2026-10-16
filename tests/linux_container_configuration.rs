@@ -337,8 +337,7 @@ fn reads_back_the_boot_log_descriptor_it_was_given() {
 }
 
 /// Only an M3 or later has nested virtualization. On other hosts the container
-/// fails to start, which is the expected behavior, and there is nothing more to
-/// check.
+/// fails to start, as expected, and there is nothing more to check.
 #[test]
 fn boots_with_nested_virtualization_where_the_host_has_it() {
   let booted = Container::try_boot_with("cfw-test-config-nested", |configuration| {

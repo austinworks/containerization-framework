@@ -33,6 +33,15 @@ pub fn vm() -> cfw::containerization::vm::VMResources {
   }
 }
 
+/// A VM configuration with [`vm`]'s resources and Swift's other defaults.
+pub fn vm_configuration() -> cfw::containerization::vm::VMConfiguration {
+  cfw::containerization::vm::VMConfiguration {
+    cpus: TEST_CPUS,
+    memory_in_bytes: vm().memory_in_bytes,
+    ..Default::default()
+  }
+}
+
 /// A progress handler, and every event it is called with, in order.
 pub fn recorded() -> (
   Arc<Mutex<Vec<cfw::containerization_extras::ProgressEvent>>>,

@@ -5,27 +5,19 @@
 mod support;
 
 use containerization_framework as cfw;
-use std::os::fd::AsRawFd;
 
 /// Runs a `/bin/sh` script in `container`, returning its exit code and what
 /// it wrote to stdout.
 fn sh(pod: &cfw::containerization::container::LinuxPod, container: &str, id: &str, script: &str) -> (i32, String) {
-  let (mut read, write) = std::io::pipe().expect("a pipe should be creatable");
-  let stdout = write.as_raw_fd();
   let script = script.to_string();
 
-  let process = pod
-    .exec_in_container(container, id, move |process| {
+  support::container::captured(&format!("{id} in {container}"), |stdout| {
+    pod.exec_in_container(container, id, move |process| {
       process.arguments = vec!["/bin/sh".into(), "-c".into(), script];
       process.stdout = Some(stdout);
       Ok(())
     })
-    .unwrap_or_else(|error| panic!("{id} should exec in {container}: {error}"));
-
-  let code = support::container::finish(&process, &format!("{id} in {container}"));
-  drop(write);
-
-  (code, support::container::read_to_end(&mut read))
+  })
 }
 
 #[test]

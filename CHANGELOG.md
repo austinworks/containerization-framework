@@ -2,11 +2,17 @@
 
 ## Unreleased
 
-- `SystemPlatform`'s `OS::as_str` and `Architecture::as_str` are renamed to
-  `raw_value`, to match every other enum backed by Swift raw values.
-- Every enum backed by Swift raw values implements `AsRef<str>`, which
-  returns its raw value, and `FromStr`, which parses one and fails with
-  `Error::Failed` for a raw value Swift lacks.
+- Those enums all implement `AsRef<str>` and `FromStr`, so `"linux".parse()`
+  gives `OS::Linux`, and an unknown raw value fails with `Error::Failed`.
+- The crate compiles again on platforms other than macOS, which v0.9.0
+  broke.
+- `containerization_archive::Options` is also at `options::Options`, beside
+  the `Compression` and `XattrFormat` types nested in it.
+
+### Breaking changes
+
+- `SystemPlatform`'s `OS::as_str` and `Architecture::as_str` are now
+  `raw_value`, like every other enum backed by a Swift raw value.
 
 ## v0.9.0
 

@@ -1,6 +1,7 @@
 #![cfg(feature = "integration")]
 
-//! `LocalContentStore` and `Content`, over an image the suite pulled.
+//! `LocalContentStore` and `Content`, over an image the suite pulled, and
+//! `ParsedDigest`.
 
 mod support;
 
@@ -258,4 +259,43 @@ fn says_which_blob_it_could_not_get() {
     .expect("a malformed digest");
 
   assert!(error.to_string().contains("not-a-digest"), "{error}");
+}
+
+#[test]
+fn parses_a_digest() {
+  let encoded = "0123456789abcdef".repeat(4);
+  let digest =
+    cfw::containerization_oci::content::ParsedDigest::parse(&format!("sha256:{encoded}")).expect("a valid digest");
+
+  assert_eq!(digest.encoded(), encoded);
+  assert_eq!(
+    digest.description().expect("a description"),
+    format!("sha256:{encoded}")
+  );
+  assert_eq!(
+    cfw::containerization_oci::content::ParsedDigest::parse_path_component(&encoded).expect("the hex digits alone"),
+    digest
+  );
+  assert!(
+    cfw::containerization_oci::content::ParsedDigest::parse(&encoded).is_err(),
+    "parse needs the prefix"
+  );
+  assert!(cfw::containerization_oci::content::ParsedDigest::is_valid(&encoded).expect("an answer"));
+  assert!(
+    !cfw::containerization_oci::content::ParsedDigest::is_valid(&encoded.to_uppercase()).expect("an answer"),
+    "uppercase hex is rejected"
+  );
+}
+
+#[test]
+fn finds_a_digests_path_in_a_directory() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  // The path is not canonicalized, because Swift's `resolvingSymlinksInPath`
+  // drops macOS's `/private` prefix, which `canonicalize` adds.
+  let root = directory.path();
+  let encoded = "f".repeat(64);
+  let digest =
+    cfw::containerization_oci::content::ParsedDigest::parse_path_component(&encoded).expect("a valid digest");
+
+  assert_eq!(digest.path(&root).expect("a path"), root.join(&encoded));
 }

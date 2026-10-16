@@ -180,21 +180,21 @@ impl Container {
     id: &str,
     configuration: cfw::containerization::process::LinuxProcessConfiguration,
   ) -> String {
-    let (mut read, write) = std::io::pipe().expect("a pipe should be creatable");
     let arguments = configuration.arguments.clone();
+    let name = self.container.id();
 
-    let code = self.run(
-      id,
-      cfw::containerization::process::LinuxProcessConfiguration {
-        stdout: Some(write.as_raw_fd()),
-        ..configuration
-      },
-    );
+    let (code, output) = captured(&format!("{arguments:?} in {name}"), |stdout| {
+      self.container.exec(
+        id,
+        cfw::containerization::process::LinuxProcessConfiguration {
+          stdout: Some(stdout),
+          ..configuration
+        },
+      )
+    });
 
-    drop(write);
-    assert_eq!(code, 0, "{arguments:?} failed in {}", self.container.id());
-
-    read_to_end(&mut read)
+    assert_eq!(code, 0, "{arguments:?} failed in {name}");
+    output
   }
 
   /// What a `/bin/sh` script wrote to stdout, which it must exit 0 from.
@@ -220,6 +220,21 @@ fn suite_configuration(
     configure(configuration);
     Ok(())
   }
+}
+
+/// Runs the process that `exec` makes with stdout on a new pipe, and returns
+/// its exit code and what it wrote. As with [`Container::capture`], it must
+/// write less than a pipe holds.
+pub fn captured(
+  what: &str,
+  exec: impl FnOnce(std::os::fd::RawFd) -> Result<cfw::containerization::process::LinuxProcess, cfw::Error>,
+) -> (i32, String) {
+  let (mut read, write) = std::io::pipe().expect("a pipe should be creatable");
+  let process = exec(write.as_raw_fd()).unwrap_or_else(|error| panic!("{what} should exec: {error}"));
+  let code = finish(&process, what);
+
+  drop(write);
+  (code, read_to_end(&mut read))
 }
 
 /// Starts an unstarted process, waits for it to exit, deletes it, and returns

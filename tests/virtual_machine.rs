@@ -24,8 +24,6 @@ fn boots_a_virtual_machine_of_its_own() {
   let shared = tempfile::tempdir().expect("a temporary directory");
   let vmm = support::store::vmm();
   let config = cfw::containerization::vm::VMConfiguration {
-    cpus: support::TEST_CPUS,
-    memory_in_bytes: support::vm().memory_in_bytes,
     mounts_by_id: [(
       "shared".to_string(),
       vec![cfw::containerization::container::Mount::share(
@@ -36,7 +34,7 @@ fn boots_a_virtual_machine_of_its_own() {
       )],
     )]
     .into(),
-    ..Default::default()
+    ..support::vm_configuration()
   };
 
   let instance = vmm.create(&config).expect("a VM should be created");
@@ -101,12 +99,9 @@ fn boots_a_virtual_machine_of_its_own() {
 #[test]
 fn talks_to_the_guest_agent() {
   let vmm = support::store::vmm();
-  let config = cfw::containerization::vm::VMConfiguration {
-    cpus: support::TEST_CPUS,
-    memory_in_bytes: support::vm().memory_in_bytes,
-    ..Default::default()
-  };
-  let instance = vmm.create(&config).expect("a VM should be created");
+  let instance = vmm
+    .create(&support::vm_configuration())
+    .expect("a VM should be created");
   instance.start().expect("the VM should start");
 
   let agent = instance
@@ -152,12 +147,9 @@ fn talks_to_the_guest_agent() {
 fn stops_a_socket_relay_by_the_configuration_that_started_it() {
   let host = tempfile::tempdir().expect("a temporary directory");
   let vmm = support::store::vmm();
-  let config = cfw::containerization::vm::VMConfiguration {
-    cpus: support::TEST_CPUS,
-    memory_in_bytes: support::vm().memory_in_bytes,
-    ..Default::default()
-  };
-  let instance = vmm.create(&config).expect("a VM should be created");
+  let instance = vmm
+    .create(&support::vm_configuration())
+    .expect("a VM should be created");
   instance.start().expect("the VM should start");
 
   let agent = instance

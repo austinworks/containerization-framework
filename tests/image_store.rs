@@ -493,3 +493,71 @@ fn unpacks_an_init_image() {
   assert!(mount.source.ends_with("/initfs.ext4"), "{}", mount.source);
   assert_eq!(mount.destination, "/");
 }
+
+fn platform(string: &str) -> cfw::containerization_oci::image::Platform {
+  cfw::containerization_oci::image::Platform::parse(string).expect("a valid platform")
+}
+
+#[test]
+fn reads_a_pulled_images_index_manifest_and_config() {
+  let store = support::store::image_store();
+  let image = support::store::image(&store);
+  let platform = platform("linux/arm64");
+
+  let descriptor = image.descriptor();
+  assert_eq!(descriptor.digest, image.digest());
+  assert_eq!(image.description().descriptor, descriptor);
+
+  let index = image.index().expect("the image's index");
+  assert_eq!(index.schema_version, 2);
+  let listed = index
+    .manifests
+    .iter()
+    .find(|manifest| manifest.platform.as_ref() == Some(&platform))
+    .expect("an arm64 manifest in the index");
+  assert_eq!(
+    &image
+      .descriptor_for(&platform)
+      .expect("the arm64 descriptor"),
+    listed
+  );
+
+  let manifest = image.manifest(&platform).expect("the arm64 manifest");
+  assert!(!manifest.layers.is_empty());
+  let content_store = support::store::content_store();
+  for layer in &manifest.layers {
+    assert!(
+      content_store
+        .get(&layer.digest)
+        .expect("a lookup")
+        .is_some(),
+      "{} should be in the content store",
+      layer.digest
+    );
+  }
+
+  let config = image.config(&platform).expect("the arm64 config");
+  assert_eq!(config.architecture, "arm64");
+  assert_eq!(config.os, "linux");
+  assert_eq!(config.rootfs.r#type, "layers");
+  assert_eq!(config.rootfs.diff_ids.len(), manifest.layers.len());
+  let image_config = config.config.expect("alpine's config");
+  assert!(
+    image_config
+      .env
+      .expect("alpine's environment")
+      .iter()
+      .any(|variable| variable.starts_with("PATH="))
+  );
+}
+
+#[test]
+fn fails_for_a_platform_the_image_lacks() {
+  let store = support::store::image_store();
+  let image = support::store::image(&store);
+
+  let error = image
+    .descriptor_for(&platform("windows/amd64"))
+    .expect_err("no Windows manifest");
+  assert!(error.is_code(cfw::containerization_error::Code::InvalidArgument));
+}
