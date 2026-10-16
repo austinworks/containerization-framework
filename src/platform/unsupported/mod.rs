@@ -85,22 +85,6 @@ pub(crate) enum VirtiofsLayoutKind {
   PerTag,
 }
 
-/// A `Network?`, which is only ever `nil` here.
-pub(crate) struct CzNetwork;
-
-pub(crate) fn cz_no_network() -> CzNetwork {
-  CzNetwork
-}
-
-/// An outcome that is always a failure, so nothing is ever taken from it.
-pub(crate) struct CzOutcome;
-
-impl CzOutcome {
-  pub(crate) fn error(&self) -> Option<String> {
-    Some(MACOS_ONLY.to_string())
-  }
-}
-
 macro_rules! taken {
   ($($name:ident -> $type:ty),* $(,)?) => {
     impl CzOutcome {
@@ -111,9 +95,12 @@ macro_rules! taken {
   };
 }
 
+/// Declares uninhabited handles. The field is visible to every stand-in file,
+/// since a method's Swift file can differ from its type's, as in
+/// `CzVirtualMachineInstance::dial_agent`.
 macro_rules! handles {
   ($($name:ident),* $(,)?) => {
-    $(pub(crate) struct $name(Infallible);)*
+    $(pub(crate) struct $name(pub(super) Infallible);)*
   };
 }
 
@@ -126,16 +113,60 @@ macro_rules! failing {
   };
 }
 
-mod archive_ext4_io;
-mod containers;
-mod images;
+// One file per Swift file, as `bridge::ffi` has one `extern "Swift"` block
+// per Swift file. A reader `taken!` declares is in the file of the Swift
+// model whose getters it reads. The files that hold only readers declare no
+// items, so they aren't re-exported.
+mod address_model;
+mod addresses;
+mod archive;
+mod authentication;
+mod bridged;
+mod container_manager;
+mod container_model;
+mod content_writer;
+mod ext4;
+mod extras;
+mod file_descriptor_ops;
+mod image_model;
+mod image_store;
+mod io;
+mod linux_container;
+mod linux_pod;
+mod local_content_store;
 mod os;
+mod reference;
+mod registry_client;
+mod spec;
+mod spec_model;
+mod unix_socket_configuration;
 mod values;
-mod vm_network;
+mod virtual_machine;
+mod vm_model;
+mod vminitd;
+mod vmnet_network;
 
-pub(crate) use self::archive_ext4_io::*;
-pub(crate) use self::containers::*;
-pub(crate) use self::images::*;
+pub(crate) use self::addresses::*;
+pub(crate) use self::archive::*;
+pub(crate) use self::authentication::*;
+pub(crate) use self::bridged::*;
+pub(crate) use self::container_manager::*;
+pub(crate) use self::content_writer::*;
+pub(crate) use self::ext4::*;
+pub(crate) use self::extras::*;
+pub(crate) use self::file_descriptor_ops::*;
+pub(crate) use self::image_model::*;
+pub(crate) use self::image_store::*;
+pub(crate) use self::io::*;
+pub(crate) use self::linux_container::*;
+pub(crate) use self::linux_pod::*;
+pub(crate) use self::local_content_store::*;
 pub(crate) use self::os::*;
+pub(crate) use self::reference::*;
+pub(crate) use self::registry_client::*;
+pub(crate) use self::spec::*;
+pub(crate) use self::unix_socket_configuration::*;
 pub(crate) use self::values::*;
-pub(crate) use self::vm_network::*;
+pub(crate) use self::virtual_machine::*;
+pub(crate) use self::vminitd::*;
+pub(crate) use self::vmnet_network::*;

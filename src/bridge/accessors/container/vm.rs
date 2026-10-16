@@ -69,7 +69,7 @@ impl vm::BootLog {
   }
 }
 
-pub(in super::super) fn boot_log_file(path: String, append: bool) -> vm::BootLog {
+pub(super) fn boot_log_file(path: String, append: bool) -> vm::BootLog {
   vm::BootLog::File {
     path: PathBuf::from(path),
     append,

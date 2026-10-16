@@ -139,14 +139,14 @@ impl network::Hosts {
 // What the container, pod and VM configurations share, read and filled the
 // same way.
 
-pub(in super::super) fn interface_kind(interface: &network::Interface) -> ffi::InterfaceKind {
+pub(super) fn interface_kind(interface: &network::Interface) -> ffi::InterfaceKind {
   match interface {
     network::Interface::Nat(_) => ffi::InterfaceKind::Nat,
     network::Interface::Vmnet(_) => ffi::InterfaceKind::Vmnet,
   }
 }
 
-pub(in super::super) fn nat_interface(interface: &network::Interface) -> &network::NATInterface {
+pub(super) fn nat_interface(interface: &network::Interface) -> &network::NATInterface {
   match interface {
     network::Interface::Nat(interface) => interface,
     network::Interface::Vmnet(_) => unreachable!("Swift asks for a NAT interface only of its kind"),
@@ -154,7 +154,7 @@ pub(in super::super) fn nat_interface(interface: &network::Interface) -> &networ
 }
 
 /// A handle on a vmnet interface for Swift to keep.
-pub(in super::super) fn vmnet_interface(interface: &network::Interface) -> ffi::CzVmnetInterface {
+pub(super) fn vmnet_interface(interface: &network::Interface) -> ffi::CzVmnetInterface {
   match interface {
     network::Interface::Vmnet(interface) => interface.handle.duplicate(),
     network::Interface::Nat(_) => unreachable!("Swift asks for a vmnet interface only of its kind"),
@@ -163,7 +163,7 @@ pub(in super::super) fn vmnet_interface(interface: &network::Interface) -> ffi::
 
 /// A `NATInterface` built from its IPv4 fields. Swift sets its IPv6 ones
 /// afterwards.
-pub(in super::super) fn nat(
+pub(super) fn nat(
   ipv4_address: u32,
   ipv4_prefix: u8,
   ipv4_gateway: Option<u32>,
@@ -183,11 +183,11 @@ pub(in super::super) fn nat(
   })
 }
 
-pub(in super::super) fn vmnet(interface: ffi::CzVmnetInterface) -> network::Interface {
+pub(super) fn vmnet(interface: ffi::CzVmnetInterface) -> network::Interface {
   network::Interface::Vmnet(vmnet_network::Interface { handle: interface })
 }
 
-pub(in super::super) fn set_ipv6_address(
+pub(super) fn set_ipv6_address(
   interfaces: &mut [network::Interface],
   high: u64,
   low: u64,
@@ -200,12 +200,7 @@ pub(in super::super) fn set_ipv6_address(
   });
 }
 
-pub(in super::super) fn set_ipv6_gateway(
-  interfaces: &mut [network::Interface],
-  high: u64,
-  low: u64,
-  zone: Option<String>,
-) {
+pub(super) fn set_ipv6_gateway(interfaces: &mut [network::Interface], high: u64, low: u64, zone: Option<String>) {
   last_nat(interfaces).ipv6_gateway = Some(address::IPv6Address::from_halves(high, low, zone));
 }
 
@@ -216,7 +211,7 @@ fn last_nat(interfaces: &mut [network::Interface]) -> &mut network::NATInterface
   }
 }
 
-pub(in super::super) fn dns(
+pub(super) fn dns(
   nameservers: Vec<String>,
   domain: Option<String>,
   search_domains: Vec<String>,
@@ -230,7 +225,7 @@ pub(in super::super) fn dns(
   }
 }
 
-pub(in super::super) fn hosts(comment: Option<String>) -> network::Hosts {
+pub(super) fn hosts(comment: Option<String>) -> network::Hosts {
   network::Hosts {
     entries: Vec::new(),
     comment,
@@ -238,7 +233,7 @@ pub(in super::super) fn hosts(comment: Option<String>) -> network::Hosts {
 }
 
 /// Swift calls this only after `set_hosts`.
-pub(in super::super) fn push_hosts_entry(
+pub(super) fn push_hosts_entry(
   hosts: &mut Option<network::Hosts>,
   ip_address: String,
   hostnames: Vec<String>,

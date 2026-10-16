@@ -22,7 +22,6 @@ mod container;
 mod ext4;
 mod images;
 mod os;
-mod pod;
 mod spec;
 
 use crate::bridge::ffi;

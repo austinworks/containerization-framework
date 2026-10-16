@@ -1,9 +1,12 @@
 //! Getters and setters for `LinuxPod`'s configurations, which share the
 //! container configuration's helpers.
 
-use super::container;
-use super::entry_at;
-use super::present;
+use super::configuration;
+use super::network;
+use super::vm;
+use crate::bridge::accessors;
+use crate::bridge::accessors::entry_at;
+use crate::bridge::accessors::present;
 use crate::bridge::ffi;
 use crate::containerization;
 use crate::containerization::container::linux_pod;
@@ -41,29 +44,25 @@ impl linux_pod::Configuration {
     mac_address: Option<u64>,
     mtu: u32,
   ) {
-    self.interfaces.push(container::nat(
-      ipv4_address,
-      ipv4_prefix,
-      ipv4_gateway,
-      mac_address,
-      mtu,
-    ));
+    self
+      .interfaces
+      .push(network::nat(ipv4_address, ipv4_prefix, ipv4_gateway, mac_address, mtu));
   }
 
   /// Swift calls this only after [`Self::push_interface`], and it sets the
   /// interface that call pushed.
   pub(crate) fn set_interface_ipv6_address(&mut self, high: u64, low: u64, zone: Option<String>, prefix: u8) {
-    container::set_ipv6_address(&mut self.interfaces, high, low, zone, prefix);
+    network::set_ipv6_address(&mut self.interfaces, high, low, zone, prefix);
   }
 
   /// Swift calls this only after [`Self::push_interface`], and it sets the
   /// interface that call pushed.
   pub(crate) fn set_interface_ipv6_gateway(&mut self, high: u64, low: u64, zone: Option<String>) {
-    container::set_ipv6_gateway(&mut self.interfaces, high, low, zone);
+    network::set_ipv6_gateway(&mut self.interfaces, high, low, zone);
   }
 
   pub(crate) fn push_vmnet_interface(&mut self, interface: ffi::CzVmnetInterface) {
-    self.interfaces.push(container::vmnet(interface));
+    self.interfaces.push(network::vmnet(interface));
   }
 
   pub(crate) fn clear_dns(&mut self) {
@@ -77,7 +76,7 @@ impl linux_pod::Configuration {
     search_domains: Vec<String>,
     options: Vec<String>,
   ) {
-    self.dns = Some(container::dns(nameservers, domain, search_domains, options));
+    self.dns = Some(network::dns(nameservers, domain, search_domains, options));
   }
 
   pub(crate) fn clear_hosts(&mut self) {
@@ -85,12 +84,12 @@ impl linux_pod::Configuration {
   }
 
   pub(crate) fn set_hosts(&mut self, comment: Option<String>) {
-    self.hosts = Some(container::hosts(comment));
+    self.hosts = Some(network::hosts(comment));
   }
 
   /// Swift calls this only after [`Self::set_hosts`].
   pub(crate) fn push_hosts_entry(&mut self, ip_address: String, hostnames: Vec<String>, comment: Option<String>) {
-    container::push_hosts_entry(&mut self.hosts, ip_address, hostnames, comment);
+    network::push_hosts_entry(&mut self.hosts, ip_address, hostnames, comment);
   }
 
   pub(crate) fn clear_boot_log(&mut self) {
@@ -98,7 +97,7 @@ impl linux_pod::Configuration {
   }
 
   pub(crate) fn set_boot_log_file(&mut self, path: String, append: bool) {
-    self.boot_log = Some(container::boot_log_file(path, append));
+    self.boot_log = Some(vm::boot_log_file(path, append));
   }
 
   pub(crate) fn set_boot_log_file_handle(&mut self, descriptor: i32) {
@@ -107,7 +106,7 @@ impl linux_pod::Configuration {
 
   /// `profile` holds the `LinuxSeccomp` of a `Profile`, or `Absent`.
   pub(crate) fn set_seccomp_profile(&mut self, mode: ffi::SeccompMode, profile: ffi::CzOutcome) {
-    self.seccomp_profile = container::seccomp_profile(mode, profile);
+    self.seccomp_profile = configuration::seccomp_profile(mode, profile);
   }
 
   pub(crate) fn clear_volumes(&mut self) {
@@ -152,17 +151,17 @@ impl linux_pod::Configuration {
   }
 
   pub(crate) fn interface_kind_at(&self, index: usize) -> ffi::InterfaceKind {
-    container::interface_kind(&self.interfaces[index])
+    network::interface_kind(&self.interfaces[index])
   }
 
   /// Swift calls this only when [`Self::interface_kind_at`] is `Nat`.
   pub(crate) fn nat_interface_at(&self, index: usize) -> &containerization::network::NATInterface {
-    container::nat_interface(&self.interfaces[index])
+    network::nat_interface(&self.interfaces[index])
   }
 
   /// Swift calls this only when [`Self::interface_kind_at`] is `Vmnet`.
   pub(crate) fn vmnet_interface_at(&self, index: usize) -> ffi::CzVmnetInterface {
-    container::vmnet_interface(&self.interfaces[index])
+    network::vmnet_interface(&self.interfaces[index])
   }
 
   pub(crate) fn virtualization(&self) -> bool {
@@ -217,12 +216,12 @@ impl linux_pod::Configuration {
   }
 
   pub(crate) fn seccomp_mode(&self) -> ffi::SeccompMode {
-    container::seccomp_mode(&self.seccomp_profile)
+    configuration::seccomp_mode(&self.seccomp_profile)
   }
 
   /// Swift calls this only when [`Self::seccomp_mode`] is `Profile`.
   pub(crate) fn seccomp_profile(&self) -> &runtime::LinuxSeccomp {
-    container::custom_seccomp(&self.seccomp_profile)
+    configuration::custom_seccomp(&self.seccomp_profile)
   }
 }
 
@@ -248,7 +247,7 @@ impl linux_pod::PodVolume {
   pub(crate) fn location(&self) -> Option<String> {
     match &self.source {
       pod_volume::Source::Nbd { url, .. } => Some(url.clone()),
-      pod_volume::Source::DiskImage { path, .. } => super::path(path),
+      pod_volume::Source::DiskImage { path, .. } => accessors::path(path),
       pod_volume::Source::Tmpfs { .. } => Some(String::new()),
     }
   }
@@ -258,7 +257,7 @@ impl linux_pod::PodVolume {
   pub(crate) fn lossy_location(&self) -> String {
     match &self.source {
       pod_volume::Source::Nbd { url, .. } => url.clone(),
-      pod_volume::Source::DiskImage { path, .. } => super::lossy_path(path),
+      pod_volume::Source::DiskImage { path, .. } => accessors::lossy_path(path),
       pod_volume::Source::Tmpfs { .. } => String::new(),
     }
   }
@@ -372,12 +371,12 @@ impl linux_pod::ContainerConfiguration {
 
   /// Swift calls this only when [`Self::has_seccomp_profile`] is true.
   pub(crate) fn seccomp_mode(&self) -> ffi::SeccompMode {
-    container::seccomp_mode(self.own_seccomp_profile())
+    configuration::seccomp_mode(self.own_seccomp_profile())
   }
 
   /// Swift calls this only when [`Self::seccomp_mode`] is `Profile`.
   pub(crate) fn seccomp_profile(&self) -> &runtime::LinuxSeccomp {
-    container::custom_seccomp(self.own_seccomp_profile())
+    configuration::custom_seccomp(self.own_seccomp_profile())
   }
 
   fn own_seccomp_profile(&self) -> &containerization::container::linux_container::SeccompProfile {

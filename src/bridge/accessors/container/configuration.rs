@@ -401,10 +401,7 @@ impl linux_container::Configuration {
 }
 
 /// `profile` holds the `LinuxSeccomp` of a `Profile`, or `Absent`.
-pub(in super::super) fn seccomp_profile(
-  mode: ffi::SeccompMode,
-  profile: ffi::CzOutcome,
-) -> linux_container::SeccompProfile {
+pub(super) fn seccomp_profile(mode: ffi::SeccompMode, profile: ffi::CzOutcome) -> linux_container::SeccompProfile {
   match mode {
     ffi::SeccompMode::Unconfined => linux_container::SeccompProfile::Unconfined,
     ffi::SeccompMode::Default => linux_container::SeccompProfile::Default,
@@ -412,7 +409,7 @@ pub(in super::super) fn seccomp_profile(
   }
 }
 
-pub(in super::super) fn seccomp_mode(profile: &linux_container::SeccompProfile) -> ffi::SeccompMode {
+pub(super) fn seccomp_mode(profile: &linux_container::SeccompProfile) -> ffi::SeccompMode {
   match profile {
     linux_container::SeccompProfile::Unconfined => ffi::SeccompMode::Unconfined,
     linux_container::SeccompProfile::Default => ffi::SeccompMode::Default,
@@ -421,7 +418,7 @@ pub(in super::super) fn seccomp_mode(profile: &linux_container::SeccompProfile) 
 }
 
 /// Swift asks for this only when the mode is `Profile`.
-pub(in super::super) fn custom_seccomp(profile: &linux_container::SeccompProfile) -> &runtime::LinuxSeccomp {
+pub(super) fn custom_seccomp(profile: &linux_container::SeccompProfile) -> &runtime::LinuxSeccomp {
   match profile {
     linux_container::SeccompProfile::Profile(profile) => profile,
     _ => panic!("Swift asks for the profile only when the mode is `Profile`"),
