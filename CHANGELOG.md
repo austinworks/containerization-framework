@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.10.0
+
 - Every enum backed by a Swift raw value, such as `SystemPlatform`'s `OS`
   and `Architecture`, implements `AsRef<str>`, which returns its raw value,
   and `FromStr`, which parses one. `"linux".parse()` gives `OS::Linux`, and
