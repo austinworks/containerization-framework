@@ -47,9 +47,6 @@ argv = ["cargo", "nextest", "run"]
 deny = ["--config", "--manifest-path", "-Z", "-p"]
 tty = true
 
-[[paths]]
-source = ".claude/plans"
-
 [project]
 image = "compostbin/base:latest"
 name = "containerization"
