@@ -477,6 +477,51 @@ fn says_which_image_it_could_not_get() {
 }
 
 #[test]
+fn gets_an_image_or_none() {
+  let store = support::store::image_store();
+  let image = support::store::image(&store);
+
+  assert_eq!(
+    store
+      .get_or_nil(support::store::IMAGE)
+      .expect("a lookup")
+      .expect("the suite's image")
+      .digest(),
+    image.digest()
+  );
+  assert!(
+    store
+      .get_or_nil("containerization-framework/never-pulled:latest")
+      .expect("a lookup")
+      .is_none(),
+    "an image the store doesn't hold is none, not an error"
+  );
+}
+
+#[test]
+fn reads_an_images_platforms_from_the_store_or_the_registry() {
+  let store = support::store::image_store();
+  support::store::image(&store);
+  let arm64 = platform("linux/arm64");
+
+  let stored = store
+    .platforms(support::store::IMAGE, Default::default())
+    .expect("the stored image's platforms");
+  assert!(stored.contains(&arm64), "{stored:?}");
+
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let empty = cfw::containerization::image::ImageStore::new(directory.path()).expect("a new image store should open");
+  let remote = empty
+    .platforms(support::store::IMAGE, Default::default())
+    .expect("the registry's platforms");
+  assert!(remote.contains(&arm64), "{remote:?}");
+  assert!(
+    empty.list().expect("the new store's images").is_empty(),
+    "reading platforms pulls nothing"
+  );
+}
+
+#[test]
 fn unpacks_an_init_image() {
   let store = support::store::image_store();
   let directory = tempfile::tempdir().expect("a temporary directory");

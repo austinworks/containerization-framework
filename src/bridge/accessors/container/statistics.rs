@@ -92,11 +92,10 @@ impl ffi::CzOutcome {
             transmitted_packets,
             received_bytes,
             transmitted_bytes,
-            received_errors,
-            transmitted_errors,
             received_dropped,
             transmitted_dropped,
           ] = network.statistics_fields();
+          let [received_errors, transmitted_errors] = network.statistics_optional_fields();
           container_statistics::NetworkStatistics {
             interface: network.statistics_name(),
             received_packets,
@@ -133,29 +132,37 @@ impl ffi::CzOutcome {
           }
         })
       }),
-      protocols: self.statistics_protocols().optional(|protocols| {
-        let counters = protocols.list(Self::network_protocol_counters);
+      network_protocols: self.statistics_network_protocols().optional(|protocols| {
+        let counters = protocols.list(|counters| counters.optional(Self::network_protocol_counters));
         let count = counters.len();
-        let [tcp, udp, icmp, ip] = counters
+        let [tcp, udp, icmp, ip, udp6, icmp6, ip6] = counters
           .try_into()
-          .unwrap_or_else(|_| panic!("Swift's protocol statistics have {count} protocols, not 4"));
-        container_statistics::NetworkProtocolStatistics { tcp, udp, icmp, ip }
+          .unwrap_or_else(|_| panic!("Swift's protocol statistics have {count} protocols, not 7"));
+        let required = |counters: Option<_>| counters.expect("Swift's tcp, udp, icmp and ip counters aren't optional");
+        container_statistics::NetworkProtocolStatistics {
+          tcp: required(tcp),
+          udp: required(udp),
+          icmp: required(icmp),
+          ip: required(ip),
+          udp6,
+          icmp6,
+          ip6,
+        }
       }),
     }
   }
 
   /// The `NetworkProtocolCounters` an outcome holds.
   fn network_protocol_counters(&self) -> container_statistics::NetworkProtocolCounters {
+    let [received_packets, transmitted_packets] = self.statistics_fields();
     let [
-      received_packets,
-      transmitted_packets,
       received_bytes,
       transmitted_bytes,
       received_drops,
       transmitted_drops,
       received_errors,
       transmitted_errors,
-    ] = self.statistics_fields();
+    ] = self.statistics_optional_fields();
     container_statistics::NetworkProtocolCounters {
       received_packets,
       transmitted_packets,
@@ -181,5 +188,17 @@ impl ffi::CzOutcome {
     fields
       .try_into()
       .unwrap_or_else(|_| panic!("Swift's statistics have {count} numbers, not {N}"))
+  }
+
+  /// The `UInt64?` fields of the statistics held, which number `N`.
+  fn statistics_optional_fields<const N: usize>(&self) -> [Option<u64>; N] {
+    let fields = self
+      .statistics_optional_numbers()
+      .list(|number| number.optional(Self::number));
+    let count = fields.len();
+
+    fields
+      .try_into()
+      .unwrap_or_else(|_| panic!("Swift's statistics have {count} optional numbers, not {N}"))
   }
 }

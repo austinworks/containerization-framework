@@ -50,6 +50,14 @@ final class CzImageStore: Sendable {
     return CzOutcome { CzImage(try blocking { try await store.get(reference: reference, pull: pull) }) }
   }
 
+  /// Holds a `CzImage`, or `Absent` for `nil`.
+  func getOrNil(reference: RustStr) -> CzOutcome {
+    let reference = reference.toString()
+    let store = store
+
+    return CzOutcome { absent(try blocking { try await store.getOrNil(reference: reference) }.map(CzImage.init)) }
+  }
+
   func list() -> CzOutcome {
     let store = store
 
@@ -99,6 +107,17 @@ final class CzImageStore: Sendable {
             maxConcurrentDownloads: maxConcurrentDownloads
           )
         })
+    }
+  }
+
+  /// Holds a `[Platform]`.
+  func platforms(reference: RustStr, insecure: Bool, auth: CzAuthentication) -> CzOutcome {
+    let reference = reference.toString()
+    let auth = auth.authentication
+    let store = store
+
+    return CzOutcome {
+      try blocking { try await store.platforms(reference: reference, insecure: insecure, auth: auth) }
     }
   }
 

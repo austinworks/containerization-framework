@@ -5,6 +5,7 @@ use crate::containerization::image::Description as RustImageDescription;
 use crate::containerization::image::EXT4Unpacker as RustExt4Unpacker;
 use crate::containerization_oci::image::Descriptor as RustDescriptor;
 use crate::containerization_oci::image::ImageConfig as RustImageConfig;
+use crate::containerization_oci::image::Index as RustIndex;
 use crate::containerization_oci::image::Platform as RustPlatform;
 
 use super::ffi::JournalModeKind;
@@ -52,6 +53,29 @@ mod ffi {
     fn platform(self: &RustDescriptor) -> &RustPlatform;
     #[swift_bridge(swift_name = "artifactType")]
     fn artifact_type(self: &RustDescriptor) -> Option<&str>;
+
+    type RustIndex;
+    #[swift_bridge(swift_name = "schemaVersion")]
+    fn schema_version(self: &RustIndex) -> isize;
+    #[swift_bridge(swift_name = "mediaType")]
+    fn media_type(self: &RustIndex) -> &str;
+    #[swift_bridge(swift_name = "manifestsLen")]
+    fn manifests_len(self: &RustIndex) -> usize;
+    #[swift_bridge(swift_name = "manifestsAt")]
+    fn manifests_at(self: &RustIndex, index: usize) -> &RustDescriptor;
+    #[swift_bridge(swift_name = "hasAnnotations")]
+    fn has_annotations(self: &RustIndex) -> bool;
+    #[swift_bridge(swift_name = "annotationsLen")]
+    fn annotations_len(self: &RustIndex) -> usize;
+    #[swift_bridge(swift_name = "annotationKeyAt")]
+    fn annotation_key_at(self: &RustIndex, index: usize) -> &str;
+    #[swift_bridge(swift_name = "annotationValueAt")]
+    fn annotation_value_at(self: &RustIndex, index: usize) -> &str;
+    #[swift_bridge(swift_name = "hasSubject")]
+    fn has_subject(self: &RustIndex) -> bool;
+    fn subject(self: &RustIndex) -> &RustDescriptor;
+    #[swift_bridge(swift_name = "artifactType")]
+    fn artifact_type(self: &RustIndex) -> Option<&str>;
 
     type RustImageDescription;
     fn reference(self: &RustImageDescription) -> &str;

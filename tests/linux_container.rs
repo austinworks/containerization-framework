@@ -211,7 +211,7 @@ fn reports_statistics_and_refuses_a_port_nothing_listens_on() {
   assert!(statistics.cpu.is_some());
   assert!(statistics.memory_events.is_some());
   assert!(
-    statistics.protocols.is_some(),
+    statistics.network_protocols.is_some(),
     "the network category should report protocol traffic"
   );
 
@@ -219,8 +219,16 @@ fn reports_statistics_and_refuses_a_port_nothing_listens_on() {
   let protocols = container
     .statistics(cfw::containerization::container::StatCategory::NETWORK)
     .expect("the container should report network statistics")
-    .protocols
+    .network_protocols
     .expect("the network category should report protocol traffic");
+  assert!(
+    protocols.ip.received_bytes.is_some(),
+    "IP keeps a byte counter: {protocols:?}"
+  );
+  assert_eq!(
+    protocols.icmp.received_drops, None,
+    "ICMP has no drop counter, which isn't the same as no drops"
+  );
   assert!(
     protocols.icmp.received_packets > 0 && protocols.icmp.transmitted_packets > 0,
     "a ping should count as ICMP, not as {protocols:?}"

@@ -5,6 +5,7 @@ use crate::containerization_oci;
 
 taken!(
   platform -> containerization_oci::image::Platform,
+  platforms -> Vec<containerization_oci::image::Platform>,
   descriptor -> containerization_oci::image::Descriptor,
   index -> containerization_oci::image::Index,
   manifest -> containerization_oci::image::Manifest,
@@ -23,4 +24,5 @@ failing!(
     containerization_oci::image::Platform,
     containerization_oci::image::Platform
   ),
+  cz_index_runnable_platforms(containerization_oci::image::Index),
 );

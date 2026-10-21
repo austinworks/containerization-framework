@@ -1,5 +1,6 @@
-//! `ImageStore`, and the options for its `pull` and `push`es:
-//! [`PullOptions`], [`PushOptions`] and [`PushAllOptions`].
+//! `ImageStore`, and the options for its `pull`, `platforms` and `push`es:
+//! [`PullOptions`], [`PlatformsOptions`], [`PushOptions`] and
+//! [`PushAllOptions`].
 
 use super::Description;
 use super::Image;
@@ -47,6 +48,14 @@ impl fmt::Debug for PullOptions {
       .field("max_concurrent_downloads", &self.max_concurrent_downloads)
       .finish_non_exhaustive()
   }
+}
+
+/// `ImageStore.platforms(reference:...)`'s defaulted arguments. [`Default`]
+/// is Swift's defaults.
+#[derive(Debug, Default)]
+pub struct PlatformsOptions {
+  pub insecure: bool,
+  pub auth: Option<containerization_oci::client::Authentication>,
 }
 
 /// `ImageStore.push(reference:...)`'s defaulted arguments. [`Default`] is
@@ -170,6 +179,16 @@ impl ImageStore {
     })
   }
 
+  /// `ImageStore.getOrNil(reference:)`: the image, or `None` if the store
+  /// has no image by that reference.
+  pub fn get_or_nil(&self, reference: &str) -> Result<Option<Image>, Error> {
+    let outcome = platform::outcome(self.handle.get_or_nil(reference), format!("get {reference}"))?;
+
+    Ok(outcome.is_some().then(|| Image {
+      handle: outcome.image(),
+    }))
+  }
+
   /// `ImageStore.list()`.
   pub fn list(&self) -> Result<Vec<Image>, Error> {
     platform::outcome(self.handle.list(), "list images").map(|outcome| images(&outcome))
@@ -211,6 +230,23 @@ impl ImageStore {
     platform::outcome(outcome, action).map(|outcome| Image {
       handle: outcome.image(),
     })
+  }
+
+  /// `ImageStore.platforms(reference:insecure:auth:)`: the platforms an image
+  /// runs on, read from the store's index when it has the image and from the
+  /// registry otherwise, without pulling layers.
+  pub fn platforms(
+    &self,
+    reference: &str,
+    options: PlatformsOptions,
+  ) -> Result<Vec<containerization_oci::image::Platform>, Error> {
+    let auth = containerization_oci::client::Authentication::crossing(options.auth.as_ref())?;
+
+    platform::outcome(
+      self.handle.platforms(reference, options.insecure, auth),
+      format!("read the platforms of {reference}"),
+    )
+    .map(|outcome| outcome.platforms())
   }
 
   /// `ImageStore.push(reference:platform:insecure:auth:progress:)`.

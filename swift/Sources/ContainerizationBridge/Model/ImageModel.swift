@@ -38,6 +38,20 @@ extension Descriptor {
   }
 }
 
+extension Index {
+  init(_ index: RustIndexRef) {
+    self.init(
+      schemaVersion: index.schemaVersion(),
+      mediaType: index.mediaType().toString(),
+      manifests: (0..<index.manifestsLen()).map { Descriptor(index.manifestsAt($0)) },
+      annotations: index.hasAnnotations()
+        ? dictionary(index.annotationsLen(), index.annotationKeyAt, index.annotationValueAt) : nil,
+      subject: index.hasSubject() ? Descriptor(index.subject()) : nil,
+      artifactType: index.artifactType()?.toString()
+    )
+  }
+}
+
 extension ImageConfig {
   init(_ config: RustImageConfigRef) {
     self.init(
@@ -365,4 +379,10 @@ func platformMatches(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome {
   let rhs = Platform(rhs)
 
   return CzOutcome { lhs ~= rhs }
+}
+
+func indexRunnablePlatforms(index: RustIndex) -> CzOutcome {
+  let index = Index(index)
+
+  return CzOutcome { index.runnablePlatforms }
 }

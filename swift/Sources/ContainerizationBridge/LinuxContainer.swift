@@ -266,13 +266,10 @@ extension CzOutcome {
       case let network as ContainerStatistics.NetworkStatistics:
         [
           network.receivedPackets, network.transmittedPackets, network.receivedBytes, network.transmittedBytes,
-          network.receivedErrors, network.transmittedErrors, network.receivedDropped, network.transmittedDropped,
+          network.receivedDropped, network.transmittedDropped,
         ]
       case let counters as ContainerStatistics.NetworkProtocolCounters:
-        [
-          counters.receivedPackets, counters.transmittedPackets, counters.receivedBytes, counters.transmittedBytes,
-          counters.receivedDrops, counters.transmittedDrops, counters.receivedErrors, counters.transmittedErrors,
-        ]
+        [counters.receivedPackets, counters.transmittedPackets]
       case let events as ContainerStatistics.MemoryEventStatistics:
         [events.low, events.high, events.max, events.oom, events.oomKill]
       case let filesystem as ContainerStatistics.FilesystemStatistics:
@@ -281,6 +278,24 @@ extension CzOutcome {
       }
 
     return rustVec(numbers)
+  }
+
+  /// The `UInt64?` fields of the statistics held, in the order Swift declares
+  /// them, each a `UInt64` or `Absent`.
+  func statisticsOptionalNumbers() -> CzOutcome {
+    let numbers: [UInt64?] =
+      switch held(Any.self) {
+      case let network as ContainerStatistics.NetworkStatistics:
+        [network.receivedErrors, network.transmittedErrors]
+      case let counters as ContainerStatistics.NetworkProtocolCounters:
+        [
+          counters.receivedBytes, counters.transmittedBytes, counters.receivedDrops, counters.transmittedDrops,
+          counters.receivedErrors, counters.transmittedErrors,
+        ]
+      case let other: cast(other)
+      }
+
+    return CzOutcome.holding(numbers.map { absent($0) })
   }
 
   /// The part of the held `ContainerStatistics` that `category` reports.
@@ -299,12 +314,17 @@ extension CzOutcome {
     }
   }
 
-  /// The held `ContainerStatistics`' `protocols`, as its `tcp`, `udp`, `icmp`
-  /// and `ip` counters.
-  func statisticsProtocols() -> CzOutcome {
+  /// The held `ContainerStatistics`' `networkProtocols`, as its `tcp`, `udp`,
+  /// `icmp`, `ip`, `udp6`, `icmp6` and `ip6` counters. The last three may be
+  /// `Absent`.
+  func statisticsNetworkProtocols() -> CzOutcome {
     let statistics: ContainerStatistics = taken()
 
-    return CzOutcome.holding(statistics.protocols.map { [$0.tcp, $0.udp, $0.icmp, $0.ip] })
+    return CzOutcome.holding(
+      statistics.networkProtocols.map {
+        [$0.tcp, $0.udp, $0.icmp, $0.ip, absent($0.udp6), absent($0.icmp6), absent($0.ip6)]
+      }
+    )
   }
 }
 

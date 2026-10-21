@@ -14,7 +14,7 @@ pub struct ContainerStatistics {
   pub filesystem: Option<Vec<FilesystemStatistics>>,
   /// Per-protocol traffic for the network namespace, which the network
   /// category reports. `None` if the guest doesn't report it.
-  pub protocols: Option<NetworkProtocolStatistics>,
+  pub network_protocols: Option<NetworkProtocolStatistics>,
 }
 
 /// `ContainerStatistics.ProcessStatistics`.
@@ -81,8 +81,8 @@ pub struct NetworkStatistics {
   pub transmitted_packets: u64,
   pub received_bytes: u64,
   pub transmitted_bytes: u64,
-  pub received_errors: u64,
-  pub transmitted_errors: u64,
+  pub received_errors: Option<u64>,
+  pub transmitted_errors: Option<u64>,
   /// Packets the device dropped, for example because its receive ring or
   /// transmit queue was full.
   pub received_dropped: u64,
@@ -90,27 +90,27 @@ pub struct NetworkStatistics {
 }
 
 /// `ContainerStatistics.NetworkProtocolCounters`, the packet and byte counters
-/// for one protocol. [`Default`] is Swift's initializer with every counter
-/// left at zero.
+/// for one protocol. [`Default`] is Swift's initializer with its defaults:
+/// zero packets, and every other counter `None`.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct NetworkProtocolCounters {
   pub received_packets: u64,
   pub transmitted_packets: u64,
-  /// Zero when the protocol has no byte counter. Linux only has one for IP
+  /// `None` when the protocol has no byte counter. Linux only has one for IP
   /// as a whole.
-  pub received_bytes: u64,
-  pub transmitted_bytes: u64,
+  pub received_bytes: Option<u64>,
+  pub transmitted_bytes: Option<u64>,
   /// Packets the stack discarded for lack of resources or a destination. The
   /// kernel attributes drops to different causes for each protocol, so they
   /// can be compared over time for one protocol but not across protocols.
-  /// Zero when the kernel has no matching counter, which doesn't mean that
-  /// none happened.
-  pub received_drops: u64,
-  pub transmitted_drops: u64,
+  /// `None` when the protocol has no matching counter, and zero when none
+  /// happened.
+  pub received_drops: Option<u64>,
+  pub transmitted_drops: Option<u64>,
   /// Packets that were malformed or failed processing. As with drops, the
   /// causes differ for each protocol.
-  pub received_errors: u64,
-  pub transmitted_errors: u64,
+  pub received_errors: Option<u64>,
+  pub transmitted_errors: Option<u64>,
 }
 
 /// `ContainerStatistics.NetworkProtocolStatistics`, the per-protocol traffic
@@ -119,12 +119,22 @@ pub struct NetworkProtocolCounters {
 /// namespace report the same values.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct NetworkProtocolStatistics {
+  /// Both IPv4 and IPv6 traffic, because the kernel shares its TCP counters
+  /// between the two families.
   pub tcp: NetworkProtocolCounters,
+  /// IPv4 only. [`Self::udp6`] counts IPv6.
   pub udp: NetworkProtocolCounters,
+  /// IPv4 only. [`Self::icmp6`] counts IPv6.
   pub icmp: NetworkProtocolCounters,
-  /// All IP traffic, including what TCP, UDP and ICMP don't count, such as
-  /// raw IP.
+  /// All IPv4 traffic, including what TCP, UDP and ICMP don't count, such as
+  /// raw IP. [`Self::ip6`] counts IPv6.
   pub ip: NetworkProtocolCounters,
+  /// IPv6 UDP. `None` when the guest has no IPv6 statistics.
+  pub udp6: Option<NetworkProtocolCounters>,
+  /// IPv6 ICMP. `None` when the guest has no IPv6 statistics.
+  pub icmp6: Option<NetworkProtocolCounters>,
+  /// All IPv6 traffic. `None` when the guest has no IPv6 statistics.
+  pub ip6: Option<NetworkProtocolCounters>,
 }
 
 /// `ContainerStatistics.MemoryEventStatistics`, the counters in cgroup2's

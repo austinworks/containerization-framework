@@ -69,6 +69,7 @@ use crate::containerization_extras::address::IPAddress as RustIpAddress;
 use crate::containerization_extras::address::IPv6Address as RustIPv6Address;
 use crate::containerization_oci::image::Descriptor as RustDescriptor;
 use crate::containerization_oci::image::ImageConfig as RustImageConfig;
+use crate::containerization_oci::image::Index as RustIndex;
 use crate::containerization_oci::image::Platform as RustPlatform;
 use crate::containerization_oci::runtime::Hook as RustHook;
 use crate::containerization_oci::runtime::LinuxCapabilities as RustOciLinuxCapabilities;
@@ -296,6 +297,8 @@ pub(crate) mod ffi {
     type RustPlatform;
     #[swift_bridge(already_declared)]
     type RustDescriptor;
+    #[swift_bridge(already_declared)]
+    type RustIndex;
     #[swift_bridge(already_declared)]
     type RustImageDescription;
     #[swift_bridge(already_declared)]
@@ -903,6 +906,10 @@ pub(crate) mod ffi {
     fn cz_platform_equals(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome;
     #[swift_bridge(swift_name = "platformMatches")]
     fn cz_platform_matches(lhs: RustPlatform, rhs: RustPlatform) -> CzOutcome;
+
+    // `Index.runnablePlatforms`, held as a list of platforms.
+    #[swift_bridge(swift_name = "indexRunnablePlatforms")]
+    fn cz_index_runnable_platforms(index: RustIndex) -> CzOutcome;
   }
 
   extern "Swift" {
@@ -2474,6 +2481,9 @@ pub(crate) mod ffi {
     fn image(self: &CzLocalContentStore, description: RustImageDescription) -> CzImage;
     fn path(self: &CzImageStore) -> String;
     fn get(self: &CzImageStore, reference: &str, pull: bool) -> CzOutcome;
+    // Its outcome holds an image, or `Absent`.
+    #[swift_bridge(swift_name = "getOrNil")]
+    fn get_or_nil(self: &CzImageStore, reference: &str) -> CzOutcome;
     fn list(self: &CzImageStore) -> CzOutcome;
     fn delete(
       self: &CzImageStore,
@@ -2492,6 +2502,8 @@ pub(crate) mod ffi {
       progress: RustProgressHandler,
       #[swift_bridge(label = "maxConcurrentDownloads")] max_concurrent_downloads: usize,
     ) -> CzOutcome;
+    // Its outcome holds a list of platforms.
+    fn platforms(self: &CzImageStore, reference: &str, insecure: bool, auth: CzAuthentication) -> CzOutcome;
     fn push(
       self: &CzImageStore,
       reference: &str,
@@ -3052,17 +3064,21 @@ pub(crate) mod ffi {
 
     // `ContainerStatistics`, which `LinuxContainer.statistics` returns: the
     // `id`, `interface` or `mountPoint` of the statistics held, their `UInt64`
-    // fields in Swift's order, and the part a `StatCategory` reports, or
-    // `Absent`. Block I/O's part is its `devices`. `protocols` is held as its
-    // `tcp`, `udp`, `icmp` and `ip` counters, in that order, or `Absent`.
+    // fields in Swift's order, their `UInt64?` fields as a list of numbers or
+    // `Absent`, and the part a `StatCategory` reports, or `Absent`. Block
+    // I/O's part is its `devices`. `networkProtocols` is held as its `tcp`,
+    // `udp`, `icmp`, `ip`, `udp6`, `icmp6` and `ip6` counters, in that order,
+    // or `Absent`, and each of the last three may be `Absent`.
     #[swift_bridge(swift_name = "statisticsName")]
     fn statistics_name(self: &CzOutcome) -> String;
     #[swift_bridge(swift_name = "statisticsNumbers")]
     fn statistics_numbers(self: &CzOutcome) -> Vec<u64>;
+    #[swift_bridge(swift_name = "statisticsOptionalNumbers")]
+    fn statistics_optional_numbers(self: &CzOutcome) -> CzOutcome;
     #[swift_bridge(swift_name = "statisticsCategory")]
     fn statistics_category(self: &CzOutcome, category: i64) -> CzOutcome;
-    #[swift_bridge(swift_name = "statisticsProtocols")]
-    fn statistics_protocols(self: &CzOutcome) -> CzOutcome;
+    #[swift_bridge(swift_name = "statisticsNetworkProtocols")]
+    fn statistics_network_protocols(self: &CzOutcome) -> CzOutcome;
 
     type CzLinuxProcess;
     #[swift_bridge(swift_name = "linuxProcess")]

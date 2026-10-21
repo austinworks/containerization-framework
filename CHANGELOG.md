@@ -2,15 +2,48 @@
 
 ## Unreleased
 
-- Those enums all implement `AsRef<str>` and `FromStr`, so `"linux".parse()`
-  gives `OS::Linux`, and an unknown raw value fails with `Error::Failed`.
+- Every enum backed by a Swift raw value, such as `SystemPlatform`'s `OS`
+  and `Architecture`, implements `AsRef<str>`, which returns its raw value,
+  and `FromStr`, which parses one. `"linux".parse()` gives `OS::Linux`, and
+  a raw value Swift lacks fails with `Error::Failed`.
 - The crate compiles again on platforms other than macOS, which v0.9.0
   broke.
 - `containerization_archive::Options` is also at `options::Options`, beside
   the `Compression` and `XattrFormat` types nested in it.
+- Update Containerization to 0.53.0. Use the matching init image,
+  `ghcr.io/apple/containerization/vminit:0.53.0`, which `versions::INIT_IMAGE`
+  now names.
+  - `NetworkProtocolStatistics` has `udp6`, `icmp6` and `ip6` fields for the
+    container's IPv6 UDP, ICMP and IP traffic. Each is `None` when the guest
+    has no IPv6 statistics. The `udp`, `icmp` and `ip` counters are IPv4
+    only, while `tcp` covers both families, because the kernel shares its TCP
+    counters between them.
+  - `ImageStore::get_or_nil` returns the image a reference names, or `None`
+    when the store doesn't hold it.
+  - `ImageStore::platforms` returns the platforms an image runs on without
+    pulling its layers. It reads the store's index when the store holds the
+    image, and asks the registry otherwise. `PlatformsOptions` holds its
+    `insecure` and `auth` arguments.
+  - `Index::runnable_platforms` returns the platforms of an index's image
+    manifests, leaving out attestations and `unknown/unknown` entries.
+  - The registry client now checks what a registry sends. Resolving a
+    digest-pinned reference fails if the registry answers with another
+    digest, and fetching a manifest or blob fails if its content doesn't
+    hash to the digest it was fetched by. This applies to pulls and to
+    `RegistryClient`'s `resolve`, `fetch_data` and `fetch_blob`.
 
 ### Breaking changes
 
+- `ContainerStatistics::protocols` is now `network_protocols`, as Swift
+  renamed it.
+- `NetworkStatistics`'s `received_errors` and `transmitted_errors` are now
+  `Option<u64>`.
+- `NetworkProtocolCounters`'s byte, drop and error counters are now
+  `Option<u64>`. A protocol that has no such counter reports `None` instead
+  of zero, so zero always means none happened. ICMP, for example, has no
+  drop counters. `NetworkProtocolCounters::default()` leaves them `None`.
+- `NetworkProtocolStatistics` has new public fields, so code that builds one
+  with a struct literal must set them.
 - `SystemPlatform`'s `OS::as_str` and `Architecture::as_str` are now
   `raw_value`, like every other enum backed by a Swift raw value.
 

@@ -139,6 +139,53 @@ fn rejects_a_malformed_reference() {
   );
 }
 
+/// The index's own annotations, subject and artifact type don't change its
+/// platforms. They are set so that every field crosses to Swift.
+#[test]
+fn lists_an_indexs_runnable_platforms() {
+  let manifest_for = |platform: oci::image::Platform| oci::image::Descriptor {
+    platform: Some(platform),
+    ..oci::image::Descriptor::new(oci::image::MediaTypes::IMAGE_MANIFEST, "sha256:00", 2)
+  };
+  let manifest = |platform_string: &str| manifest_for(platform(platform_string));
+  let unknown = oci::image::Platform {
+    architecture: "unknown".to_string(),
+    os: "unknown".to_string(),
+    os_version: None,
+    os_features: None,
+    variant: None,
+  };
+  let attestation = oci::image::Descriptor {
+    annotations: Some(
+      [(
+        "vnd.docker.reference.type".to_string(),
+        "attestation-manifest".to_string(),
+      )]
+      .into(),
+    ),
+    ..manifest("linux/arm64")
+  };
+  let unplatformed = oci::image::Descriptor::new(oci::image::MediaTypes::IMAGE_MANIFEST, "sha256:00", 2);
+  let index = oci::image::Index {
+    annotations: Some([("org.opencontainers.image.ref.name".to_string(), "3".to_string())].into()),
+    subject: Some(manifest("linux/arm64")),
+    artifact_type: Some("application/example".to_string()),
+    ..oci::image::Index::new(vec![
+      manifest("linux/arm64"),
+      attestation,
+      manifest_for(unknown),
+      unplatformed,
+      manifest("linux/amd64"),
+    ])
+  };
+
+  assert_eq!(
+    index.runnable_platforms().expect("the index's platforms"),
+    vec![platform("linux/arm64"), platform("linux/amd64")],
+    "attestations, unknown/unknown and manifests without a platform are left out"
+  );
+}
+
 #[test]
 fn makes_values_with_swifts_defaults() {
   let config = oci::image::Descriptor::new(oci::image::MediaTypes::IMAGE_CONFIG, "sha256:00", 2);

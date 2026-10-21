@@ -66,6 +66,10 @@ impl CzImageStore {
     match self.0 {}
   }
 
+  pub(crate) fn get_or_nil(&self, _reference: &str) -> CzOutcome {
+    match self.0 {}
+  }
+
   pub(crate) fn list(&self) -> CzOutcome {
     match self.0 {}
   }
@@ -88,6 +92,10 @@ impl CzImageStore {
     _progress: platform::Progress,
     _max_concurrent_downloads: usize,
   ) -> CzOutcome {
+    match self.0 {}
+  }
+
+  pub(crate) fn platforms(&self, _reference: &str, _insecure: bool, _auth: CzAuthentication) -> CzOutcome {
     match self.0 {}
   }
 

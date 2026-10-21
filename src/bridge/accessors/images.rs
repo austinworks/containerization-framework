@@ -1,6 +1,6 @@
 //! Getters and setters for the values images, content and unpacking take: the
-//! OCI `Platform`, `Descriptor` and `ImageConfig`, `Image.Description` and
-//! `EXT4Unpacker`.
+//! OCI `Platform`, `Descriptor`, `Index` and `ImageConfig`,
+//! `Image.Description` and `EXT4Unpacker`.
 
 use super::entry_at;
 use super::ext4;
@@ -54,6 +54,11 @@ impl ffi::CzOutcome {
         .then(|| self.platform_os_features()),
       variant: self.platform_variant(),
     }
+  }
+
+  /// The `[Platform]` an outcome holds.
+  pub(crate) fn platforms(&self) -> Vec<containerization_oci::image::Platform> {
+    self.list(Self::platform)
   }
 
   /// The `Descriptor` an outcome holds, read field by field.
@@ -202,6 +207,52 @@ impl containerization_oci::image::Descriptor {
 
   pub(crate) fn platform(&self) -> &containerization_oci::image::Platform {
     present(&self.platform)
+  }
+
+  pub(crate) fn artifact_type(&self) -> Option<&str> {
+    self.artifact_type.as_deref()
+  }
+}
+
+impl containerization_oci::image::Index {
+  pub(crate) fn schema_version(&self) -> isize {
+    self.schema_version
+  }
+
+  pub(crate) fn media_type(&self) -> &str {
+    &self.media_type
+  }
+
+  pub(crate) fn manifests_len(&self) -> usize {
+    self.manifests.len()
+  }
+
+  pub(crate) fn manifests_at(&self, index: usize) -> &containerization_oci::image::Descriptor {
+    &self.manifests[index]
+  }
+
+  pub(crate) fn has_annotations(&self) -> bool {
+    self.annotations.is_some()
+  }
+
+  pub(crate) fn annotations_len(&self) -> usize {
+    self.annotations.as_ref().map_or(0, BTreeMap::len)
+  }
+
+  pub(crate) fn annotation_key_at(&self, index: usize) -> &str {
+    entry_at(present(&self.annotations), index).0
+  }
+
+  pub(crate) fn annotation_value_at(&self, index: usize) -> &str {
+    entry_at(present(&self.annotations), index).1
+  }
+
+  pub(crate) fn has_subject(&self) -> bool {
+    self.subject.is_some()
+  }
+
+  pub(crate) fn subject(&self) -> &containerization_oci::image::Descriptor {
+    present(&self.subject)
   }
 
   pub(crate) fn artifact_type(&self) -> Option<&str> {

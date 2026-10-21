@@ -1,5 +1,9 @@
 use super::Descriptor;
 use super::MediaTypes;
+use super::Platform;
+use crate::error::Error;
+use crate::platform;
+use crate::platform::ffi;
 use std::collections::BTreeMap;
 
 /// `Index`.
@@ -25,5 +29,15 @@ impl Index {
       subject: None,
       artifact_type: None,
     }
+  }
+
+  /// `Index.runnablePlatforms`: the platforms of the image manifests, leaving
+  /// out attestations and `unknown/unknown` entries.
+  pub fn runnable_platforms(&self) -> Result<Vec<Platform>, Error> {
+    platform::outcome(
+      ffi::cz_index_runnable_platforms(self.clone()),
+      "read an index's runnable platforms",
+    )
+    .map(|outcome| outcome.platforms())
   }
 }
