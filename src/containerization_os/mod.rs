@@ -1,7 +1,7 @@
 //! Containerization's `ContainerizationOS` module: the parts that run on a
-//! macOS host. The keychain types are in [`keychain`], and binfmt_misc and
-//! capabilities are in [`linux`], as they are in Swift's `Keychain` and `Linux`
-//! directories.
+//! macOS host. The keychain types are in [`keychain`], and binfmt_misc,
+//! capabilities and network protocol counters are in [`linux`], as they are
+//! in Swift's `Keychain` and `Linux` directories.
 
 pub mod file;
 pub mod file_descriptor_ops;

@@ -1,5 +1,6 @@
 //! `Mount`, and its nested `Mount.RuntimeOptions`.
 
+use crate::cloud_hypervisor;
 use crate::containerization::strings;
 use crate::error::Error;
 use crate::platform;
@@ -99,6 +100,19 @@ impl Mount {
   /// `Mount.isBlock`.
   pub fn is_block(&self) -> bool {
     matches!(self.runtime_options, RuntimeOptions::Virtioblk(_))
+  }
+
+  /// `Mount.chDiskConfig(id:)`: this mount as a cloud-hypervisor virtio-blk
+  /// disk with the device id `id`, or `None` if it isn't a block mount. The
+  /// disk is raw, read-only when the options hold `ro`, and opened with
+  /// `O_DIRECT` when the runtime options hold `directio`.
+  pub fn ch_disk_config(&self, id: &str) -> Result<Option<cloud_hypervisor::device::DiskConfig>, Error> {
+    let outcome = platform::outcome(
+      ffi::cz_mount_ch_disk_config(self.clone(), id),
+      format!("describe {} as a cloud-hypervisor disk", self.source),
+    )?;
+
+    Ok(outcome.is_some().then(|| outcome.disk_config()))
   }
 
   /// `Mount.tagHash`, which hashes the source path after resolving its

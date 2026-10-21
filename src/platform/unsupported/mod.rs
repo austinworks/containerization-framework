@@ -122,6 +122,7 @@ mod addresses;
 mod archive;
 mod authentication;
 mod bridged;
+mod cloud_hypervisor_model;
 mod container_manager;
 mod container_model;
 mod content_writer;

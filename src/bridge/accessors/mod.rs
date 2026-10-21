@@ -18,6 +18,7 @@
 
 mod addresses;
 mod archive;
+mod cloud_hypervisor;
 mod container;
 mod ext4;
 mod images;

@@ -1,8 +1,9 @@
 #![cfg(feature = "integration")]
 
 //! What Swift computes for Containerization's configuration types, without a
-//! VM: command lines, mounts, DNS, hosts, exit statuses, resource limits,
-//! capabilities, process configurations and signals.
+//! VM: command lines, mounts and their cloud-hypervisor disks, DNS, hosts,
+//! exit statuses, resource limits, capabilities, process configurations and
+//! signals.
 
 use containerization_framework as cfw;
 use std::collections::BTreeMap;
@@ -102,6 +103,40 @@ fn tells_block_mounts_from_others() {
   );
   assert!(!shared.is_block());
   assert!(cfw::containerization::container::Mount::block("ext4", "/disk.img", "/data", &[], &[]).is_block());
+}
+
+#[test]
+fn describes_a_block_mount_as_a_cloud_hypervisor_disk() {
+  let disk = |options: &[&str], runtime_options: &[&str]| {
+    cfw::containerization::container::Mount::block("ext4", "/disk.img", "/data", options, runtime_options)
+      .ch_disk_config("vda")
+      .expect("the disk config")
+      .expect("a block mount is a disk")
+  };
+
+  assert_eq!(
+    disk(&["ro"], &[]),
+    cfw::cloud_hypervisor::device::DiskConfig {
+      readonly: Some(true),
+      id: Some("vda".to_string()),
+      image_type: Some(cfw::cloud_hypervisor::device::ImageType::Raw),
+      ..cfw::cloud_hypervisor::device::DiskConfig::new("/disk.img")
+    }
+  );
+  assert_eq!(disk(&[], &[]).readonly, Some(false));
+  assert_eq!(disk(&[], &["directio"]).direct, Some(true));
+  assert_eq!(
+    disk(&[], &["directio=1"]).direct,
+    None,
+    "only the bare flag asks for direct I/O"
+  );
+  assert_eq!(
+    cfw::containerization::container::Mount::share("/shared", "/shared", &[], &[])
+      .ch_disk_config("vda")
+      .expect("the disk config"),
+    None,
+    "a share is not a disk"
+  );
 }
 
 #[test]

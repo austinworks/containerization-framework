@@ -31,6 +31,16 @@
     digest, and fetching a manifest or blob fails if its content doesn't
     hash to the digest it was fetched by. This applies to pulls and to
     `RegistryClient`'s `resolve`, `fetch_data` and `fetch_blob`.
+- Bind `ProcNetSnmp` as `containerization_os::linux::ProcNetSnmp`.
+  `ProcNetSnmp::new` parses the contents of a Linux network namespace's
+  `/proc/net/snmp`, `/proc/net/netstat` and `/proc/net/snmp6` into
+  per-protocol traffic counters, and `ProcNetSnmp::read` reads those files.
+  Only Linux has them, so `read` fails on macOS.
+- Bind `Mount.chDiskConfig(id:)` as `Mount::ch_disk_config`, which describes
+  a block mount as a cloud-hypervisor virtio-blk disk. It returns a
+  `DiskConfig` from the new `cloud_hypervisor::device` module, with its
+  `ImageType`. A mount whose runtime options hold `directio` gets a disk
+  that cloud-hypervisor opens with `O_DIRECT`.
 
 ### Breaking changes
 

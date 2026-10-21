@@ -1,7 +1,7 @@
 #![cfg(feature = "integration")]
 
 //! ContainerizationOS: `Terminal`, `CapabilityName`, `CapabilitySet`,
-//! `KeychainQuery`, `Sysctl` and `File`.
+//! `KeychainQuery`, `Sysctl`, `ProcNetSnmp` and `File`.
 
 use containerization_framework as cfw;
 use std::io::IsTerminal;
@@ -191,6 +191,59 @@ fn reads_sysctls_by_name() {
 
   assert!(memory > 0, "{memory}");
   assert!(cfw::containerization_os::sysctl::by_name("no.such.sysctl").is_err());
+}
+
+#[test]
+fn parses_network_protocol_counters() {
+  let snmp = "Ip: Forwarding InReceives InHdrErrors InAddrErrors InUnknownProtos InDiscards OutRequests OutDiscards OutNoRoutes FragFails\n\
+              Ip: 1 100 1 2 3 4 90 5 6 7\n\
+              Icmp: InMsgs InErrors OutMsgs OutErrors\n\
+              Icmp: 10 1 9 2\n\
+              Tcp: RtoAlgorithm MaxConn InSegs OutSegs InErrs\n\
+              Tcp: 1 -1 600 500 3\n\
+              Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors\n\
+              Udp: 300 1 5 250 2 4\n";
+  let netstat = "IpExt: InNoRoutes InOctets OutOctets\nIpExt: 8 4000 3000\n";
+  let snmp6 = "Ip6InReceives 50\nIp6InOctets 1000\nIp6OutRequests 40\nUdp6InDatagrams 60\nIcmp6InMsgs 6\n";
+
+  let counters = cfw::containerization_os::linux::ProcNetSnmp::new(snmp, Some(netstat), Some(snmp6))
+    .expect("the counters should parse");
+
+  assert_eq!(
+    counters.udp,
+    cfw::containerization_os::linux::proc_net_snmp::Counters {
+      received_packets: 300,
+      transmitted_packets: 250,
+      received_bytes: None,
+      transmitted_bytes: None,
+      received_drops: Some(3),
+      transmitted_drops: Some(4),
+      received_errors: Some(3),
+      transmitted_errors: None,
+    },
+    "UDP's receive errors leave out the buffer errors it counts as drops"
+  );
+  assert_eq!(counters.tcp.received_packets, 600);
+  assert_eq!(counters.icmp.received_drops, None, "ICMP has no drop counter");
+  assert_eq!(counters.ip.received_bytes, Some(4000));
+  assert_eq!(counters.ip.received_drops, Some(12));
+  let ip6 = counters.ip6.expect("snmp6 was given");
+  assert_eq!((ip6.received_packets, ip6.received_bytes), (50, Some(1000)));
+  assert_eq!(counters.udp6.expect("snmp6 was given").received_packets, 60);
+
+  let without_ipv6 =
+    cfw::containerization_os::linux::ProcNetSnmp::new(snmp, None, None).expect("the counters should parse");
+  assert_eq!(without_ipv6.ip6, None);
+  assert_eq!(
+    without_ipv6.ip.received_bytes,
+    Some(0),
+    "Swift reads IP's bytes as zero without netstat"
+  );
+}
+
+#[test]
+fn reads_no_network_protocol_counters_on_a_host_without_proc() {
+  assert!(cfw::containerization_os::linux::ProcNetSnmp::read(None).is_err());
 }
 
 #[test]

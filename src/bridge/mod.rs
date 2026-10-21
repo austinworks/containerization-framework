@@ -913,6 +913,29 @@ pub(crate) mod ffi {
   }
 
   extern "Swift" {
+    // Model/CloudHypervisorModel.swift
+    //
+    // CloudHypervisor's `DiskConfig`, field by field, its `ImageType` as its
+    // `rawValue`. For a unit test: `ImageType`'s raw values, in Swift's order.
+    #[swift_bridge(swift_name = "diskConfigPath")]
+    fn disk_config_path(self: &CzOutcome) -> String;
+    #[swift_bridge(swift_name = "diskConfigReadonly")]
+    fn disk_config_readonly(self: &CzOutcome) -> Option<bool>;
+    #[swift_bridge(swift_name = "diskConfigDirect")]
+    fn disk_config_direct(self: &CzOutcome) -> Option<bool>;
+    #[swift_bridge(swift_name = "diskConfigIommu")]
+    fn disk_config_iommu(self: &CzOutcome) -> Option<bool>;
+    #[swift_bridge(swift_name = "diskConfigId")]
+    fn disk_config_id(self: &CzOutcome) -> Option<String>;
+    #[swift_bridge(swift_name = "diskConfigPciSegment")]
+    fn disk_config_pci_segment(self: &CzOutcome) -> Option<u16>;
+    #[swift_bridge(swift_name = "diskConfigImageType")]
+    fn disk_config_image_type(self: &CzOutcome) -> Option<String>;
+    #[swift_bridge(swift_name = "imageTypeRawValues")]
+    fn cz_image_type_raw_values() -> Vec<String>;
+  }
+
+  extern "Swift" {
     // Model/SpecModel.swift
     //
     // The OCI runtime spec, field by field. An enum is its `rawValue`.
@@ -2021,6 +2044,22 @@ pub(crate) mod ffi {
     #[swift_bridge(swift_name = "sysctlByName")]
     fn cz_sysctl_by_name(name: &str) -> CzOutcome;
 
+    // `ProcNetSnmp(snmp:netstat:snmp6:)` and `ProcNetSnmp.read(pid:)`, whose
+    // outcomes hold a `ProcNetSnmp`. It is read as its counters in Swift's
+    // order, each IPv6 one `Absent` for `nil`. Each `Counters` is read as its
+    // `UInt64` fields, then its `UInt64?` fields as numbers or `Absent`, both
+    // in Swift's order.
+    #[swift_bridge(swift_name = "procNetSnmp")]
+    fn cz_proc_net_snmp_new(snmp: &str, netstat: Option<String>, snmp6: Option<String>) -> CzOutcome;
+    #[swift_bridge(swift_name = "readProcNetSnmp")]
+    fn cz_proc_net_snmp_read(pid: Option<i32>) -> CzOutcome;
+    #[swift_bridge(swift_name = "procNetSnmpCounters")]
+    fn proc_net_snmp_counters(self: &CzOutcome) -> CzOutcome;
+    #[swift_bridge(swift_name = "procNetSnmpCountersNumbers")]
+    fn proc_net_snmp_counters_numbers(self: &CzOutcome) -> Vec<u64>;
+    #[swift_bridge(swift_name = "procNetSnmpCountersOptionalNumbers")]
+    fn proc_net_snmp_counters_optional_numbers(self: &CzOutcome) -> CzOutcome;
+
     // `File.info(_:)`, and the `FileInfo` it returns. Swift's `Int`s cross as
     // `Int64`s.
     type CzFileInfo;
@@ -2226,11 +2265,14 @@ pub(crate) mod ffi {
     fn command_line_kernel_args(self: &CzOutcome) -> Vec<String>;
     #[swift_bridge(swift_name = "commandLineInitArgs")]
     fn command_line_init_args(self: &CzOutcome) -> Vec<String>;
-    // `clone(to:)`'s outcome holds a `Mount`, and `tagHash`'s a string.
+    // `clone(to:)`'s outcome holds a `Mount`, `tagHash`'s a string, and
+    // `chDiskConfig(id:)`'s a `CloudHypervisor.DiskConfig` or `Absent`.
     #[swift_bridge(swift_name = "cloneMount")]
     fn cz_mount_clone(mount: RustMount, to: &str) -> CzOutcome;
     #[swift_bridge(swift_name = "mountTagHash")]
     fn cz_mount_tag_hash(mount: RustMount) -> CzOutcome;
+    #[swift_bridge(swift_name = "mountChDiskConfig")]
+    fn cz_mount_ch_disk_config(mount: RustMount, id: &str) -> CzOutcome;
     #[swift_bridge(swift_name = "validateDNS")]
     fn cz_dns_validate(dns: RustDns) -> CzOutcome;
     #[swift_bridge(swift_name = "dnsResolvConf")]

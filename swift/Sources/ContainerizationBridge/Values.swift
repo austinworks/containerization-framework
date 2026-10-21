@@ -1,8 +1,8 @@
 //===----------------------------------------------------------------------===//
 // What Containerization's value types compute: `Kernel.CommandLine`'s edits,
-// `Mount`'s copy and hash, `DNS`, `Hosts`, `ExitStatus`, `LinuxRLimit.Kind`,
-// `LinuxProcessConfiguration` and `Signal`. How each type crosses is in
-// `Model/`.
+// `Mount`'s copy, hash and cloud-hypervisor disk, `DNS`, `Hosts`,
+// `ExitStatus`, `LinuxRLimit.Kind`, `LinuxProcessConfiguration` and `Signal`.
+// How each type crosses is in `Model/`.
 //
 // A process configuration crosses back the way the manager's configuration
 // does: Swift fills a Rust value with it and hands that to a Rust closure.
@@ -73,6 +73,13 @@ func mountTagHash(mount: RustMount) -> CzOutcome {
   let mount = Containerization.Mount(mount)
 
   return CzOutcome { try mount.tagHash }
+}
+
+func mountChDiskConfig(mount: RustMount, id: RustStr) -> CzOutcome {
+  let mount = Containerization.Mount(mount)
+  let id = id.toString()
+
+  return CzOutcome { absent(mount.chDiskConfig(id: id)) }
 }
 
 // MARK: DNS and Hosts

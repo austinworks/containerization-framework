@@ -1,5 +1,5 @@
 //! Stand-ins for `OS.swift`: ContainerizationOS's terminals, capabilities,
-//! keychain queries, sysctl and file information.
+//! keychain queries, sysctl, network protocol counters and file information.
 
 use super::CzOutcome;
 use crate::containerization_os;
@@ -14,6 +14,7 @@ taken!(
   keychain_query_result -> Result<containerization_os::keychain::KeychainQueryResult, crate::error::Error>,
   file_info -> CzFileInfo,
   stat -> containerization_os::Stat,
+  proc_net_snmp -> containerization_os::linux::ProcNetSnmp,
 );
 
 handles!(CzTerminal, CzFileInfo,);
@@ -30,6 +31,8 @@ failing!(
   cz_keychain_query_list(&str, Option<String>),
   cz_keychain_query_exists(&str, Option<String>, &str),
   cz_sysctl_by_name(&str),
+  cz_proc_net_snmp_new(&str, Option<String>, Option<String>),
+  cz_proc_net_snmp_read(Option<i32>),
   cz_file_info(&str),
 );
 

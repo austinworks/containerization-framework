@@ -22,6 +22,7 @@ failing!(
   cz_kernel_command_line_set_agent_log_level(Vec<String>, Vec<String>, LogLevel),
   cz_mount_clone(container::Mount, &str),
   cz_mount_tag_hash(container::Mount),
+  cz_mount_ch_disk_config(container::Mount, &str),
   cz_dns_validate(network::DNS),
   cz_dns_resolv_conf(network::DNS),
   cz_hosts_file(network::Hosts),

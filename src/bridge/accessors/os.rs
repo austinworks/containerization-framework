@@ -1,11 +1,13 @@
 //! Readers for what ContainerizationOS returns, including the keychain's
-//! registry entries, and getters for the `Binfmt.Entry` Swift reads.
+//! registry entries and `ProcNetSnmp`, and getters for the `Binfmt.Entry`
+//! Swift reads.
 
 use crate::bridge::ffi;
 use crate::containerization_os;
 use crate::containerization_os::file_descriptor_ops;
 use crate::containerization_os::keychain;
 use crate::containerization_os::linux::binfmt;
+use crate::containerization_os::linux::proc_net_snmp;
 use crate::error::Error;
 use crate::platform;
 
@@ -74,6 +76,58 @@ impl ffi::CzOutcome {
       atime: time(atime, atime_nanos),
       mtime: time(mtime, mtime_nanos),
       ctime: time(ctime, ctime_nanos),
+    }
+  }
+
+  /// The `ProcNetSnmp` an outcome holds.
+  pub(crate) fn proc_net_snmp(&self) -> proc_net_snmp::ProcNetSnmp {
+    let counters = self
+      .proc_net_snmp_counters()
+      .list(|counters| counters.optional(Self::proc_net_snmp_counters_value));
+    let [Some(tcp), Some(udp), Some(icmp), Some(ip), udp6, icmp6, ip6] = counters[..] else {
+      panic!("Swift sends `ProcNetSnmp`'s tcp, udp, icmp and ip counters, then the three IPv6 ones");
+    };
+
+    proc_net_snmp::ProcNetSnmp {
+      tcp,
+      udp,
+      icmp,
+      ip,
+      udp6,
+      icmp6,
+      ip6,
+    }
+  }
+
+  /// The `ProcNetSnmp.Counters` an outcome holds.
+  fn proc_net_snmp_counters_value(&self) -> proc_net_snmp::Counters {
+    let [received_packets, transmitted_packets] = self.proc_net_snmp_counters_numbers()[..] else {
+      panic!("Swift sends a `ProcNetSnmp.Counters`' two packet counts");
+    };
+    let optional = self
+      .proc_net_snmp_counters_optional_numbers()
+      .list(|number| number.optional(Self::number));
+    let [
+      received_bytes,
+      transmitted_bytes,
+      received_drops,
+      transmitted_drops,
+      received_errors,
+      transmitted_errors,
+    ] = optional[..]
+    else {
+      panic!("Swift sends a `ProcNetSnmp.Counters`' six optional counters");
+    };
+
+    proc_net_snmp::Counters {
+      received_packets,
+      transmitted_packets,
+      received_bytes,
+      transmitted_bytes,
+      received_drops,
+      transmitted_drops,
+      received_errors,
+      transmitted_errors,
     }
   }
 

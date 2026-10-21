@@ -37,6 +37,7 @@ let package = Package(
     .target(
       name: "ContainerizationBridge",
       dependencies: [
+        .product(name: "CloudHypervisor", package: "containerization"),
         .product(name: "Containerization", package: "containerization"),
         .product(name: "ContainerizationArchive", package: "containerization"),
         .product(name: "ContainerizationEXT4", package: "containerization"),

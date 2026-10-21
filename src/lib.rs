@@ -149,6 +149,7 @@ macro_rules! raw_values {
   };
 }
 
+pub mod cloud_hypervisor;
 pub mod containerization;
 pub mod containerization_archive;
 pub mod containerization_error;

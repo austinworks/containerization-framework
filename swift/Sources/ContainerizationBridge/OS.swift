@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 // ContainerizationOS: `Terminal`, `CapabilityName`, `CapabilitySet`,
-// `KeychainQuery`, `Sysctl` and `File`.
+// `KeychainQuery`, `Sysctl`, `ProcNetSnmp` and `File`.
 //
 // `CapabilityName` and `CapabilitySet` cross as their `description`s.
 //===----------------------------------------------------------------------===//
@@ -183,6 +183,18 @@ func sysctlByName(name: RustStr) -> CzOutcome {
   return CzOutcome { try Sysctl.byName(name) }
 }
 
+func procNetSnmp(snmp: RustStr, netstat: RustString?, snmp6: RustString?) -> CzOutcome {
+  let snmp = snmp.toString()
+  let netstat = netstat?.toString()
+  let snmp6 = snmp6?.toString()
+
+  return CzOutcome { ProcNetSnmp(snmp: snmp, netstat: netstat, snmp6: snmp6) }
+}
+
+func readProcNetSnmp(pid: Int32?) -> CzOutcome {
+  CzOutcome { try ProcNetSnmp.read(pid: pid) }
+}
+
 func fileInfoAt(path: RustStr) -> CzOutcome {
   let path = path.toString()
 
@@ -249,6 +261,35 @@ extension CzOutcome {
 
   func keychainQueryResultCreatedDate() -> Double {
     (taken() as KeychainQueryResult).createdDate.timeIntervalSince1970
+  }
+
+  /// The held `ProcNetSnmp`'s `tcp`, `udp`, `icmp`, `ip`, `udp6`, `icmp6` and
+  /// `ip6` counters. The last three may be `Absent`.
+  func procNetSnmpCounters() -> CzOutcome {
+    let snmp: ProcNetSnmp = taken()
+
+    return CzOutcome.holding([
+      snmp.tcp, snmp.udp, snmp.icmp, snmp.ip, absent(snmp.udp6), absent(snmp.icmp6), absent(snmp.ip6),
+    ])
+  }
+
+  /// The held `ProcNetSnmp.Counters`' `UInt64` fields, in Swift's order.
+  func procNetSnmpCountersNumbers() -> RustVec<UInt64> {
+    let counters: ProcNetSnmp.Counters = taken()
+
+    return rustVec([counters.receivedPackets, counters.transmittedPackets])
+  }
+
+  /// The held `ProcNetSnmp.Counters`' `UInt64?` fields, in Swift's order,
+  /// each a `UInt64` or `Absent`.
+  func procNetSnmpCountersOptionalNumbers() -> CzOutcome {
+    let counters: ProcNetSnmp.Counters = taken()
+    let numbers = [
+      counters.receivedBytes, counters.transmittedBytes, counters.receivedDrops, counters.transmittedDrops,
+      counters.receivedErrors, counters.transmittedErrors,
+    ]
+
+    return CzOutcome.holding(numbers.map { absent($0) })
   }
 
   /// A `Stat`'s unsigned fields, in Swift's order.

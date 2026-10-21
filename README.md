@@ -130,8 +130,10 @@ rustflags = ["-C", "link-arg=-Wl,-rpath,/usr/lib/swift"]
   `ProgressHandler`; and `proxy_utils`.
 - `containerization_io`: `ReadStream`.
 - `containerization_os`: `Terminal`, `sysctl`, `file`, `file_descriptor_ops`,
-  `keychain::KeychainQuery`, and in `linux`, `CapabilityName`, `CapabilitySet`
-  and `binfmt`.
+  `keychain::KeychainQuery`, and in `linux`, `CapabilityName`, `CapabilitySet`,
+  `ProcNetSnmp` and `binfmt`.
+- `cloud_hypervisor`: in `device`, `DiskConfig` and `ImageType`, which
+  `Mount::ch_disk_config` returns.
 
 A few things work differently because Rust can't express them the way Swift
 does:
