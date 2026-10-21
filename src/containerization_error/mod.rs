@@ -37,6 +37,7 @@ impl Code {
   ];
 
   /// The code whose `description` Swift gave.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn from_description(description: &str) -> Option<Self> {
     Self::ALL
       .into_iter()

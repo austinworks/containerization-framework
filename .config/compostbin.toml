@@ -15,6 +15,11 @@ argv = ["cargo", "audit"]
 [host.commands.check]
 argv = ["cargo", "check", "--all-targets"]
 
+# Off macOS the bridge is compiled out, so code only Swift calls is dead there.
+# This only type-checks, so the target needs no linker.
+[host.commands.check-linux]
+argv = ["cargo", "check", "--all-targets", "--features", "strict", "--target", "aarch64-unknown-linux-gnu"]
+
 [host.commands.clippy]
 argv = ["cargo", "clippy", "--all-targets", "--", "-D", "warnings"]
 

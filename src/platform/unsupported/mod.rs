@@ -36,7 +36,8 @@ pub(crate) enum HostsEntryName {
   Ipv6AllRouters,
 }
 
-/// `FileDescriptorOps.EntryType`.
+/// `FileDescriptorOps.EntryType`. Only Swift makes one.
+#[allow(dead_code)]
 pub(crate) enum FdOpsEntryType {
   Regular,
   Directory,
@@ -70,7 +71,8 @@ pub(crate) enum SocketDirection {
   OutOf,
 }
 
-/// `VirtualMachineInstanceState`.
+/// `VirtualMachineInstanceState`. Only Swift makes one.
+#[allow(dead_code)]
 pub(crate) enum InstanceState {
   Starting,
   Running,
@@ -79,7 +81,8 @@ pub(crate) enum InstanceState {
   Unknown,
 }
 
-/// `VirtiofsLayout`.
+/// `VirtiofsLayout`. Only Swift makes one.
+#[allow(dead_code)]
 pub(crate) enum VirtiofsLayoutKind {
   Unified,
   PerTag,

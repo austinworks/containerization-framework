@@ -1,6 +1,9 @@
 //! This module provides the Swift bridge on macOS and a stand-in for it on
 //! every other platform, and it reads either one's failures as `Error`s. Every
 //! wrapper calls through here, so each is written once for every platform.
+//!
+//! Only Swift calls the closures' `call` methods, so each allows dead code on
+//! other platforms, which also covers what it reaches.
 
 // The bridge's functions take Swift's arguments, however many there are.
 #[cfg(not(target_os = "macos"))]
@@ -50,7 +53,6 @@ impl Panic {
       .ok()
   }
 
-  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn caught(&self) -> bool {
     self
       .0
@@ -75,11 +77,13 @@ pub(crate) struct Progress {
 }
 
 impl Progress {
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn is_some(&self) -> bool {
     self.handler.is_some()
   }
 
   /// One batch of events, as a kind and a value each.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn call(&self, kinds: Vec<ffi::ProgressKind>, values: Vec<i64>) {
     let Some(handler) = &self.handler else {
       return;
@@ -133,6 +137,7 @@ impl<T> Configure<T> {
 
   /// Runs the closure on the value Swift filled, the first time only, and
   /// says whether it threw. Its error or panic is kept for Rust.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn call(&self, value: &mut T) -> bool {
     let configure = self
       .configure
@@ -256,6 +261,7 @@ impl WithDescriptor {
 
   /// Runs the closure on `descriptor`, the first time only, and says whether
   /// it threw.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn call(&self, descriptor: i32) -> bool {
     let body = self
       .body
@@ -293,6 +299,7 @@ impl Enumerate {
   }
 
   /// Runs the closure on one entry, and says whether it threw.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn call(&self, path: String, entry_type: ffi::FdOpsEntryType, parent: i32) -> bool {
     let mut body = self.body.lock().unwrap_or_else(PoisonError::into_inner);
 

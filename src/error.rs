@@ -51,6 +51,7 @@ impl Error {
 
   /// A failure of `action`, with the code of the `ContainerizationError` that
   /// Swift threw, if it threw one.
+  #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
   pub(crate) fn failed_with_code(
     action: impl Into<String>,
     message: impl fmt::Display,
