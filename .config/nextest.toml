@@ -6,7 +6,7 @@ command = { command-line = "bin/dev/prepare-integration", relative-to = "workspa
 slow-timeout = { period = "120s", terminate-after = 5 }
 
 [[profile.default.scripts]]
-filter = 'binary(linux_container) | binary(linux_container_configuration) | binary(container_manager) | binary(virtual_machine) | binary(linux_pod)'
+filter = 'binary(linux_container) | binary(linux_container_configuration) | binary(container_manager) | binary(vz_virtual_machine_manager) | binary(linux_pod)'
 setup = 'prepare-integration'
 
 # A VM per test: a dozen at once leaves the host swapping, and a starved guest
@@ -17,12 +17,12 @@ containers = { max-threads = 4 }
 # Each container unpacks its image, and a cold store first pulls the image and
 # the init image.
 [[profile.default.overrides]]
-filter = 'binary(linux_container) | binary(linux_container_configuration) | binary(container_manager) | binary(virtual_machine) | binary(linux_pod)'
+filter = 'binary(linux_container) | binary(linux_container_configuration) | binary(container_manager) | binary(vz_virtual_machine_manager) | binary(linux_pod)'
 test-group = 'containers'
 slow-timeout = { period = "300s", terminate-after = 4 }
 
 # A cold store pulls an image and the init image, and the registry suite
 # reaches the registry the image is pulled from.
 [[profile.default.overrides]]
-filter = 'binary(content) | binary(image_store) | binary(ext4) | binary(registry)'
+filter = 'binary(content) | binary(image_store) | binary(ext4) | binary(registry_client)'
 slow-timeout = { period = "300s", terminate-after = 4 }

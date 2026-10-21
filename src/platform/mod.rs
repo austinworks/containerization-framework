@@ -90,12 +90,7 @@ impl Progress {
     let events: Vec<containerization_extras::ProgressEvent> = kinds
       .into_iter()
       .zip(values)
-      .map(|(kind, value)| match kind {
-        ffi::ProgressKind::Items => containerization_extras::ProgressEvent::AddItems(value as isize),
-        ffi::ProgressKind::TotalItems => containerization_extras::ProgressEvent::AddTotalItems(value as isize),
-        ffi::ProgressKind::Size => containerization_extras::ProgressEvent::AddSize(value),
-        ffi::ProgressKind::TotalSize => containerization_extras::ProgressEvent::AddTotalSize(value),
-      })
+      .map(|(kind, value)| containerization_extras::ProgressEvent::from_kind(kind, value))
       .collect();
 
     self.panic.catch(|| handler(&events));

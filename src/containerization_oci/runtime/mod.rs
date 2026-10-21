@@ -4,7 +4,6 @@
 mod bundle;
 mod spec;
 mod state;
-mod user;
 mod version;
 
 pub use self::bundle::Bundle;
@@ -44,9 +43,9 @@ pub use self::spec::POSIXRlimit;
 pub use self::spec::Process;
 pub use self::spec::Root;
 pub use self::spec::Spec;
+pub use self::spec::User;
 pub use self::state::ContainerProcessState;
 pub use self::state::ContainerState;
 pub use self::state::SECCOMP_FD_NAME;
 pub use self::state::State;
-pub use self::user::User;
 pub use self::version::RuntimeSpecVersion;

@@ -401,26 +401,29 @@ impl linux_container::Configuration {
 }
 
 /// `profile` holds the `LinuxSeccomp` of a `Profile`, or `Absent`.
-pub(super) fn seccomp_profile(mode: ffi::SeccompMode, profile: ffi::CzOutcome) -> linux_container::SeccompProfile {
+pub(super) fn seccomp_profile(
+  mode: ffi::SeccompMode,
+  profile: ffi::CzOutcome,
+) -> linux_container::configuration::SeccompProfile {
   match mode {
-    ffi::SeccompMode::Unconfined => linux_container::SeccompProfile::Unconfined,
-    ffi::SeccompMode::Default => linux_container::SeccompProfile::Default,
-    ffi::SeccompMode::Profile => linux_container::SeccompProfile::Profile(profile.seccomp()),
+    ffi::SeccompMode::Unconfined => linux_container::configuration::SeccompProfile::Unconfined,
+    ffi::SeccompMode::Default => linux_container::configuration::SeccompProfile::Default,
+    ffi::SeccompMode::Profile => linux_container::configuration::SeccompProfile::Profile(profile.seccomp()),
   }
 }
 
-pub(super) fn seccomp_mode(profile: &linux_container::SeccompProfile) -> ffi::SeccompMode {
+pub(super) fn seccomp_mode(profile: &linux_container::configuration::SeccompProfile) -> ffi::SeccompMode {
   match profile {
-    linux_container::SeccompProfile::Unconfined => ffi::SeccompMode::Unconfined,
-    linux_container::SeccompProfile::Default => ffi::SeccompMode::Default,
-    linux_container::SeccompProfile::Profile(_) => ffi::SeccompMode::Profile,
+    linux_container::configuration::SeccompProfile::Unconfined => ffi::SeccompMode::Unconfined,
+    linux_container::configuration::SeccompProfile::Default => ffi::SeccompMode::Default,
+    linux_container::configuration::SeccompProfile::Profile(_) => ffi::SeccompMode::Profile,
   }
 }
 
 /// Swift asks for this only when the mode is `Profile`.
-pub(super) fn custom_seccomp(profile: &linux_container::SeccompProfile) -> &runtime::LinuxSeccomp {
+pub(super) fn custom_seccomp(profile: &linux_container::configuration::SeccompProfile) -> &runtime::LinuxSeccomp {
   match profile {
-    linux_container::SeccompProfile::Profile(profile) => profile,
+    linux_container::configuration::SeccompProfile::Profile(profile) => profile,
     _ => panic!("Swift asks for the profile only when the mode is `Profile`"),
   }
 }
@@ -508,7 +511,7 @@ mod tests {
       Vec::new(),
     );
     let configuration = linux_container::Configuration {
-      seccomp_profile: linux_container::SeccompProfile::Profile(profile.clone()),
+      seccomp_profile: linux_container::configuration::SeccompProfile::Profile(profile.clone()),
       ..Default::default()
     };
 

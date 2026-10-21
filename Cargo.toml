@@ -1,5 +1,4 @@
 [package]
-build = "build.rs"
 categories = ["api-bindings", "virtualization"]
 description = "Rust bindings for Apple's Containerization framework: Linux containers in lightweight VMs, in-process and without a daemon."
 edition = "2024"
@@ -12,9 +11,9 @@ rust-version = "1.98"
 version = "0.9.0"
 
 # The Swift package is an input to the build script, not a cargo target, so it
-# ships whole. `.build` and the generated glue are gitignored and so excluded
-# already; naming the sources keeps the tarball the same whatever is lying
-# around a working tree.
+# ships whole. Naming the sources keeps the tarball the same whatever else is
+# lying around a working tree, such as a `.build` left by running SwiftPM in
+# `swift/`.
 include = [
   "/README.md",
   "/build.rs",

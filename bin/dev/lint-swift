@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 check_swift() {
-  output="$(find . -name '*.swift' -not -path './target/*' -exec swift-format lint --configuration .swift-format.json -s {} 2>&1 \;)"
+  output="$(find ./swift -name '*.swift' -exec swift-format lint --configuration .swift-format.json -s {} 2>&1 \;)"
 
   if [[ -z "${output}" ]]; then
     exit 0

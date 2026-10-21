@@ -9,7 +9,7 @@
 # Further arguments reach nextest, so a single test can be run the way it
 # usually takes one:
 #
-#   bin/dev/test-integration -E 'test(exit_code)'
+#   bin/dev/test-integration -E 'test(creates_and_runs_processes)'
 
 set -euo pipefail
 

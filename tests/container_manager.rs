@@ -159,3 +159,17 @@ fn opens_a_store_at_its_root() {
 
   assert_eq!(manager.image_store().path(), support::store::image_store().path());
 }
+
+#[test]
+fn makes_a_manager_on_the_default_store() {
+  let vmm = support::store::vmm();
+  let manager = cfw::containerization::container::ContainerManager::with_vmm(&vmm, None)
+    .expect("a manager should be made on the VM manager");
+
+  assert_eq!(
+    manager.image_store().path(),
+    cfw::containerization::image::ImageStore::default_store()
+      .expect("the default store should open")
+      .path()
+  );
+}

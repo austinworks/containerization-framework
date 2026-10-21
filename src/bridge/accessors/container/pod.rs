@@ -379,7 +379,7 @@ impl linux_pod::ContainerConfiguration {
     configuration::custom_seccomp(self.own_seccomp_profile())
   }
 
-  fn own_seccomp_profile(&self) -> &containerization::container::linux_container::SeccompProfile {
+  fn own_seccomp_profile(&self) -> &containerization::container::linux_container::configuration::SeccompProfile {
     present(&self.seccomp_profile)
   }
 

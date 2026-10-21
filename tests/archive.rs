@@ -1,7 +1,6 @@
 #![cfg(feature = "integration")]
 
-//! `ArchiveWriter`, `ArchiveReader` and `WriteEntry`, and `EXT4Unpacker`
-//! unpacking an archive they wrote.
+//! `ArchiveWriter`, `ArchiveReader` and `WriteEntry`.
 
 use containerization_framework as cfw;
 use std::collections::BTreeMap;
@@ -516,35 +515,4 @@ fn says_which_file_is_not_in_an_archive() {
     .expect("a file the archive lacks");
 
   assert!(error.to_string().contains("two.txt"), "{error}");
-}
-
-#[test]
-fn unpacks_an_archive_into_a_filesystem() {
-  let directory = tempfile::tempdir().expect("a temporary directory");
-  let archive = archive_tree(
-    directory.path(),
-    "root.tar.gz",
-    cfw::containerization_archive::Format::PaxRestricted,
-    cfw::containerization_archive::Filter::Gzip,
-    Default::default(),
-  );
-  let at = directory.path().join("root.ext4");
-  let exported = directory.path().join("exported.tar");
-
-  cfw::containerization::image::EXT4Unpacker::new(64 * 1024 * 1024, None)
-    .unpack_archive(&archive, cfw::containerization_archive::Filter::Gzip, &at)
-    .expect("the archive should unpack");
-  cfw::containerization_ext4::ext4::EXT4Reader::new(&at)
-    .expect("the filesystem should read")
-    .export(&exported)
-    .expect("the filesystem should export");
-
-  let files = files(&cfw::containerization_archive::ArchiveReader::new(&exported).expect("the export should open"));
-  let files: BTreeMap<_, _> = files
-    .into_iter()
-    .map(|(path, data)| (path.trim_start_matches("./").to_string(), data))
-    .collect();
-
-  assert_eq!(files["a.txt"], b"alpha");
-  assert_eq!(files["sub/b.txt"], b"bravo");
 }

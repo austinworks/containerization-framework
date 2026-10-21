@@ -1,6 +1,7 @@
 //! `ArchiveWriter`, and the options its file initializer defaults.
 
 use super::ArchiveWriterConfiguration;
+use super::ArchiveWriterTransaction;
 use super::Filter;
 use super::Format;
 use super::Options;
@@ -175,56 +176,5 @@ impl ArchiveWriter {
       format!("archive paths under {}", base.display()),
     )
     .map(drop)
-  }
-}
-
-/// `ArchiveWriterTransaction`. It writes through its writer's archive, so it
-/// borrows the writer. Swift's is a class that isn't `Sendable`, so Rust's is
-/// neither `Send` nor `Sync`.
-///
-/// ```compile_fail
-/// # use containerization_framework as cfw;
-/// # let configuration = cfw::containerization_archive::ArchiveWriterConfiguration::new(
-/// #   cfw::containerization_archive::Format::Ustar,
-/// #   cfw::containerization_archive::Filter::None,
-/// # );
-/// let writer = cfw::containerization_archive::ArchiveWriter::new(&configuration)?;
-/// let transaction = writer.make_transaction_writer();
-/// std::thread::scope(|scope| {
-///   scope.spawn(move || transaction.finish());
-/// });
-/// # Ok::<(), cfw::Error>(())
-/// ```
-pub struct ArchiveWriterTransaction<'a> {
-  handle: ffi::CzArchiveWriterTransaction,
-  writer: PhantomData<&'a ArchiveWriter>,
-}
-
-impl fmt::Debug for ArchiveWriterTransaction<'_> {
-  fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-    formatter
-      .debug_struct("ArchiveWriterTransaction")
-      .finish_non_exhaustive()
-  }
-}
-
-impl ArchiveWriterTransaction<'_> {
-  /// `ArchiveWriterTransaction.writeHeader(entry:)`.
-  pub fn write_header(&self, entry: &WriteEntry) -> Result<(), Error> {
-    platform::outcome(
-      self.handle.write_header(entry.handle.duplicate()),
-      format!("write the header of {} to an archive", entry.path().unwrap_or_default()),
-    )
-    .map(drop)
-  }
-
-  /// `ArchiveWriterTransaction.writeChunk(data:)`.
-  pub fn write_chunk(&self, data: &[u8]) -> Result<(), Error> {
-    platform::outcome(self.handle.write_chunk(data.to_vec()), "write a chunk to an archive").map(drop)
-  }
-
-  /// `ArchiveWriterTransaction.finish()`.
-  pub fn finish(&self) -> Result<(), Error> {
-    platform::outcome(self.handle.finish(), "finish an archive entry").map(drop)
   }
 }

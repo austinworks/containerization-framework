@@ -31,9 +31,10 @@
 
 mod accessors;
 mod addresses;
+mod archive;
 mod callbacks;
-mod containers;
-mod ext4_archive;
+mod container;
+mod ext4;
 mod images;
 mod network;
 mod spec;

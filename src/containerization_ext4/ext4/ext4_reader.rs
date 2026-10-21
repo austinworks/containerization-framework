@@ -116,7 +116,7 @@ impl EXT4Reader {
   /// `EXT4.EXT4Reader.readInlineExtendedAttributes(from:)`. Like Swift's, it
   /// traps on a buffer shorter than its 4-byte header.
   pub fn read_inline_extended_attributes(buffer: &[u8]) -> Result<Vec<ExtendedAttribute>, Error> {
-    attributes(
+    super::extended_attribute::attributes(
       ffi::cz_ext4_reader_read_inline_extended_attributes(buffer.to_vec()),
       "read inline extended attributes",
     )
@@ -125,18 +125,9 @@ impl EXT4Reader {
   /// `EXT4.EXT4Reader.readBlockExtendedAttributes(from:)`. Like Swift's, it
   /// traps on a buffer shorter than its 4-byte header.
   pub fn read_block_extended_attributes(buffer: &[u8]) -> Result<Vec<ExtendedAttribute>, Error> {
-    attributes(
+    super::extended_attribute::attributes(
       ffi::cz_ext4_reader_read_block_extended_attributes(buffer.to_vec()),
       "read a block's extended attributes",
     )
   }
-}
-
-/// The `[EXT4.ExtendedAttribute]` an outcome holds, which Rust can only count.
-pub(super) fn attributes(outcome: ffi::CzOutcome, action: &str) -> Result<Vec<ExtendedAttribute>, Error> {
-  platform::outcome(outcome, action).map(|outcome| {
-    (0..outcome.len())
-      .map(|_| ExtendedAttribute::opaque())
-      .collect()
-  })
 }

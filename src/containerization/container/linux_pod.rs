@@ -3,7 +3,6 @@
 //! volume's `Source` in [`pod_volume`].
 
 use super::ContainerStatistics;
-use super::FilesystemOperation;
 use super::LinuxContainer;
 use super::Mount;
 use super::StatCategory;
@@ -35,7 +34,7 @@ pub struct Configuration {
   pub hosts: Option<network::Hosts>,
   pub volumes: Vec<PodVolume>,
   pub oci_runtime_path: Option<String>,
-  pub seccomp_profile: linux_container::SeccompProfile,
+  pub seccomp_profile: linux_container::configuration::SeccompProfile,
 }
 
 /// `LinuxPod.ContainerConfiguration`.
@@ -53,7 +52,7 @@ pub struct ContainerConfiguration {
   pub dns: Option<network::DNS>,
   pub hosts: Option<network::Hosts>,
   /// `None` uses the pod's profile.
-  pub seccomp_profile: Option<linux_container::SeccompProfile>,
+  pub seccomp_profile: Option<linux_container::configuration::SeccompProfile>,
   pub use_init: bool,
   /// The cgroup v2 files to write, as in
   /// [`linux_container::Configuration::unified`].
@@ -362,7 +361,7 @@ impl LinuxPod {
   pub fn filesystem_operation(
     &self,
     container_id: &str,
-    operation: FilesystemOperation,
+    operation: vm::FilesystemOperation,
     path: &str,
   ) -> Result<(), Error> {
     platform::outcome(

@@ -47,7 +47,7 @@ impl Vminitd {
   /// `containerID` defaults to `nil`.
   pub fn filesystem_operation(
     &self,
-    operation: container::FilesystemOperation,
+    operation: super::FilesystemOperation,
     path: &str,
     container_id: Option<&str>,
   ) -> Result<(), Error> {

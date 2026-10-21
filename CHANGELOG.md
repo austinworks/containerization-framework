@@ -56,6 +56,20 @@
   with a struct literal must set them.
 - `SystemPlatform`'s `OS::as_str` and `Architecture::as_str` are now
   `raw_value`, like every other enum backed by a Swift raw value.
+- `FilesystemOperation` has moved from `containerization::container` to
+  `containerization::vm`. Swift declares it beside the guest agent, and
+  `Vminitd` takes it as well as the containers.
+- `SeccompProfile` has moved from `container::linux_container` to
+  `container::linux_container::configuration`, since Swift nests it in
+  `LinuxContainer.Configuration`.
+- The `error` module is private. `Error` is still at the crate root, as
+  `containerization_framework::Error`.
+- Several types were reachable by two paths and now have only one.
+  `ArchiveWriterTransaction` is only at `containerization_archive`, not also
+  at `containerization_archive::archive_writer`. `RetryOptions` is only at
+  `containerization_oci::client`, not also at
+  `containerization_oci::client::registry_client`. `FileInfo` is only at
+  `containerization_os`, not also at `containerization_os::file`.
 
 ## v0.9.0
 

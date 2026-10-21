@@ -185,11 +185,16 @@ fn says_which_block_device_it_could_not_read() {
 }
 
 #[test]
-fn reads_the_current_platform() {
-  let platform = cfw::containerization_oci::image::Platform::current().expect("the current platform");
+fn unpacks_an_archive_into_a_filesystem() {
+  let directory = tempfile::tempdir().expect("a temporary directory");
+  let archive = archive(directory.path());
+  let at = directory.path().join("unpacked.ext4");
 
-  assert_eq!(platform.os, "linux");
-  assert_eq!(platform.architecture, "arm64");
+  cfw::containerization::image::EXT4Unpacker::new(64 * 1024 * 1024, None)
+    .unpack_archive(&archive, cfw::containerization_archive::Filter::Gzip, &at)
+    .expect("the archive should unpack");
+
+  assert_unpacked(&at);
 }
 
 fn mode(flag: cfw::containerization_ext4::ext4::FileModeFlag, perm: u16) -> u16 {

@@ -1,7 +1,7 @@
-//! `LinuxContainer`, and its nested `LinuxContainer.Configuration`.
+//! `LinuxContainer`, its nested `LinuxContainer.Configuration`, and the
+//! configuration's `SeccompProfile` in [`configuration`].
 
 use super::ContainerStatistics;
-use super::FilesystemOperation;
 use super::Mount;
 use super::StatCategory;
 use super::UnixSocketConfiguration;
@@ -10,7 +10,6 @@ use crate::containerization::network;
 use crate::containerization::process;
 use crate::containerization::strings;
 use crate::containerization::vm;
-use crate::containerization_oci;
 use crate::containerization_os::terminal;
 use crate::error::Error;
 use crate::platform;
@@ -20,17 +19,6 @@ use std::fmt;
 use std::os::fd::FromRawFd;
 use std::os::fd::OwnedFd;
 use std::path::Path;
-
-/// `LinuxContainer.Configuration.SeccompProfile`.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub enum SeccompProfile {
-  #[default]
-  Unconfined,
-  Default,
-  /// A profile of its own. [`containerization_oci::runtime::LinuxSeccomp::decode`]
-  /// reads one from JSON.
-  Profile(containerization_oci::runtime::LinuxSeccomp),
-}
 
 /// `LinuxContainer.Configuration`.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -50,7 +38,7 @@ pub struct Configuration {
   pub virtualization: bool,
   pub boot_log: Option<vm::BootLog>,
   pub oci_runtime_path: Option<String>,
-  pub seccomp_profile: SeccompProfile,
+  pub seccomp_profile: configuration::SeccompProfile,
   pub use_init: bool,
   /// cgroup v2 files to write in the container's cgroup, as OCI's
   /// `linux.resources.unified`. Each key is a file name and each value what
@@ -78,10 +66,27 @@ impl Default for Configuration {
       virtualization: false,
       boot_log: None,
       oci_runtime_path: None,
-      seccomp_profile: SeccompProfile::Unconfined,
+      seccomp_profile: configuration::SeccompProfile::Unconfined,
       use_init: false,
       unified: BTreeMap::new(),
     }
+  }
+}
+
+pub mod configuration {
+  //! `LinuxContainer.Configuration.SeccompProfile`.
+
+  use crate::containerization_oci;
+
+  /// `LinuxContainer.Configuration.SeccompProfile`.
+  #[derive(Clone, Debug, Default, Eq, PartialEq)]
+  pub enum SeccompProfile {
+    #[default]
+    Unconfined,
+    Default,
+    /// A profile of its own. [`containerization_oci::runtime::LinuxSeccomp::decode`]
+    /// reads one from JSON.
+    Profile(containerization_oci::runtime::LinuxSeccomp),
   }
 }
 
@@ -357,7 +362,7 @@ impl LinuxContainer {
   }
 
   /// `LinuxContainer.filesystemOperation(operation:path:)`.
-  pub fn filesystem_operation(&self, operation: FilesystemOperation, path: &str) -> Result<(), Error> {
+  pub fn filesystem_operation(&self, operation: vm::FilesystemOperation, path: &str) -> Result<(), Error> {
     platform::outcome(
       self.handle.filesystem_operation(operation.into(), path),
       format!("{operation:?} {path} in {}", self.id()),
@@ -505,7 +510,7 @@ mod tests {
         .contains(&"/proc/sys".to_string())
     );
     assert_eq!(configuration.dns, None);
-    assert_eq!(configuration.seccomp_profile, SeccompProfile::Unconfined);
+    assert_eq!(configuration.seccomp_profile, configuration::SeccompProfile::Unconfined);
     assert_eq!(configuration.process.working_directory, "/");
     assert_eq!(
       configuration.process.environment_variables,

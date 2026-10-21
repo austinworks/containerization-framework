@@ -80,6 +80,14 @@ fn matches_platforms_as_swift_does() {
 }
 
 #[test]
+fn reads_the_current_platform() {
+  let platform = oci::image::Platform::current().expect("the current platform");
+
+  assert_eq!(platform.os, "linux");
+  assert_eq!(platform.architecture, "arm64");
+}
+
+#[test]
 fn parses_and_normalizes_a_reference() {
   let mut reference = oci::image::Reference::parse("docker.io/alpine").expect("a valid reference");
 

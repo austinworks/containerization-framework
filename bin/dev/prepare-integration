@@ -18,11 +18,6 @@ url="https://github.com/kata-containers/kata-containers/releases/download/${kern
 kernels="${HOME:?}/.cache/containerization-framework-tests/kernels"
 kernel="${kernels}/vmlinux-${kernel_version}"
 
-# A kernel cached before this script resolved the symlink is a dangling link.
-if [ -L "$kernel" ] && [ ! -e "$kernel" ]; then
-  rm "$kernel"
-fi
-
 if [ ! -f "$kernel" ]; then
   echo "bin/dev/prepare-integration: downloading the kernel from ${url}" >&2
   mkdir -p "$kernels"

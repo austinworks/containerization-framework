@@ -1,15 +1,17 @@
-//! The values a container and its processes are configured with, which Swift
-//! reads and fills through setters.
+//! The values a container, its processes and its pod's volumes are
+//! configured with, which Swift reads and fills through setters.
 
 use crate::containerization::container::Mount as RustMount;
 use crate::containerization::container::container_manager::CreateOptions as RustCreateOptions;
 use crate::containerization::container::container_manager::CreateWithRootfsOptions as RustRootfsCreateOptions;
+use crate::containerization::container::linux_pod::PodVolume as RustPodVolume;
 use crate::containerization::process::LinuxCapabilities as RustLinuxCapabilities;
 use crate::containerization::process::LinuxProcessConfiguration as RustLinuxProcessConfiguration;
 use crate::containerization::process::LinuxRLimit as RustLinuxRLimit;
 use crate::containerization_oci::runtime::User as RustUser;
 
 use super::ffi::CapabilitySet;
+use super::ffi::PodVolumeKind;
 use super::ffi::RlimitKind;
 use super::ffi::RuntimeKind;
 
@@ -23,6 +25,9 @@ mod ffi {
 
   #[swift_bridge(already_declared)]
   enum CapabilitySet {}
+
+  #[swift_bridge(already_declared)]
+  enum PodVolumeKind {}
 
   extern "Rust" {
     type RustRootfsCreateOptions;
@@ -145,5 +150,22 @@ mod ffi {
     fn kind(self: &RustLinuxRLimit) -> RlimitKind;
     fn hard(self: &RustLinuxRLimit) -> u64;
     fn soft(self: &RustLinuxRLimit) -> u64;
+
+    // `location` is an `nbd` source's URL or a `diskImage`'s path. It is
+    // `None` if the path isn't UTF-8, and Swift throws, naming it by
+    // `lossyLocation`.
+    type RustPodVolume;
+    fn name(self: &RustPodVolume) -> &str;
+    fn format(self: &RustPodVolume) -> &str;
+    #[swift_bridge(swift_name = "sourceKind")]
+    fn source_kind(self: &RustPodVolume) -> PodVolumeKind;
+    fn location(self: &RustPodVolume) -> Option<String>;
+    #[swift_bridge(swift_name = "lossyLocation")]
+    fn lossy_location(self: &RustPodVolume) -> String;
+    fn timeout(self: &RustPodVolume) -> Option<f64>;
+    #[swift_bridge(swift_name = "readOnly")]
+    fn read_only(self: &RustPodVolume) -> bool;
+    #[swift_bridge(swift_name = "sizeBytes")]
+    fn size_bytes(self: &RustPodVolume) -> Option<u64>;
   }
 }

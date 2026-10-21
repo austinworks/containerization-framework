@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "strict", deny(warnings))]
+
 //! Rust bindings for Apple's [Containerization] framework, which runs each
 //! Linux container in its own lightweight VM, in-process and with no daemon.
 //!
@@ -158,9 +160,9 @@ pub mod containerization_extras;
 pub mod containerization_io;
 pub mod containerization_oci;
 pub mod containerization_os;
-pub mod error;
 pub mod versions;
 
+mod error;
 mod platform;
 
 // The bridge's functions take Swift's arguments, however many there are.

@@ -1,45 +1,6 @@
+use super::Filter;
+use super::Format;
 use super::Options;
-
-raw_values!(
-  /// `Format`.
-  Format {
-    Ustar = "ustar",
-    Gnutar = "gnutar",
-    Pax = "pax",
-    PaxRestricted = "paxRestricted",
-    Cpio = "cpio",
-    CpioNewc = "cpioNewc",
-    Zip = "zip",
-    Shar = "shar",
-    SharDump = "sharDump",
-    Iso9660 = "iso9660",
-    SevenZip = "sevenZip",
-    ArBSD = "arBSD",
-    ArGNU = "arGNU",
-    Mtree = "mtree",
-    Xar = "xar",
-  }
-);
-
-raw_values!(
-  /// `Filter`.
-  Filter {
-    None = "none",
-    Gzip = "gzip",
-    Bzip2 = "bzip2",
-    Compress = "compress",
-    Lzma = "lzma",
-    Xz = "xz",
-    Uu = "uu",
-    Rpm = "rpm",
-    Lzip = "lzip",
-    Lrzip = "lrzip",
-    Lzop = "lzop",
-    Grzip = "grzip",
-    Lz4 = "lz4",
-    Zstd = "zstd",
-  }
-);
 
 /// `ArchiveWriterConfiguration`.
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -1,7 +1,8 @@
 use crate::platform::ffi;
 
 /// `FilesystemOperation`, which
-/// [`super::LinuxContainer::filesystem_operation`] performs.
+/// [`crate::containerization::container::LinuxContainer::filesystem_operation`]
+/// performs.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum FilesystemOperation {
   Freeze,

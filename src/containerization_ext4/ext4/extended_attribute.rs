@@ -21,11 +21,6 @@ impl ExtendedAttribute {
     (8, "system.richacl"),
   ];
 
-  /// What Swift returns in place of each of its attributes.
-  pub(crate) fn opaque() -> Self {
-    Self { _private: () }
-  }
-
   /// `compressName(_:)`. It returns the id of the name's longest known prefix
   /// and the rest of the name.
   pub fn compress_name(name: &str) -> Result<(u8, String), Error> {
@@ -44,4 +39,13 @@ impl ExtendedAttribute {
     )
     .map(|outcome| outcome.text())
   }
+}
+
+/// The `[EXT4.ExtendedAttribute]` an outcome holds, which Rust can only count.
+pub(super) fn attributes(outcome: ffi::CzOutcome, action: &str) -> Result<Vec<ExtendedAttribute>, Error> {
+  platform::outcome(outcome, action).map(|outcome| {
+    (0..outcome.len())
+      .map(|_| ExtendedAttribute { _private: () })
+      .collect()
+  })
 }

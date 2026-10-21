@@ -1,10 +1,11 @@
-//! `RegistryClient`, the [`RegistryClientOptions`] that its host init takes,
-//! and the [`RetryOptions`] among them.
+//! `RegistryClient`, and the [`RegistryClientOptions`] that its host init
+//! takes.
 //!
 //! Neither init takes Swift's `tlsConfiguration` or `logger`, which are
 //! swift-nio and swift-log types.
 
 use super::Authentication;
+use super::RetryOptions;
 use crate::containerization_extras;
 use crate::containerization_oci::image;
 use crate::error::Error;
@@ -12,26 +13,6 @@ use crate::platform;
 use crate::platform::ffi;
 use std::fmt;
 use std::path::Path;
-
-/// `RetryOptions`, without its `shouldRetry` closure, which takes an
-/// AsyncHTTPClient response. Without that closure, a client retries only a
-/// request that fails outright, never one that a server error answers.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct RetryOptions {
-  pub max_retries: isize,
-  /// In nanoseconds.
-  pub retry_interval: u64,
-}
-
-impl RetryOptions {
-  /// `RetryOptions(maxRetries:retryInterval:)`.
-  pub fn new(max_retries: isize, retry_interval: u64) -> Self {
-    Self {
-      max_retries,
-      retry_interval,
-    }
-  }
-}
 
 /// The defaulted arguments of `RegistryClient(host:...)`. Its [`Default`]
 /// holds Swift's defaults.

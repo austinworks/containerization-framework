@@ -1,7 +1,6 @@
 //! The OCI runtime spec, from Swift's `Spec.swift`: `Spec` and every type it
 //! holds.
 
-use super::User;
 use crate::containerization_oci::image;
 use crate::error::Error;
 use crate::platform;
@@ -74,6 +73,16 @@ impl Process {
   pub fn description(&self) -> Result<String, Error> {
     platform::outcome(ffi::cz_process_description(self.clone()), "describe a process").map(|outcome| outcome.text())
   }
+}
+
+/// `User`.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct User {
+  pub uid: u32,
+  pub gid: u32,
+  pub umask: Option<u32>,
+  pub additional_gids: Vec<u32>,
+  pub username: String,
 }
 
 /// The OCI `LinuxCapabilities`, not

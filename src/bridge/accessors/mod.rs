@@ -1,5 +1,13 @@
-//! Crate-private getters Swift reads value types through, and the setters it
-//! fills them with.
+//! Crate-private getters Swift reads value types through, the setters it
+//! fills them with, and the `CzOutcome` readers that turn what Swift returns
+//! into Rust values.
+//!
+//! The files are grouped by the public module each type is in, not by the
+//! bridge module that declares it. `images.rs` covers Containerization's and
+//! OCI's image types, `container/` the rest of the `containerization`
+//! module, `spec/` the OCI runtime spec, and `os.rs` all of
+//! `containerization_os`, including the `binfmt::Entry` that `bridge/vm.rs`
+//! declares.
 //!
 //! Each getter lends what the value holds, so Swift's copy is the only one.
 //! Swift calls each by the `swift_name` it has in `bridge::ffi`, which is the

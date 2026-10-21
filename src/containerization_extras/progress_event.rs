@@ -28,12 +28,22 @@ impl ProgressEvent {
   }
 
   /// The case as it crosses to Swift, and its value.
-  pub(crate) fn kind(&self) -> (ffi::ProgressKind, i64) {
+  fn kind(&self) -> (ffi::ProgressKind, i64) {
     match *self {
       ProgressEvent::AddItems(value) => (ffi::ProgressKind::Items, value as i64),
       ProgressEvent::AddTotalItems(value) => (ffi::ProgressKind::TotalItems, value as i64),
       ProgressEvent::AddSize(value) => (ffi::ProgressKind::Size, value),
       ProgressEvent::AddTotalSize(value) => (ffi::ProgressKind::TotalSize, value),
+    }
+  }
+
+  /// The event Swift sent as a case and its value.
+  pub(crate) fn from_kind(kind: ffi::ProgressKind, value: i64) -> Self {
+    match kind {
+      ffi::ProgressKind::Items => ProgressEvent::AddItems(value as isize),
+      ffi::ProgressKind::TotalItems => ProgressEvent::AddTotalItems(value as isize),
+      ffi::ProgressKind::Size => ProgressEvent::AddSize(value),
+      ffi::ProgressKind::TotalSize => ProgressEvent::AddTotalSize(value),
     }
   }
 }

@@ -360,7 +360,8 @@ fn boots_with_nested_virtualization_where_the_host_has_it() {
 #[test]
 fn refuses_seccomp_without_an_oci_runtime() {
   let refused = Container::try_boot_with("cfw-test-config-seccomp", |configuration| {
-    configuration.seccomp_profile = cfw::containerization::container::linux_container::SeccompProfile::Default;
+    configuration.seccomp_profile =
+      cfw::containerization::container::linux_container::configuration::SeccompProfile::Default;
   });
 
   let error = refused
@@ -373,7 +374,7 @@ fn refuses_seccomp_without_an_oci_runtime() {
 /// as starting `runc`.
 #[test]
 fn carries_a_seccomp_profile_of_its_own() {
-  let profile = cfw::containerization::container::linux_container::SeccompProfile::Profile(
+  let profile = cfw::containerization::container::linux_container::configuration::SeccompProfile::Profile(
     cfw::containerization_oci::runtime::LinuxSeccomp::default_profile(
       None,
       cfw::containerization_oci::runtime::Arch::current_verified().expect("a seccomp architecture"),

@@ -275,9 +275,9 @@ fn copies_files_in_and_out_and_freezes_the_filesystem() {
   );
 
   container
-    .filesystem_operation(cfw::containerization::container::FilesystemOperation::Freeze, "/")
+    .filesystem_operation(cfw::containerization::vm::FilesystemOperation::Freeze, "/")
     .expect("the root filesystem should freeze");
   container
-    .filesystem_operation(cfw::containerization::container::FilesystemOperation::Thaw, "/")
+    .filesystem_operation(cfw::containerization::vm::FilesystemOperation::Thaw, "/")
     .expect("the root filesystem should thaw");
 }

@@ -12,8 +12,8 @@ import PackageDescription
 let bridgingHeader =
   "\(URL(fileURLWithPath: #filePath).deletingLastPathComponent().path)/Sources/ContainerizationBridge/bridging-header.h"
 
-// Pinned exactly: the initfs in the `container` CLI's store (`vminit:0.53.0`)
-// carries a guest agent speaking that release's protocol. A newer library is a
+// Pinned exactly: the init image that `versions::INIT_IMAGE` names carries a
+// guest agent speaking this release's protocol. Any other library is a
 // runtime mismatch, not a compile error.
 let containerization: Version = "0.53.0"
 
